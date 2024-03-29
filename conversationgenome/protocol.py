@@ -1,7 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# TODO(developer): Set your name
-# Copyright © 2023 <your name>
+# Copyright © 2024 Afterparty, Inc.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -17,38 +15,33 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import torch
-from typing import List
 
+import bittensor as bt
+from typing import Optional, List
+import typing
 
-def reward(query: int, response: int) -> float:
+class CgSynapse(bt.Synapse):
+    time_elapsed = 0
     """
-    Reward the miner response to the dummy request. This method returns a reward
-    value for the miner, which is used to update the miner's score.
+    A simple OCR synapse protocol representation which uses bt.Synapse as its base.
+    This protocol enables communication betweenthe miner and the validator.
 
-    Returns:
-    - float: The reward value for the miner.
+    Attributes:
+    - base64_image: Base64 encoding of pdf image to be processed by the miner.
+    - response: List[dict] containing data extracted from the image.
     """
 
-    return 1.0 if response == query * 2 else 0
+    # Required request input, filled by sending dendrite caller. It is a base64 encoded string.
+    dummy_input: List[dict]
 
+    # Optional request output, filled by recieving axon.
+    dummy_output: Optional[List[dict]] = None
 
-def get_rewards(
-    self,
-    query: int,
-    responses: List[float],
-) -> torch.FloatTensor:
-    """
-    Returns a tensor of rewards for the given query and responses.
+    def deserialize(self) -> List[dict]:
+        """
+        Deserialize the miner response.
 
-    Args:
-    - query (int): The query sent to the miner.
-    - responses (List[float]): A list of responses from the miner.
-
-    Returns:
-    - torch.FloatTensor: A tensor of rewards for the given query and responses.
-    """
-    # Get all the reward results by iteratively calling your reward() function.
-    return torch.FloatTensor(
-        [reward(query, response) for response in responses]
-    ).to(self.device)
+        Returns:
+        - List[dict]: The deserialized response, which is a list of dictionaries containing the extracted data.
+        """
+        return self.dummy_output

@@ -1,7 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# TODO(developer): Set your name
-# Copyright © 2023 <your name>
+# Copyright © 2024 Afterparty, Inc.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -19,6 +17,8 @@
 
 
 import time
+import os
+import hashlib
 
 # Bittensor
 import bittensor as bt
@@ -28,7 +28,13 @@ import template
 from template.validator import forward
 
 # import base validator class which takes care of most of the boilerplate
-from template.base.validator import BaseValidatorNeuron
+from conversationgenome.base.validator import BaseValidatorNeuron
+
+import conversationgenome.utils
+import conversationgenome.validator
+
+from conversationgenome.ValidatorLib import ValidatorLib
+
 
 
 class Validator(BaseValidatorNeuron):
@@ -46,7 +52,9 @@ class Validator(BaseValidatorNeuron):
         bt.logging.info("load_state()")
         self.load_state()
 
-        # TODO(developer): Anything specific to your use case you can do here
+        self.image_dir = './data/conversations/'
+        if not os.path.exists(self.image_dir):
+            os.makedirs(self.image_dir)
 
     async def forward(self):
         """
@@ -57,13 +65,43 @@ class Validator(BaseValidatorNeuron):
         - Rewarding the miners
         - Updating the scores
         """
-        # TODO(developer): Rewrite this function based on your protocol definition.
-        return await forward(self)
+        miner_uids = conversationgenome.utils.uids.get_random_uids(self, k=min(self.config.neuron.sample_size, self.metagraph.n.item()))
+        #print("miner_uids", miner_uids)
+        vl = ValidatorLib()
+        vl.validateMinimumTags([])
 
+        windows = await vl.requestConvo()
+
+        synapse = conversationgenome.protocol.CgSynapse(dummy_input = [windows])
+
+        rewards = None
+        # The dendrite client queries the network.
+        responses = self.dendrite.query(
+            # Send the query to selected miner axons in the network.
+            axons=[self.metagraph.axons[uid] for uid in miner_uids],
+            # Pass the synapse to the miner.
+            synapse=synapse,
+            # Do not deserialize the response so that we have access to the raw response.
+            deserialize=False,
+        )
+        validResponses = []
+        for response in responses:
+            if not response.dummy_output:
+                continue
+            validResponses.append(response)
+            bt.logging.info(f"CGP Received tags: {response.dummy_output[0]['tags']}")
+        labels = ["Hello", "World"]
+        #print("getting rewards")
+        #rewards = conversationgenome.validator.reward.get_rewards(self, labels=labels, responses=validResponses)
+
+        #bt.logging.info(f"CGP Scored responses: {rewards}")
+
+        # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
+        #self.update_scores(rewards, miner_uids)
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
     with Validator() as validator:
         while True:
-            bt.logging.info("Validator running...", time.time())
+            bt.logging.info("CGP Validator running...", time.time())
             time.sleep(5)
