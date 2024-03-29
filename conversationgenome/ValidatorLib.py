@@ -34,6 +34,7 @@ proto = {
 
 class ValidatorLib:
     hotkey = "v1234"
+    verbose = False
 
     async def calculate_base_score(self, result_dict):
         total_1 = result_dict['total_1']
@@ -85,10 +86,8 @@ class ValidatorLib:
         return rewards
 
 
-    async def requestConvo(self):
-        minConvWindows = 1
-        hotkey = "a123"
-        fullConvo = await self.getConvo(hotkey)
+    async def requestConvo(self, minConvWindows = 1, dryrun=False):
+        fullConvo = await self.getConvo(self.hotkey)
         bt.logging.info("Convo ID:", Utils.get(fullConvo, "guid"))
         #print("fullConvo", fullConvo)
 
@@ -107,12 +106,14 @@ class ValidatorLib:
                 numWindows = len(convoWindows)
                 if numWindows > minConvWindows:
                     print("Found %d convo windows. Sending to miners..." % (numWindows))
-                    #await self.sendWindowsToMiners(convoWindows, fullConvo=fullConvo, fullConvoMetaData=fullConvoMetaData)
-                    return {
-                        "full_conversation": fullConvo,
-                        "full_conversation_metadata": fullConvoMetaData,
-                        "windows": convoWindows,
-                    }
+                    if dryrun:
+                        await self.sendWindowsToMiners(convoWindows, fullConvo=fullConvo, fullConvoMetaData=fullConvoMetaData)
+                    else:
+                        return {
+                            "full_conversation": fullConvo,
+                            "full_conversation_metadata": fullConvoMetaData,
+                            "windows": convoWindows,
+                        }
                 else:
                     print("Not enough convo windows -- only %d. Passing." % (numWindows))
             else:
@@ -172,10 +173,12 @@ class ValidatorLib:
         return results
 
     def validateMinimumTags(self, tags):
+        # TODO: Validate tags
         #print("Validating tags", tags)
         return True
 
     def selectStage1Miners(self, uids, num=3):
+        # TODO: Move to MockBt
         selectedMiners = random.sample(uids, num)
         return selectedMiners
 
@@ -187,29 +190,27 @@ class ValidatorLib:
         participantProfiles = Utils.get(fullConvoMetaData, "participantProfiles", [])
         fullConvoTags = Utils.get(fullConvoMetaData, "tags", [])
         fullConvoTagVectors = Utils.get(fullConvoMetaData, "tag_vectors", {})
+
         #print("fullConvoTagVectors", fullConvoTagVectors)
         vectorNeightborhood = []
         for key, fullConvoTagVector in fullConvoTagVectors.items():
             #print(fullConvoTagVector)
             vectorNeightborhood.append(fullConvoTagVector['vectors'])
             #print("num vectors", len(fullConvoTagVector['vectors']))
+
         #print("vectorNeightborhood LEN", len(vectorNeightborhood))
         semantic_neighborhood = np.mean(vectorNeightborhood, axis=0)
         #print("Full convo semantic_neighborhood", semantic_neighborhood)
 
-        # Get uids of available miners
-        uids = [1,2,3,4,5,6,7,8] #bt.getUids()
-        if len(uids) < 6:
-            print("Not enough miners available. Aborting.")
-            return
-
-        print("Full convo tags", fullConvoTags)
+        if self.verbose:
+            print("Full convo tags", fullConvoTags)
 
         # Loop through rows in db
         success = True
         for idx, window in enumerate(windows):
             # Pick initial minors
             minersPerWindow = c.get("validator", "miners_per_window", 3)
+            uids = [1,2,3,4,5,6,7,8,9]
             miners = self.selectStage1Miners(uids, minersPerWindow)
             # Send first window to miners
             minerResults = await self.sendToMiners(window, miners)
