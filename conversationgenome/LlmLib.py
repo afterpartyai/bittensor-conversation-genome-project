@@ -210,38 +210,37 @@ class LlmLib:
         prompt1 = 'Analyze conversations in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <q> has the questions from Mary and <a> has the answers from Jaden. Return JSON structured like this: {"q":{"interests":["baseball", "math"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[], },"a":{"interests":["flute",...]}} Take a moment to reflect on this and provide a thorough response.'
         prompt = prompt1 + "\n\n\n" + self.getExampleFunctionConv()
         #prompt = "Generate a basic conversation and then provide an analysis of the topic interests of the participants."
-        completion = await client.chat.completions.create(
-            model="gpt-4-0613",
-            messages=[{"role": "user", "content": prompt} ],
-            functions=[
-                {
-                    "name": "get_semantic_tags",
-                    "description": "Analyze conversations in terms of topic interests of the participants.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "semantical_tags": {
-                                "type": "object",
-                                "description": "Organized tags",
+        if False:
+            completion = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt} ],
+                functions=[
+                    {
+                        "name": "get_semantic_tags",
+                        "description": "Analyze conversations in terms of topic interests of the participants.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "semantical_tags": {
+                                    "type": "object",
+                                    "description": "Organized tags",
+                                },
                             },
+                            "required": ["semantical_tags"],
                         },
-                        "required": ["semantical_tags"],
-                    },
-                }
-            ],
-            function_call={"name":"get_semantic_tags"},
-        )
-        completion = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {
-                    "role": "user",
-                    "content": "How do I output all files in a directory using Python?",
-                },
-            ],
-        )
+                    }
+                ],
+                function_call={"name":"get_semantic_tags"},
+            )
+        elif True:
+            completion = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt} ],
+            )
         reply_content = completion.choices[0].message
         print("reply_content", reply_content)
+        print("reply_content", reply_content.content)
+        print("reply_content", json.loads(reply_content.content))
         #funcs = reply_content.to_dict()['function_call']['arguments']
         #funcs = json.loads(funcs)
         #print(funcs)
