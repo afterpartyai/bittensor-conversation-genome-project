@@ -238,13 +238,19 @@ class LlmLib:
                 messages=[{"role": "user", "content": prompt} ],
             )
         reply_content = completion.choices[0].message
-        print("reply_content", reply_content)
-        print("reply_content", reply_content.content)
-        print("reply_content", json.loads(reply_content.content))
+        #print("reply_content", reply_content)
+        #print("reply_content", reply_content.content)
+        #print("reply_content", json.loads(reply_content.content))
         #funcs = reply_content.to_dict()['function_call']['arguments']
         #funcs = json.loads(funcs)
         #print(funcs)
         #print(funcs['location'])
+        out = {}
+        try:
+            out = json.loads(reply_content.content)
+        except:
+            print("Error parsing LLM reply")
+        return out
 
     async def test_tagging(self):
 
@@ -254,7 +260,8 @@ class LlmLib:
             raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
 
         #client = AsyncOpenAI(timeout=60.0)
-        await self.callFunctionFull()
+        response = await self.callFunctionFull()
+        print("Conv response", response)
         #wandb_api_key = os.getenv("WANDB_API_KEY")
 
 
