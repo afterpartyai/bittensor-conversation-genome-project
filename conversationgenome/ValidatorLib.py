@@ -27,6 +27,7 @@ except:
 openai = None
 try:
     import openai
+    from openai import AsyncOpenAI, OpenAI
 except:
     print("No openai lib")
 
@@ -55,7 +56,7 @@ class ValidatorLib:
         super(ValidatorLib, self).__init__()
 
         load_dotenv()
-        #print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
+        print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
 
 
     async def calculate_base_score(self, result_dict):
@@ -285,7 +286,13 @@ class ValidatorLib:
             await cl.markConversionComplete(self.hotkey, cguid)
 
     async def neighborhood_test(self):
-        print("Quick test")
+        print("Quick test for semantic neighborhood with vectors")
         llml = LlmLib()
-        await llml.test()
+        await llml.test_neighborhood()
+
+    async def llm_test(self):
+        print("Quick test for LLM")
+        llml = LlmLib()
+        await llml.test_tagging()
+
 
