@@ -4,8 +4,10 @@ import copy
 import random
 import asyncio
 import math
+import os
 import numpy as np
 
+from dotenv import load_dotenv
 
 from conversationgenome.Utils import Utils
 from conversationgenome.MinerLib import MinerLib
@@ -22,6 +24,19 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
+openai = None
+try:
+    import openai
+except:
+    print("No openai lib")
+
+tiktoken = None
+try:
+    import tiktoken
+except:
+    print("No tiktoken lib")
+
+
 proto = {
     "interests_of_q": [],
     "hobbies_of_q": [],
@@ -35,6 +50,13 @@ proto = {
 class ValidatorLib:
     hotkey = "v1234"
     verbose = False
+
+    def __init__(self):
+        super(ValidatorLib, self).__init__()
+
+        load_dotenv()
+        #print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
+
 
     async def calculate_base_score(self, result_dict):
         total_1 = result_dict['total_1']

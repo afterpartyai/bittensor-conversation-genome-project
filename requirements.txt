@@ -1,3 +1,4 @@
+python-dotenv
 bittensor
 torch
 faker
