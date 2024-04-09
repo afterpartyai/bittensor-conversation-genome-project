@@ -292,7 +292,13 @@ class LlmLib:
 
 if __name__ == "__main__":
     print("Load LLM")
-    from conversationgenome.llm_spacy import llm_spacy
-    ls = llm_spacy()
-    ls.convert()
+    # Import the required LLM class dynamically
+    class_name = "conversationgenome.llm_spacy"
+    module = __import__(class_name)
+    print("MODULE", module)
+    # Get the class from the imported module
+    mainClass = getattr(module.llm_spacy, "llm_spacy")
+    print(mainClass)
+    ls1 = mainClass()
+    ls1.convert()
     print("Done")
