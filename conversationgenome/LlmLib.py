@@ -34,11 +34,18 @@ class LlmLib:
 
     def get_nlp(self):
         nlp = self.nlp
+        dataset = "en_core_web_lg"
         if not nlp:
             # python -m spacy download en_core_web_sm
             #nlp = spacy.load("en_core_web_sm")
             #nlp = spacy.load("en_core_web_md")
-            nlp = spacy.load("en_core_web_lg") # ~600mb
+
+            if not spacy.util.is_package(dataset):
+                # download model
+                spacy.cli.download(dataset)
+                print("Model downloaded successfully!")
+
+            nlp = spacy.load(dataset) # ~600mb
             #print(f"Vector dimensionality: {nlp.vocab.vectors_length}")
             self.nlp = nlp
         return nlp
