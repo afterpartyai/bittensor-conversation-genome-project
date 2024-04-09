@@ -106,7 +106,7 @@ class LlmLib:
         print(f"Similarity score between the content and the tag '{tag}': {similarity_score}")
 
     async def call_llm_function(self):
-        ll._("Calling...")
+        print("call_llm_function...")
         if not openai.api_key:
             print("No OpenAI key")
             return
@@ -121,7 +121,7 @@ class LlmLib:
         example_user_input = "List 20 personality traits for the people in the following conversation."
         example_user_input = example_user_input + "\n\n\n" + self.getExampleFunctionConv()
 
-        completion = openai.ChatCompletion.create(
+        completion = await client.chat.completions.create(
             model="gpt-4-0613",
             messages=[{"role": "user", "content": example_user_input}],
                 functions=[
@@ -261,7 +261,10 @@ class LlmLib:
             raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
 
         #client = AsyncOpenAI(timeout=60.0)
-        response = await self.callFunctionFull()
+        if True:
+            response = await self.callFunctionFull()
+        else:
+            response = await self.call_llm_function()
         print("Conv response", response)
         #wandb_api_key = os.getenv("WANDB_API_KEY")
 
