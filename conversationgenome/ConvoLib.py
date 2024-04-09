@@ -1,3 +1,4 @@
+import requests
 
 from conversationgenome.ApiLib import ApiLib
 
