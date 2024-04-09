@@ -111,12 +111,14 @@ class ValidatorLib:
 
 
     async def requestConvo(self, minConvWindows = 1):
+        # Request a full conversation from the API
         fullConvo = await self.getConvo(self.hotkey)
-        bt.logging.info("Convo ID:", Utils.get(fullConvo, "guid"))
         #print("fullConvo", fullConvo)
 
         if fullConvo:
-            # Do overview tagging and participant profiles
+            bt.logging.info("Reserved conversation ID:", Utils.get(fullConvo, "guid"))
+
+            # Do overview tagging and generate base participant profiles
             fullConvoMetaData = await self.generateFullConvoMetaData(fullConvo)
             bt.logging.info("Found %d FullConvo tags" % len(fullConvoMetaData['tags']) )
 
@@ -126,18 +128,26 @@ class ValidatorLib:
             # Make sure there are enough tags to make processing worthwhile
             minValidTags = self.validateMinimumTags(fullConvoTags)
             if minValidTags:
+                # Break the full conversation up into overlapping conversation windows
                 convoWindows = self.getConvoWindows(fullConvo)
                 numWindows = len(convoWindows)
                 if numWindows > minConvWindows:
                     print("Found %d convo windows. Sending to miners..." % (numWindows))
-                    if c.get('system', 'mode') == 'test':
+                    system_mode = c.get('system', 'mode')
+                    if system_mode == 'test':
                         await self.sendWindowsToMiners(convoWindows, fullConvo=fullConvo, fullConvoMetaData=fullConvoMetaData)
-                    else:
+                    elif system_mode == 'openai':
                         return {
                             "full_conversation": fullConvo,
                             "full_conversation_metadata": fullConvoMetaData,
                             "windows": convoWindows,
                         }
+                    elif system_mode == 'anthropic':
+                        pass
+                    elif system_mode == 'local_llm':
+                        pass
+                    else:
+                        bt.logging.info("System mode %s not found. Aborting." % (system_mode) )
                 else:
                     print("Not enough convo windows -- only %d. Passing." % (numWindows))
             else:
