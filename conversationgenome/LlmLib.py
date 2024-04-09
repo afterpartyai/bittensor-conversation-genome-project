@@ -211,6 +211,7 @@ class LlmLib:
         prompt = prompt1 + "\n\n\n" + self.getExampleFunctionConv()
         #prompt = "Generate a basic conversation and then provide an analysis of the topic interests of the participants."
         if False:
+            # Worked with 2023 API, doesn't work with 2024
             completion = await client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt} ],
@@ -232,19 +233,19 @@ class LlmLib:
                 ],
                 function_call={"name":"get_semantic_tags"},
             )
+            #print("reply_content", reply_content)
+            #funcs = reply_content.to_dict()['function_call']['arguments']
+            #funcs = json.loads(funcs)
+            #print(funcs)
+            #print(funcs['location'])
         elif True:
             completion = await client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt} ],
             )
         reply_content = completion.choices[0].message
-        #print("reply_content", reply_content)
         #print("reply_content", reply_content.content)
         #print("reply_content", json.loads(reply_content.content))
-        #funcs = reply_content.to_dict()['function_call']['arguments']
-        #funcs = json.loads(funcs)
-        #print(funcs)
-        #print(funcs['location'])
         out = {}
         try:
             out = json.loads(reply_content.content)
