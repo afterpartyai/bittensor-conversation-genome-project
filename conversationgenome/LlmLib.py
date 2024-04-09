@@ -53,11 +53,21 @@ class LlmLib:
             self.nlp = nlp
         return nlp
 
+    async def conversation_to_metadata_test(self,  convo):
+        matches_dict = await self.simple_text_to_tags(json.dumps(convo['lines']))
+        return {"tags": matches_dict}
+
+    async def conversation_to_metadata_openai(self,  convo):
+        matches_dict = await self.simple_text_to_tags(json.dumps(convo['lines']))
+        return {"tags": matches_dict}
+
+
     async def conversation_to_tags(self,  convo):
         # Get prompt template
         #pt = await cl.getConvoPromptTemplate()
         #llml =  LlmApi()
         #data = await llml.callFunction("convoParse", convo)
+        system_mode = c.get('system', 'mode')
         if c.get('system', 'mode') == 'test':
             matches_dict = await self.simple_text_to_tags(json.dumps(convo['lines']))
         else:
@@ -280,4 +290,9 @@ class LlmLib:
         print("Conv response", response)
         #wandb_api_key = os.getenv("WANDB_API_KEY")
 
-
+if __name__ == "__main__":
+    print("Load LLM")
+    from conversationgenome.llm_spacy import llm_spacy
+    ls = llm_spacy()
+    ls.convert()
+    print("Done")

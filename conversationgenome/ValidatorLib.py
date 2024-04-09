@@ -49,7 +49,7 @@ proto = {
 
 
 class ValidatorLib:
-    mode = "test" # test|local|gpt|anthropic
+    mode = "test" # test|local_llm|openai|anthropic
     hotkey = "v1234"
     verbose = False
 
