@@ -14,6 +14,8 @@ except:
     print("Please install spacy to run locally")
     # en_core_web_sm model vectors = 96 dimensions.
     # en_core_web_md and en_core_web_lg = 300 dimensions
+    # python -m spacy download en_core_web_sm
+    # python -m spacy download en_core_web_lg
 
 
 openai = None
