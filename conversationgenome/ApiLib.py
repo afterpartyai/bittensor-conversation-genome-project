@@ -2,12 +2,13 @@ import json
 import random
 
 from conversationgenome.Utils import Utils
+from conversationgenome.ConfigLib import c
 
 
 class ApiLib:
-    async def reserveConversation(self, hotkey, dryrun=False):
+    async def reserveConversation(self, hotkey):
         # Call Convo server and reserve a conversation
-        if dryrun:
+        if c.get('system', 'mode') == 'test':
             path = 'facebook-chat-data.json'
             f = open(path)
             body = f.read()

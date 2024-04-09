@@ -4,9 +4,9 @@ from conversationgenome.ApiLib import ApiLib
 
 
 class ConvoLib:
-    async def getConversation(self, hotkey, dryrun=False):
+    async def getConversation(self, hotkey):
         api = ApiLib()
-        convo = await api.reserveConversation(hotkey, dryrun=dryrun)
+        convo = await api.reserveConversation(hotkey)
         return convo
 
     async def getConvoPromptTemplate(self):

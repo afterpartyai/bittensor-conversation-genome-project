@@ -5,6 +5,9 @@ import spacy
 from dotenv import load_dotenv
 import numpy as np
 
+from conversationgenome.ConfigLib import c
+
+
 spacy = None
 Matcher = None
 try:
@@ -50,12 +53,12 @@ class LlmLib:
             self.nlp = nlp
         return nlp
 
-    async def conversation_to_tags(self,  convo, dryrun=True):
+    async def conversation_to_tags(self,  convo):
         # Get prompt template
         #pt = await cl.getConvoPromptTemplate()
         #llml =  LlmApi()
         #data = await llml.callFunction("convoParse", convo)
-        if dryrun:
+        if c.get('system', 'mode') == 'test':
             matches_dict = await self.simple_text_to_tags(json.dumps(convo['lines']))
         else:
             print("Send conversation to the LLM")

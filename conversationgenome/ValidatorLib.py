@@ -49,6 +49,7 @@ proto = {
 
 
 class ValidatorLib:
+    mode = "test" # test|local|gpt|anthropic
     hotkey = "v1234"
     verbose = False
 
@@ -109,7 +110,7 @@ class ValidatorLib:
         return rewards
 
 
-    async def requestConvo(self, minConvWindows = 1, dryrun=False):
+    async def requestConvo(self, minConvWindows = 1):
         fullConvo = await self.getConvo(self.hotkey)
         bt.logging.info("Convo ID:", Utils.get(fullConvo, "guid"))
         #print("fullConvo", fullConvo)
@@ -129,7 +130,7 @@ class ValidatorLib:
                 numWindows = len(convoWindows)
                 if numWindows > minConvWindows:
                     print("Found %d convo windows. Sending to miners..." % (numWindows))
-                    if dryrun:
+                    if c.get('system', 'mode') == 'test':
                         await self.sendWindowsToMiners(convoWindows, fullConvo=fullConvo, fullConvoMetaData=fullConvoMetaData)
                     else:
                         return {
@@ -146,7 +147,7 @@ class ValidatorLib:
 
     async def getConvo(self, hotkey):
         cl = ConvoLib()
-        convo = await cl.getConversation(hotkey, dryrun=True)
+        convo = await cl.getConversation(hotkey)
         return convo
 
     def getConvoWindows(self, fullConvo):

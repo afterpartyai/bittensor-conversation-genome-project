@@ -1,12 +1,36 @@
 
 class Utils:
     @staticmethod
-    def get(obj, path, default=None):
+    def get(inDict, path, default=None, dataType=None):
+        if not inDict:
+            return default
         out = default
-        try:
-            out = obj[path]
-        except:
-            pass
+        parts = path.split(".")
+        cur = inDict
+        success = True
+        for part in parts:
+            #print(part, cur, part in cur, type(cur)==dict)
+            if cur and type(cur)==list:
+                index = 0
+                try:
+                    part = int(part)
+                except:
+                    pass
+            if cur and ( (type(cur)==dict and part in cur) or (type(cur)==list and  0 <= part < len(cur)) ):
+                cur = cur[part]
+            else:
+                success = False
+                break
+        if success:
+            out = cur
+        if dataType:
+            if dataType == 'int':
+                out2 = default
+                try:
+                    out2 = int(out)
+                except:
+                    pass
+                out = out2
         return out
 
     @staticmethod
