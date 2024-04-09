@@ -291,14 +291,14 @@ class LlmLib:
         #wandb_api_key = os.getenv("WANDB_API_KEY")
 
 if __name__ == "__main__":
-    print("Load LLM")
+    print("Load LLM by dependency injection")
     # Import the required LLM class dynamically
-    class_name = "conversationgenome.llm_spacy"
+    llm_class = "llm_spacy"
+    class_name = "conversationgenome.%s" % (llm_class)
     module = __import__(class_name)
-    print("MODULE", module)
     # Get the class from the imported module
-    mainClass = getattr(module.llm_spacy, "llm_spacy")
-    print(mainClass)
-    ls1 = mainClass()
-    ls1.convert()
+    module_class_obj = getattr(module, "llm_spacy")
+    main_class = getattr(module_class_obj, "llm_spacy")
+    llm_instance = main_class()
+    llm_instance.convert()
     print("Done")
