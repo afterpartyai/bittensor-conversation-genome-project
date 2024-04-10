@@ -227,6 +227,15 @@ class llm_openai:
         #wandb_api_key = os.getenv("WANDB_API_KEY")
         return response
 
+    async def getEmbeddings(self, text):
+       response = openai.Embedding.create(
+           model="text-embedding-ada-002",
+           input = text.replace("\n"," ")
+       )
+       embedding = response['data'][0]['embedding']
+       print("USAGE", response['usage'])
+       return embedding
+
 
 
 if __name__ == "__main__":

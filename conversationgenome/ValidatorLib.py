@@ -115,6 +115,13 @@ class ValidatorLib:
 
 
     async def requestConvo(self, minConvWindows = 1):
+        print("getEmbeddings")
+        llml = LlmLib()
+        inst = await llml.generate_llm_instance()
+        body = "mary had a little lamb"
+        matches_dict = await inst.getEmbeddings(body)
+
+        return
         # Request a full conversation from the API
         fullConvo = await self.getConvo(self.hotkey)
         #print("fullConvo", fullConvo)
@@ -146,10 +153,6 @@ class ValidatorLib:
                             "full_conversation_metadata": fullConvoMetaData,
                             "windows": convoWindows,
                         }
-                    elif system_mode == 'anthropic':
-                        pass
-                    elif system_mode == 'local_llm':
-                        pass
                     else:
                         bt.logging.info("System mode %s not found. Aborting." % (system_mode) )
                 else:

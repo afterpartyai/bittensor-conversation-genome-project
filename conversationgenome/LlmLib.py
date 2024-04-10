@@ -12,6 +12,9 @@ from conversationgenome.ConfigLib import c
 class LlmLib:
     factory_llm = None
 
+    def __init__(self):
+        self.generate_llm_instance()
+
     async def generate_llm_instance(self, llm_type=None):
         if not llm_type:
             llm_type = c.get("llm", "type")
