@@ -98,7 +98,12 @@ class ValidatorLib:
         stdev = math.sqrt(sum((x - mean) ** 2 for x in scores) / len(scores))
 
         def normal_pdf(x, mean, stdev):
-            return math.exp(-(x - mean) ** 2 / (2 * stdev ** 2)) / (stdev * math.sqrt(2 * math.pi))
+            normal = 0
+            try:
+                normal = math.exp(-(x - mean) ** 2 / (2 * stdev ** 2)) / (stdev * math.sqrt(2 * math.pi))
+            except:
+                print("ERROR: normal_pdf --", " x: ", x, " mean: ", mean, " stdev: ", stdev)
+            return normal
 
         rewards = []
         for cur_dict in dicts:
@@ -115,13 +120,14 @@ class ValidatorLib:
 
 
     async def requestConvo(self, minConvWindows = 1):
-        print("getEmbeddings")
-        llml = LlmLib()
-        inst = await llml.generate_llm_instance()
-        body = "mary had a little lamb"
-        matches_dict = await inst.getEmbeddings(body)
+        if False:
+            print("getEmbeddings")
+            llml = LlmLib()
+            inst = await llml.generate_llm_instance()
+            body = "mary had a little lamb"
+            matches_dict = await inst.getEmbeddings(body)
 
-        return
+            return
         # Request a full conversation from the API
         fullConvo = await self.getConvo(self.hotkey)
         #print("fullConvo", fullConvo)
@@ -182,7 +188,7 @@ class ValidatorLib:
 
 
     async def generateFullConvoMetaData(self, convo):
-        cl = ConvoLib()
+        #cl = ConvoLib()
         print("generateFullConvoMetaData participants", convo['participants'])
 
         llml = LlmLib()

@@ -1,3 +1,5 @@
+import os
+
 from conversationgenome.Utils import Utils
 
 class c:
@@ -10,6 +12,7 @@ class c:
         },
         "llm" : {
             #"type": 'spacy',
+            #"type": os.environ.get("LLM_TYPE"),
             "type": 'openai',
         },
 

@@ -53,8 +53,10 @@ class llm_openai:
             tags = Utils.get(response, "p1.interests")
         if tags:
             for tag in tags:
-                out['tags'][tag] = {"vectors":[]}
-            print("OUT", out)
+                print("Get vectors for tag: %s" % (tag))
+                vectors = await self.getEmbeddings(tag)
+                out['tags'][tag] = {"tag":tag, "count":0, "vectors":vectors}
+            #print("OUT", out)
         else:
             print("No tags returned", response)
         return out
@@ -230,11 +232,13 @@ class llm_openai:
         return response
 
     async def getEmbeddings(self, text):
-       response = client.embeddings.create(model="text-embedding-ada-002",
-       input = text.replace("\n"," "))
+       response = client.embeddings.create(
+           model="text-embedding-ada-002",
+           input = text.replace("\n"," ")
+       )
        embedding = response.data[0].embedding
        print("USAGE", response.usage)
-       print("embeddings generated", len(embedding))
+       print("OpenAI embeddings generated", len(embedding))
        return embedding
 
 
