@@ -22,9 +22,16 @@ class llm_openai:
 
     async def conversation_to_metadata(self,  convo):
         #print("CONVO OPENAI", convo)
+        out = {"tags":{}}
         response = await self.test_tagging()
-        print("RESPONSE", Utils.get(response, "q.interests"))
-        return {"tags":{"hello":{"vectors":[]}}}
+        tags = Utils.get(response, "q.interests")
+        if tags:
+            for tag in tags:
+                out['tags'][tag] = {"vectors":[]}
+            print("OUT", out)
+        else:
+            print("No tags returned", response)
+        return out
 
 
     async def call_llm_function(self):
