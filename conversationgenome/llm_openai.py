@@ -7,7 +7,9 @@ from conversationgenome.ConfigLib import c
 
 openai = None
 try:
-    import openai
+    from openai import OpenAI
+
+    client = OpenAI()
     from openai import AsyncOpenAI, OpenAI
 except:
     print("No openai package")
@@ -228,12 +230,11 @@ class llm_openai:
         return response
 
     async def getEmbeddings(self, text):
-       response = openai.Embedding.create(
-           model="text-embedding-ada-002",
-           input = text.replace("\n"," ")
-       )
-       embedding = response['data'][0]['embedding']
-       print("USAGE", response['usage'])
+       response = client.embeddings.create(model="text-embedding-ada-002",
+       input = text.replace("\n"," "))
+       embedding = response.data[0].embedding
+       print("USAGE", response.usage)
+       print("embeddings generated", len(embedding))
        return embedding
 
 
