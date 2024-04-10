@@ -17,9 +17,6 @@ except:
 class llm_spacy:
     nlp = None
 
-    def convert(self):
-        print("Convert Spacy")
-
     def get_nlp(self):
         nlp = self.nlp
         dataset = "en_core_web_lg"
