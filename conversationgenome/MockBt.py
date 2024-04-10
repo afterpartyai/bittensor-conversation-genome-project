@@ -3,8 +3,9 @@ import random
 from conversationgenome.Utils import Utils
 
 class logging:
-    def info(a1, a2=None, a3=None):
-        print(a1, a2, a3,)
+    def info(*args, **kwargs):
+        #print("MOCKBT: ", " ".join(args))
+        print(*args[1:], sep=", ")
 
 class MockBt:
     def __init__(self):

@@ -2,6 +2,10 @@ import os
 
 from conversationgenome.Utils import Utils
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 class c:
     state = {
         "validator" : {

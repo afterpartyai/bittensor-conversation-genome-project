@@ -7,7 +7,6 @@ import math
 import os
 import numpy as np
 
-from dotenv import load_dotenv
 
 from conversationgenome.Utils import Utils
 from conversationgenome.MinerLib import MinerLib
@@ -56,8 +55,7 @@ class ValidatorLib:
     def __init__(self):
         super(ValidatorLib, self).__init__()
 
-        load_dotenv()
-        print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
+        #print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
 
 
     async def calculate_base_score(self, result_dict):
@@ -120,20 +118,12 @@ class ValidatorLib:
 
 
     async def requestConvo(self, minConvWindows = 1):
-        if False:
-            print("getEmbeddings")
-            llml = LlmLib()
-            inst = await llml.generate_llm_instance()
-            body = "mary had a little lamb"
-            matches_dict = await inst.getEmbeddings(body)
-
-            return
         # Request a full conversation from the API
         fullConvo = await self.getConvo(self.hotkey)
         #print("fullConvo", fullConvo)
 
         if fullConvo:
-            bt.logging.info("Reserved conversation ID:", Utils.get(fullConvo, "guid"))
+            bt.logging.info("Reserved conversation ID: %s. Sending to %s LLM..." % (str(Utils.get(fullConvo, "guid")), c.get('env','LLM_TYPE') ) )
 
             # Do overview tagging and generate base participant profiles
             fullConvoMetaData = await self.generateFullConvoMetaData(fullConvo)
