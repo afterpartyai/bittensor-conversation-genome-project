@@ -225,10 +225,10 @@ class ValidatorLib:
         fullConvoTags = Utils.get(fullConvoMetaData, "tags", [])
         fullConvoTagVectors = Utils.get(fullConvoMetaData, "tag_vectors", {})
 
-        #print("fullConvoTagVectors", fullConvoTagVectors)
+        print("fullConvoTagVectors", fullConvoTagVectors)
         vectorNeightborhood = []
         for key, fullConvoTagVector in fullConvoTagVectors.items():
-            #print(fullConvoTagVector)
+            #print("fullConvoTagVector", key, fullConvoTagVector)
             vectorNeightborhood.append(fullConvoTagVector['vectors'])
             #print("num vectors", len(fullConvoTagVector['vectors']))
 

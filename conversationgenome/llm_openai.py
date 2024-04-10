@@ -12,7 +12,7 @@ class llm_openai:
         print("Convert OpenAI")
 
     async def conversation_to_metadata(self,  convo):
-        pass
+        return {"tags":{"hello":{"vectors":[]}}}
 
 if __name__ == "__main__":
     print("Test OpenAI LLM class")
