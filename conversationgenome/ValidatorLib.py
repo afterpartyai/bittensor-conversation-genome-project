@@ -63,6 +63,10 @@ class ValidatorLib:
     async def calculate_base_score(self, result_dict):
         total_1 = result_dict['total_1']
         total_2 = result_dict['total_2']
+        if not total_2:
+            print("ERROR: total_2 empty -- nothing to eval")
+            return 0
+
         unique_1_count = len(result_dict['unique_1'])
         unique_2_count = len(result_dict['unique_2'])
         both_count = len(result_dict['both'])
