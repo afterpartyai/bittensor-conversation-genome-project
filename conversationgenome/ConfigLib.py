@@ -7,7 +7,12 @@ class c:
         },
         "system" : {
             "mode": 'test',
-        }
+        },
+        "llm" : {
+            #"type": 'spacy',
+            "type": 'openai',
+        },
+
     }
 
     @staticmethod

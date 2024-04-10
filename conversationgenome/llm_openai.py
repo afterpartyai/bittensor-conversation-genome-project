@@ -10,3 +10,6 @@ except:
 class llm_openai:
     def convert(self):
         print("Convert OpenAI")
+
+if __name__ == "__main__":
+    print("Test OpenAI LLM class")

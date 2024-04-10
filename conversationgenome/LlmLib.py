@@ -14,9 +14,7 @@ class LlmLib:
 
     async def generate_llm_instance(self, llm_type=None):
         if not llm_type:
-            # TODO: read from .env
-            llm_type = "spacy"
-            #llm_type = "openai"
+            llm_type = c.get("llm", "type")
         llm_class = "llm_"+llm_type
         print("Factory generate LLM class of type %s" % (llm_type))
         out = None
@@ -51,7 +49,7 @@ class LlmLib:
 
 
 if __name__ == "__main__":
-    print("Dynamically load LLM class by dependency injection")
+    print("Dynamically load LLM class by factory")
     # Import the required LLM class dynamically
     llm_class = "llm_spacy"
     #llm_class = "llm_openai"
