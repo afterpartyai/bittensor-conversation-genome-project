@@ -11,5 +11,8 @@ class llm_openai:
     def convert(self):
         print("Convert OpenAI")
 
+    async def conversation_to_metadata(self,  convo):
+        pass
+
 if __name__ == "__main__":
     print("Test OpenAI LLM class")
