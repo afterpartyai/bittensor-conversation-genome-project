@@ -16,9 +16,9 @@ class LlmLib:
         if not llm_type:
             # TODO: read from .env
             llm_type = "spacy"
-            llm_type = "openai"
+            #llm_type = "openai"
         llm_class = "llm_"+llm_type
-        print("Dynamically load LLM class %s by dependency injection" % (llm_type))
+        print("Factory generate LLM class of type %s" % (llm_type))
         out = None
         # Import the required LLM class dynamically
         class_name = "conversationgenome.%s" % (llm_class)

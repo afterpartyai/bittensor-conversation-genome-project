@@ -176,7 +176,7 @@ class ValidatorLib:
 
     async def generateFullConvoMetaData(self, convo):
         cl = ConvoLib()
-        #print("METACONVO participants", convo['participants'])
+        print("generateFullConvoMetaData participants", convo['participants'])
 
         llml = LlmLib()
         matches_dict = await llml.conversation_to_tags(convo)
