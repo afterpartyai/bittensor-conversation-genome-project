@@ -137,7 +137,7 @@ class ValidatorLib:
 
             # Do overview tagging and generate base participant profiles
             fullConvoMetaData = await self.generateFullConvoMetaData(fullConvo)
-            bt.logging.info("Found %d FullConvo tags" % len(fullConvoMetaData['tags']) )
+            bt.logging.info("Found %d tags in FullConvo" % len(fullConvoMetaData['tags']) )
 
             #print("fullConvoMetaData", fullConvoMetaData)
             fullConvoTags = Utils.get(fullConvoMetaData, "tags", [])
@@ -238,7 +238,8 @@ class ValidatorLib:
         fullConvoTags = Utils.get(fullConvoMetaData, "tags", [])
         fullConvoTagVectors = Utils.get(fullConvoMetaData, "tag_vectors", {})
 
-        print("fullConvoTagVectors", fullConvoTagVectors)
+        if self.verbose:
+            print("fullConvoTagVectors", fullConvoTagVectors)
         vectorNeightborhood = []
         for key, fullConvoTagVector in fullConvoTagVectors.items():
             #print("fullConvoTagVector", key, fullConvoTagVector)

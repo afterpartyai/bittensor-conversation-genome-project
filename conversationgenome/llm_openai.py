@@ -53,12 +53,13 @@ class llm_openai:
             tags = Utils.get(response, "p1.interests")
         if tags:
             for tag in tags:
-                print("Get vectors for tag: %s" % (tag))
+                if self.verbose:
+                    print("Get vectors for tag: %s" % (tag))
                 vectors = await self.getEmbeddings(tag)
                 out['tags'][tag] = {"tag":tag, "count":0, "vectors":vectors}
             #print("OUT", out)
         else:
-            print("No tags returned", response)
+            print("No tags returned by OpenAI", response)
         return out
 
 
@@ -158,7 +159,8 @@ class llm_openai:
         return conversation
 
     async def callFunctionFull(self, convoXmlStr=None, participants=None):
-        print("Calling OpenAi...")
+        if self.verbose:
+            print("Calling OpenAi...")
         if not OpenAI.api_key:
             print("No OpenAI key")
             return
@@ -237,8 +239,9 @@ class llm_openai:
            input = text.replace("\n"," ")
        )
        embedding = response.data[0].embedding
-       print("USAGE", response.usage)
-       print("OpenAI embeddings generated", len(embedding))
+       if self.verbose:
+           print("OpenAI embeddings USAGE", response.usage)
+           print("OpenAI embeddings generated", len(embedding))
        return embedding
 
 

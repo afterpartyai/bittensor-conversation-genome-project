@@ -10,6 +10,7 @@ from conversationgenome.ConfigLib import c
 
 
 class LlmLib:
+    verbose = False
     factory_llm = None
 
     def __init__(self):
@@ -19,7 +20,8 @@ class LlmLib:
         if not llm_type:
             llm_type = c.get("llm", "type")
         llm_class = "llm_"+llm_type
-        print("Factory generate LLM class of type %s" % (llm_type))
+        if self.verbose:
+            print("Factory generate LLM class of type %s" % (llm_type))
         out = None
         # Import the required LLM class dynamically
         class_name = "conversationgenome.%s" % (llm_class)
