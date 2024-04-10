@@ -1,5 +1,14 @@
 export WANDB_API_KEY=some_key
 
+#export LLM_TYPE=spacy
+export LLM_TYPE=openai
+#export LLM_TYPE=anthropic
+#export LLM_TYPE=local_llm
+
 # used both by validator and miner:
 export OPENAI_API_KEY=some_key
+export ANTHROPIC_API_KEY=some_key
+
+export LOCAL_LLM_IP=xxx
+export LOCAL_LLM_PORT=xxx
 

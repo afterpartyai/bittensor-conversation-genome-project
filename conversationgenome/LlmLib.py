@@ -18,7 +18,7 @@ class LlmLib:
 
     async def generate_llm_instance(self, llm_type=None):
         if not llm_type:
-            llm_type = c.get("llm", "type")
+            llm_type = c.get("env", "LLM_TYPE")
         llm_class = "llm_"+llm_type
         if self.verbose:
             print("Factory generate LLM class of type %s" % (llm_type))

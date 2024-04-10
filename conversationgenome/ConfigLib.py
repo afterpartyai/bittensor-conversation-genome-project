@@ -20,7 +20,16 @@ class c:
 
     @staticmethod
     def get(section, key, default=None):
-        return Utils.get(c.state, "%s.%s" % (section, key), default)
+        out = default
+        if section == "env":
+            #print("env", os.environ.get(key))
+            val = os.environ.get(key)
+            if val:
+                out = val
+        else:
+            out = Utils.get(c.state, "%s.%s" % (section, key), default)
+        return out
+
 
     @staticmethod
     def set(section, key, val):
