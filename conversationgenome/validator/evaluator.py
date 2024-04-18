@@ -57,8 +57,22 @@ class Evaluator:
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
         if self.verbose:
             print("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
+        score_data = []
         for idx, miner_result in enumerate(miner_results):
             results = await self.calc_scores(full_convo_metadata, full_conversation_neighborhood, miner_result)
+            (scores, scores_both, scores_unique) = results
+            mean_score = np.mean(scores)
+            median_score = np.median(scores)
+            min_score = np.min(scores)
+            max_score = np.max(scores)
+            std = np.std(scores)
+            adjusted_score = (
+                (0.7 * median_score) +
+                (0.3 * mean_score)
+            ) / 2
+            final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
+            score_data.append({"uid": idx, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
+            #print(f"__________Tags: {len(tags)} Unique Tags: {unique} Median score: {median_score} Mean score: {mean_score} Skewness: {skewness} Min: {min_score} Max: {max_score}" )
         return
 
         num_responses = len(miner_results)
@@ -168,7 +182,7 @@ class Evaluator:
             else:
                 scores_both.append(score)
             #print(f"Score for {tag}: {score} -- Unique: {is_unique}")
-        print(f"Scores len: {len(scores)} Unique: {len(scores_unique)}")
+        print(f"Scores len: {len(scores)} Unique: {len(scores_unique)} full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique)
 
