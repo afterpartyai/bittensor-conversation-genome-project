@@ -31,10 +31,9 @@ class MinerLib:
         if not dryrun:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
-            matches_dict = await llml.conversation_to_tags({"lines":lines})
-            tags = list(matches_dict.keys())
-            out["tags"] = tags
-            out["vectors"] = matches_dict
+            result = await llml.conversation_to_metadata({"lines":lines})
+            out["tags"] = result['tags']
+            out["vectors"] = result['vectors']
             print(out["tags"])
         else:
             llml = LlmLib()

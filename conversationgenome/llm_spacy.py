@@ -101,5 +101,7 @@ class llm_spacy:
         # For this simple matcher, just munge all of the lines together
         body = json.dumps(convo['lines'])
         matches_dict = await self.simple_text_to_tags(body)
-        return {"tags": matches_dict}
+        tags = list(matches_dict.keys())
+
+        return {"tags": tags, "vectors":matches_dict}
 

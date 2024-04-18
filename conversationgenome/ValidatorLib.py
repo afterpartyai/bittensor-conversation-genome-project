@@ -179,8 +179,8 @@ class ValidatorLib:
         print("generateFullConvoMetaData participants", convo['participants'])
 
         llml = LlmLib()
-        matches_dict = await llml.conversation_to_tags(convo)
-        tags = list(matches_dict.keys())
+        result = await llml.conversation_to_metadata(convo)
+        tags = result['tags']
 
         half = int(len(tags) / 2)
         tagsQ = tags[0:half]
@@ -192,7 +192,7 @@ class ValidatorLib:
         data = {
             "participantProfiles": convo['participants'],
             "tags": tags,
-            "tag_vectors": matches_dict,
+            "vectors": result['vectors'],
         }
         return data
 

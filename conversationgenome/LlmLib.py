@@ -39,16 +39,12 @@ class LlmLib:
 
         return out
 
-    async def conversation_to_tags(self,  convo):
+    async def conversation_to_metadata(self,  conversation):
         if not self.factory_llm:
             self.factory_llm = await self.generate_llm_instance()
-        # Get prompt template
-        #pt = await cl.getConvoPromptTemplate()
-        #llml =  LlmApi()
-        #data = await llml.callFunction("convoParse", convo)
-        response = await self.factory_llm.conversation_to_metadata(convo)
-        matches_dict = response['tags']
-        return matches_dict
+
+        response = await self.factory_llm.conversation_to_metadata(conversation)
+        return response
 
 
 
