@@ -105,6 +105,23 @@ class ValidatorLib:
 
         return rewards
 
+    async def conversation_process_start(self):
+        result = await self.reserve_conversation()
+        if result:
+            (full_conversation, full_conversation_metadata, convoWindows) = result
+            print("Found %d convo windows. Sending to miners..." % (numWindows))
+            system_mode = c.get('system', 'mode')
+            if system_mode == 'test':
+                await self.send_windows_to_test_miners(convoWindows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
+            elif system_mode == 'openai':
+                return {
+                    "full_conversation": full_conversation,
+                    "full_conversation_metadata": full_conversationMetaData,
+                    "windows": convoWindows,
+                }
+            else:
+                bt.logging.info(f"System mode {system_mode} not found. Aborting.")
+
 
     async def reserve_conversation(self, minConvWindows = 1):
         # Validator requests a full conversation from the API
@@ -126,25 +143,13 @@ class ValidatorLib:
             if minValidTags:
                 # Break the full conversation up into overlapping conversation windows
                 convoWindows = self.getConvoWindows(full_conversation)
-                numWindows = len(convoWindows)
-                if numWindows > minConvWindows:
-                    print("Found %d convo windows. Sending to miners..." % (numWindows))
-                    system_mode = c.get('system', 'mode')
-                    if system_mode == 'test':
-                        await self.send_windows_to_miners(convoWindows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
-                    elif system_mode == 'openai':
-                        return {
-                            "full_conversation": full_conversation,
-                            "full_conversation_metadata": full_conversationMetaData,
-                            "windows": convoWindows,
-                        }
-                    else:
-                        bt.logging.info(f"System mode {system_mode} not found. Aborting.")
+                if len(convoWindows) > minConvWindows:
+                    return (full_conversation, full_conversation_metadata, convoWindows)
                 else:
-                    print(f"Not enough convo windows -- only {numWindows}. Passing.")
+                    print(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
             else:
                 print("Not enough valid tags for conversation. Passing.")
-                return
+                return None
         else:
             bt.logging.error("9879432: No conversation returned from API. Aborting.")
         return None
@@ -214,7 +219,7 @@ class ValidatorLib:
     async def outputEmissions(self, convoId, windowId, emissionRewards):
         print("EMISSIONS for %d window %d" % (convoId, windowId), emissionRewards)
 
-    async def send_windows_to_miners(self, windows, full_conversation=None, full_conversation_metadata=None):
+    async def send_windows_to_test_miners(self, windows, full_conversation=None, full_conversation_metadata=None):
         cguid = Utils.get(full_conversation, "uid")
         participantProfiles = Utils.get(full_conversation_metadata, "participantProfiles", [])
         full_conversationTags = Utils.get(full_conversation_metadata, "tags", [])

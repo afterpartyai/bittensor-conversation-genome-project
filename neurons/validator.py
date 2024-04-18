@@ -70,37 +70,40 @@ class Validator(BaseValidatorNeuron):
         vl.validateMinimumTags([])
 
         # Reserve a conversation (so others won't take it) from the conversation API
-        # xxx change var name
-        windows = await vl.reserve_conversation()
+        result = await vl.reserve_conversation()
 
-        # Create a synapse to distribute to miners
-        # TODO: Create synapse for each miner? For each window?
-        synapse = conversationgenome.protocol.CgSynapse(dummy_input = [windows])
+        if result:
+            (full_conversation, full_conversation_metadata, conversation_windows) = result
 
-        rewards = None
+            # Loop through conversation windows. Send each window to multiple miners
+            for conversation_window in conversation_windows:
+                # Create a synapse to distribute to miners
+                synapse = conversationgenome.protocol.CgSynapse(dummy_input = [conversation])
 
-        # Is this blocking?
-        responses = self.dendrite.query(
-            axons=[self.metagraph.axons[uid] for uid in miner_uids],
-            synapse=synapse,
-            deserialize=False,
-        )
-        valid_responses = []
-        # xxx Change the dummy_output variable name
-        for response in responses:
-            if not response.dummy_output:
-                continue
-            valid_responses.append(response)
-            bt.logging.info(f"CGP Received tags: {response.dummy_output[0]['tags']}")
-        labels = ["Hello", "World"]
-        # xxx Walk through the rewards per epoch code
-        #print("getting rewards")
-        #rewards = conversationgenome.validator.reward.get_rewards(self, labels=labels, responses=validResponses)
+                rewards = None
 
-        #bt.logging.info(f"CGP Scored responses: {rewards}")
+                # Is this blocking?
+                responses = self.dendrite.query(
+                    axons=[self.metagraph.axons[uid] for uid in miner_uids],
+                    synapse=synapse,
+                    deserialize=False,
+                )
+                valid_responses = []
+                # xxx Change the dummy_output variable name
+                for response in responses:
+                    if not response.dummy_output:
+                        continue
+                    valid_responses.append(response)
+                    bt.logging.info(f"CGP Received tags: {response.dummy_output[0]['tags']}")
+                labels = ["Hello", "World"]
+                # xxx Walk through the rewards per epoch code
+                #print("getting rewards")
+                #rewards = conversationgenome.validator.reward.get_rewards(self, labels=labels, responses=validResponses)
 
-        # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
-        #self.update_scores(rewards, miner_uids)
+                #bt.logging.info(f"CGP Scored responses: {rewards}")
+
+                # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
+                #self.update_scores(rewards, miner_uids)
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
