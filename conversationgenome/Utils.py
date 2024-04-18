@@ -81,3 +81,14 @@ class Utils:
     def is_empty_vector(vector):
         return all(v == 0.0 for v in vector)
 
+
+    @staticmethod
+    def sort_dict_list(dict_list, key, ascending=True):
+        """
+        Sorts a list of dictionary objects based on the value of a dictionary element.
+        :param dict_list: list of dictionaries
+        :param key: key to sort by
+        :return: sorted list of dictionaries
+        """
+        return sorted(dict_list, key=lambda x: x[key], reverse=not ascending)
+

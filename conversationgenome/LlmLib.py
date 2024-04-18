@@ -13,8 +13,8 @@ class LlmLib:
     verbose = False
     factory_llm = None
 
-    def __init__(self):
-        self.generate_llm_instance()
+    #def __init__(self):
+    #    self.generate_llm_instance()
 
     async def generate_llm_instance(self, llm_type=None):
         if not llm_type:
