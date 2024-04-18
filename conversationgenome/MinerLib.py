@@ -23,7 +23,7 @@ from conversationgenome.LlmLib import LlmLib
 class MinerLib:
     verbose = False
 
-    async def doMining(self, convoWindow, minerUid, dryrun=True):
+    async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
         #print("MINERCONVO", convoWindow, minerUid)
         out = {"uid":minerUid, "tags":[], "profiles":[], "convoChecksum":11}
 
@@ -49,16 +49,22 @@ class MinerLib:
             lines = copy.deepcopy(convoWindow)
             lines.append(random.choice(exampleSentences))
             lines.append(random.choice(exampleSentences))
-            matches_dict = await llml.conversation_to_tags({"lines":lines})
+            matches_dict = await llml.conversation_to_tags({"lines":conversation_window})
             tags = list(matches_dict.keys())
             out["tags"] = tags
             out["vectors"] = matches_dict
             #waitSec = random.randint(0, 3)
             #await asyncio.sleep(waitSec)
         else:
-            # TODO: Make this actually tag content
-            exampleTags = ["realistic", "business-minded", "conciliatory", "responsive", "caring", "understanding", "apologetic", "affectionate", "optimistic", "family-oriented"]
-            out["tags"].append(random.choice(exampleTags))
+            llml = LlmLib()
+            lines = copy.deepcopy(conversation_window)
+            matches_dict = await llml.conversation_to_tags({"lines":lines})
+            tags = list(matches_dict.keys())
+            out["tags"] = tags
+            out["vectors"] = matches_dict
+            print(out["tags"])
+            #exampleTags = ["realistic", "business-minded", "conciliatory", "responsive", "caring", "understanding", "apologetic", "affectionate", "optimistic", "family-oriented"]
+            #out["tags"].append(random.choice(exampleTags))
         return out
 
 

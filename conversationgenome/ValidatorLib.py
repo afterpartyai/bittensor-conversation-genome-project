@@ -196,11 +196,11 @@ class ValidatorLib:
         }
         return data
 
-    async def sendToMiners(self, convoWindow, minerUids):
-        print("Send to miners", minerUids)
+    async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
+        print("Send to miners", miner_uids)
         results = []
         ml = MinerLib()
-        tasks = [asyncio.create_task(ml.doMining(convoWindow, minerUid)) for minerUid in minerUids]
+        tasks = [asyncio.create_task(ml.do_mining(conversation_guid, window_idx, conversation_window, minerUid)) for minerUid in miner_uids]
         await asyncio.wait(tasks)
         for task in tasks:
             results.append(task.result())
@@ -220,7 +220,7 @@ class ValidatorLib:
         print("EMISSIONS for %d window %d" % (convoId, windowId), emissionRewards)
 
     async def send_windows_to_test_miners(self, windows, full_conversation=None, full_conversation_metadata=None):
-        cguid = Utils.get(full_conversation, "uid")
+        conversation_guid = Utils.get(full_conversation, "uid")
         participantProfiles = Utils.get(full_conversation_metadata, "participantProfiles", [])
         full_conversationTags = Utils.get(full_conversation_metadata, "tags", [])
         full_conversationTagVectors = Utils.get(full_conversation_metadata, "tag_vectors", {})
@@ -248,7 +248,7 @@ class ValidatorLib:
             uids = [1,2,3,4,5,6,7,8,9]
             miners = self.selectStage1Miners(uids, minersPerWindow)
             # Send first window to miners
-            minerResults = await self.sendToMiners(window, miners)
+            miner_results = await self.send_to_miners(conversation_guid, idx, window, miners)
             #print("Miner results", minerResults)
             # TODO: Each miner returns data, write data into local db
             # TODO: Write up incomplete errors, such as if timeout happens for miner, send to another miner
