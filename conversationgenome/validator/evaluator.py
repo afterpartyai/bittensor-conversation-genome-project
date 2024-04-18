@@ -51,6 +51,7 @@ class Evaluator:
 
 
     async def evaluate(self, full_convo_metadata=None, miner_results=None, body=None, exampleList=None):
+        #print("FULL convo tags", full_convo_metadata['tags'])
         final_scores = []
         now = datetime.now(timezone.utc)
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
@@ -166,7 +167,8 @@ class Evaluator:
                 scores_unique.append(score)
             else:
                 scores_both.append(score)
-            print(f"Score for {tag}: {score} -- Unique: {is_unique}")
+            #print(f"Score for {tag}: {score} -- Unique: {is_unique}")
+        print(f"Scores len: {len(scores)} Unique: {len(scores_unique)}")
 
         return (scores, scores_both, scores_unique)
 
