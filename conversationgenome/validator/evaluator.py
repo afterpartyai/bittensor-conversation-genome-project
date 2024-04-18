@@ -10,26 +10,18 @@ from traceback import print_exception
 import numpy as np
 #from scipy.stats import skew
 
+from conversationgenome.Utils import Utils
+
 
 class Evaluator:
     min_tags = 3
 
     async def evaluate(self, full_convo_tags=None, miner_results=None, body=None, exampleList=None):
-        if False:
-            if not miner_responses and exampleList:
-                miner_responses = []
-                for idx, examples in enumerate(exampleList):
-                    miner_responses.append({"uid":idx, "tags":examples})
-            if not full_convo_tags and body:
-                response = await llm.simple_text_to_tags(body, min_tokens=0)
-                print(f"Found tags for main convesation: {list(response.keys())}")
-                neighborhood_vector = await llm.get_neighborhood(response)
-                full_convo_tags = list(response.keys())
         final_scores = []
         now = datetime.now(timezone.utc)
         neighborhood_vector = None
         for idx, miner_result in enumerate(miner_results):
-            results = await self.calc_scores(full_convo_tags['tags'], neighborhood_vector, miner_result['tags'])
+            results = await self.calc_scores(full_convo_tags['tags'], neighborhood_vector, miner_result)
         return
 
         num_responses = len(miner_results)
@@ -106,21 +98,22 @@ class Evaluator:
     def get_full_convo_tag_score(self, tag):
         return 0.9
 
-    async def calc_scores(self, ground_tags, neighborhood_vector, tags):
+    async def calc_scores(self, ground_tags, neighborhood_vector, miner_result):
+        tags = miner_result['tags']
+        vectors = miner_result['vectors']
         scores = []
         scores_both = []
         scores_unique = []
         tag_count_ceiling = 5
         # Remove duplicate tags
         tag_set = list(set(tags))
-        diff = compare_arrays(ground_tags, tag_set)
+        diff = Utils.compare_arrays(ground_tags, tag_set)
         for tag in tag_set:
             is_unique = False
-            resp2 = await llm.simple_text_to_tags(tag, min_tokens=0)
             if tag in diff['unique_2']:
                 is_unique = True
             #print(example, resp2)
-            if len(resp2.keys()) == 0:
+            if not tag in vectors:
                 print(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
                 scores.append(0)
                 if is_unique:
@@ -128,7 +121,8 @@ class Evaluator:
                 else:
                     scores_both.append(0)
                 continue
-            neighborhood_vector2 = await llm.get_neighborhood(resp2, tag_count_ceiling=tag_count_ceiling)
+            continue
+            neighborhood_vector2 = await llm.get_neighborhood(resp2)
             #print("neighborhood_vector2", neighborhood_vector2)
             score = llm.score_vector_similarity(neighborhood_vector, neighborhood_vector2)
             scores.append(score)
