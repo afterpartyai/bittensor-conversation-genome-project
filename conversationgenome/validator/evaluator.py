@@ -15,13 +15,49 @@ from conversationgenome.Utils import Utils
 
 class Evaluator:
     min_tags = 3
+    verbose = False
 
-    async def evaluate(self, full_convo_tags=None, miner_results=None, body=None, exampleList=None):
+    # Tag all the vectors from all the tags and return set of vectors defining the neighborhood
+    async def calculate_semantic_neighborhood(self, conversation_metadata, tag_count_ceiling=None):
+        all_vectors = []
+        count = 0
+
+        # Note: conversation_metadata['vectors'] is a dict, so:
+        #       numeric_vectors = conversation_metadata['vectors'][tag_name]['vectors']
+        for tag_name, val in conversation_metadata['vectors'].items():
+            all_vectors.append(val['vectors'])
+            count += 1
+            if tag_count_ceiling and count > tag_count_ceiling:
+                break
+        if self.verbose:
+            print("all_vectors",all_vectors )
+        # Create a vector representing the entire content by averaging the vectors of all tokens
+        if len(all_vectors) > 0:
+            neighborhood_vectors = np.mean(all_vectors, axis=0)
+            return neighborhood_vectors
+        else:
+            return None
+
+    def score_vector_similarity(self, neighborhood_vectors, individual_vectors):
+        # Calculate the similarity score between the neighborhood_vectors and the individual_vectors
+        # If all vectors are 0.0, the vector wasn't found for scoring in the embedding score
+        if np.all(individual_vectors==0):
+            return 0
+        # Calculate the cosine similarity between two sets of vectors
+        similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
+        #print(f"Similarity score between the content and the tag: {similarity_score}")
+        return similarity_score
+
+
+
+    async def evaluate(self, full_convo_metadata=None, miner_results=None, body=None, exampleList=None):
         final_scores = []
         now = datetime.now(timezone.utc)
-        neighborhood_vector = None
+        full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
+        if self.verbose:
+            print("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
         for idx, miner_result in enumerate(miner_results):
-            results = await self.calc_scores(full_convo_tags['tags'], neighborhood_vector, miner_result)
+            results = await self.calc_scores(full_convo_metadata, full_conversation_neighborhood, miner_result)
         return
 
         num_responses = len(miner_results)
@@ -98,22 +134,23 @@ class Evaluator:
     def get_full_convo_tag_score(self, tag):
         return 0.9
 
-    async def calc_scores(self, ground_tags, neighborhood_vector, miner_result):
+    async def calc_scores(self, full_convo_metadata, full_conversation_neighborhood, miner_result):
+        full_convo_tags = full_convo_metadata['tags']
         tags = miner_result['tags']
-        vectors = miner_result['vectors']
+        tag_vector_dict = miner_result['vectors']
         scores = []
         scores_both = []
         scores_unique = []
         tag_count_ceiling = 5
         # Remove duplicate tags
         tag_set = list(set(tags))
-        diff = Utils.compare_arrays(ground_tags, tag_set)
+        diff = Utils.compare_arrays(full_convo_tags, tag_set)
         for tag in tag_set:
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
             #print(example, resp2)
-            if not tag in vectors:
+            if not tag in tag_vector_dict:
                 print(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
                 scores.append(0)
                 if is_unique:
@@ -121,10 +158,9 @@ class Evaluator:
                 else:
                     scores_both.append(0)
                 continue
+            tag_vectors = tag_vector_dict[tag]['vectors']
+            score = self.score_vector_similarity(full_conversation_neighborhood, tag_vectors)
             continue
-            neighborhood_vector2 = await llm.get_neighborhood(resp2)
-            #print("neighborhood_vector2", neighborhood_vector2)
-            score = llm.score_vector_similarity(neighborhood_vector, neighborhood_vector2)
             scores.append(score)
             if is_unique:
                 scores_unique.append(score)
