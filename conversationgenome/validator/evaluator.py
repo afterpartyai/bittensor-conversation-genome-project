@@ -15,23 +15,24 @@ class Evaluator:
     min_tags = 3
 
     async def evaluate(self, full_convo_tags=None, miner_results=None, body=None, exampleList=None):
-        print(f"Evaluating {len(miner_results)} miner results...")
-        return
-
-        if not miner_responses and exampleList:
-            miner_responses = []
-            for idx, examples in enumerate(exampleList):
-                miner_responses.append({"uid":idx, "tags":examples})
-        if not full_convo_tags and body:
-            response = await llm.simple_text_to_tags(body, min_tokens=0)
-            print(f"Found tags for main convesation: {list(response.keys())}")
-            neighborhood_vector = await llm.get_neighborhood(response)
-            full_convo_tags = list(response.keys())
+        if False:
+            if not miner_responses and exampleList:
+                miner_responses = []
+                for idx, examples in enumerate(exampleList):
+                    miner_responses.append({"uid":idx, "tags":examples})
+            if not full_convo_tags and body:
+                response = await llm.simple_text_to_tags(body, min_tokens=0)
+                print(f"Found tags for main convesation: {list(response.keys())}")
+                neighborhood_vector = await llm.get_neighborhood(response)
+                full_convo_tags = list(response.keys())
         final_scores = []
         now = datetime.now(timezone.utc)
-        num_responses = len(miner_responses)
-        bt.logging.debug(f"Starting eval of {num_responses} responses ...")
+        neighborhood_vector = None
+        for idx, miner_result in enumerate(miner_results):
+            results = await self.calc_scores(full_convo_tags['tags'], neighborhood_vector, miner_result['tags'])
+        return
 
+        num_responses = len(miner_results)
         scores = torch.zeros(num_responses)
         zero_score_mask = torch.ones(num_responses)
         rank_scores = torch.zeros(num_responses)
@@ -44,6 +45,8 @@ class Evaluator:
         max_avg_age = 0
 
         spot_check_id_dict = dict()
+
+        return
 
         # quick integrity check and get spot_check_id_dict
         utcnow = datetime.now(timezone.utc)
