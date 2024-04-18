@@ -36,3 +36,8 @@ class ApiLib:
         return True
 
 
+if __name__ == "__main__":
+    print("Test convo get")
+    url = "https://www.google.com"
+    body = Utils.get_url(url)
+    print(body)

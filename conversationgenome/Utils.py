@@ -1,3 +1,4 @@
+import requests
 
 class Utils:
     @staticmethod
@@ -92,3 +93,23 @@ class Utils:
         """
         return sorted(dict_list, key=lambda x: x[key], reverse=not ascending)
 
+    @staticmethod
+    def get_url(url, headers=None, verbose=False):
+        out = {"success":False, "code":-1, "errors":[]}
+        if not requests:
+            print("No requests library")
+
+            return out
+
+        response = requests.get(url, params=None, cookies=None, headers=headers)
+        out["code"] = response.status_code
+        if out["code"] == 200:
+            out["body"] = response.text
+            try:
+                out["json"] = response.json()
+            except:
+                pass
+        else:
+            out['errors'].append({"id":198390129, "msg":response.text})
+
+        return out
