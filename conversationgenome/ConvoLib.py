@@ -4,7 +4,7 @@ from conversationgenome.ApiLib import ApiLib
 
 
 class ConvoLib:
-    async def getConversation(self, hotkey):
+    async def get_conversation(self, hotkey):
         api = ApiLib()
         convo = await api.reserveConversation(hotkey)
         return convo

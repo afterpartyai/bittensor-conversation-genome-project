@@ -6,7 +6,7 @@ from conversationgenome.ConfigLib import c
 async def test_full():
     c.set('system', 'mode', 'test')
     vl = ValidatorLib()
-    await vl.requestConvo()
+    await vl.reserve_conversation()
     #await vl.neighborhood_test()
     #await vl.llm_test()
 

@@ -38,12 +38,10 @@ from conversationgenome.ValidatorLib import ValidatorLib
 
 
 class Validator(BaseValidatorNeuron):
+    verbose = True
     """
-    Your validator neuron class. You should use this class to define your validator's behavior. In particular, you should replace the forward function with your own logic.
-
-    This class inherits from the BaseValidatorNeuron class, which in turn inherits from BaseNeuron. The BaseNeuron class takes care of routine tasks such as setting up wallet, subtensor, metagraph, logging directory, parsing config, etc. You can override any of the methods in BaseNeuron if you need to customize the behavior.
-
-    This class provides reasonable default behavior for a validator such as keeping a moving average of the scores of the miners and using them to set weights at the end of each epoch. Additionally, the scores are reset for new hotkeys at the end of each epoch.
+    xxx
+    Keeping a moving average of the scores of the miners and using them to set weights at the end of each epoch. Additionally, the scores are reset for new hotkeys at the end of each epoch.
     """
 
     def __init__(self, config=None):
@@ -52,45 +50,50 @@ class Validator(BaseValidatorNeuron):
         bt.logging.info("load_state()")
         self.load_state()
 
+        # xxx
         self.image_dir = './data/conversations/'
         if not os.path.exists(self.image_dir):
             os.makedirs(self.image_dir)
 
     async def forward(self):
-        """
-        Validator forward pass. Consists of:
-        - Generating the query
-        - Querying the miners
-        - Getting the responses
-        - Rewarding the miners
-        - Updating the scores
-        """
-        miner_uids = conversationgenome.utils.uids.get_random_uids(self, k=min(self.config.neuron.sample_size, self.metagraph.n.item()))
-        #print("miner_uids", miner_uids)
+        # Get random miner IDs
+        miner_uids = conversationgenome.utils.uids.get_random_uids(
+            self,
+            k=min(self.config.neuron.sample_size, self.metagraph.n.item())
+        )
+        if self.verbose:
+            print("miner_uid pool", miner_uids)
+
+        # Instance of validator library
         vl = ValidatorLib()
+        # xxx -- what does this do?
         vl.validateMinimumTags([])
 
-        windows = await vl.requestConvo()
+        # Reserve a conversation (so others won't take it) from the conversation API
+        # xxx change var name
+        windows = await vl.reserve_conversation()
 
+        # Create a synapse to distribute to miners
+        # TODO: Create synapse for each miner? For each window?
         synapse = conversationgenome.protocol.CgSynapse(dummy_input = [windows])
 
         rewards = None
-        # The dendrite client queries the network.
+
+        # Is this blocking?
         responses = self.dendrite.query(
-            # Send the query to selected miner axons in the network.
             axons=[self.metagraph.axons[uid] for uid in miner_uids],
-            # Pass the synapse to the miner.
             synapse=synapse,
-            # Do not deserialize the response so that we have access to the raw response.
             deserialize=False,
         )
-        validResponses = []
+        valid_responses = []
+        # xxx Change the dummy_output variable name
         for response in responses:
             if not response.dummy_output:
                 continue
-            validResponses.append(response)
+            valid_responses.append(response)
             bt.logging.info(f"CGP Received tags: {response.dummy_output[0]['tags']}")
         labels = ["Hello", "World"]
+        # xxx Walk through the rewards per epoch code
         #print("getting rewards")
         #rewards = conversationgenome.validator.reward.get_rewards(self, labels=labels, responses=validResponses)
 
@@ -104,4 +107,5 @@ if __name__ == "__main__":
     with Validator() as validator:
         while True:
             bt.logging.info("CGP Validator running...", time.time())
+            # xxx Remove for Prod? Add for mode test?
             time.sleep(5)

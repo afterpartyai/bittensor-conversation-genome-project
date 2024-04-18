@@ -23,20 +23,8 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
-openai = None
-try:
-    import openai
-    from openai import AsyncOpenAI, OpenAI
-except:
-    print("No openai lib")
 
-tiktoken = None
-try:
-    import tiktoken
-except:
-    print("No tiktoken lib")
-
-
+# xxx Refactor to multiple participants. Make abstract class?
 proto = {
     "interests_of_q": [],
     "hobbies_of_q": [],
@@ -57,7 +45,7 @@ class ValidatorLib:
 
         #print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
 
-
+    # Deprecated: remove
     async def calculate_base_score(self, result_dict):
         total_1 = result_dict['total_1']
         total_2 = result_dict['total_2']
@@ -89,6 +77,7 @@ class ValidatorLib:
 
         return score
 
+    # Deprecated: remove
     async def calculate_emission_rewards(self, dicts, scoreKey):
         scores = Utils.pluck(dicts, scoreKey)
         total_scores = sum(scores)
@@ -117,50 +106,53 @@ class ValidatorLib:
         return rewards
 
 
-    async def requestConvo(self, minConvWindows = 1):
-        # Request a full conversation from the API
-        fullConvo = await self.getConvo(self.hotkey)
-        #print("fullConvo", fullConvo)
+    async def reserve_conversation(self, minConvWindows = 1):
+        # Validator requests a full conversation from the API
+        full_conversation = await self.getConvo()
+        if self.verbose:
+            print("full_conversation", full_conversation)
 
-        if fullConvo:
-            bt.logging.info("Reserved conversation ID: %s. Sending to %s LLM..." % (str(Utils.get(fullConvo, "guid")), c.get('env','LLM_TYPE') ) )
+        if full_conversation:
+            conversation_guid = str(Utils.get(full_conversation, "guid"))
+            bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
-            fullConvoMetaData = await self.generateFullConvoMetaData(fullConvo)
-            bt.logging.info("Found %d tags in FullConvo" % len(fullConvoMetaData['tags']) )
-
-            #print("fullConvoMetaData", fullConvoMetaData)
-            fullConvoTags = Utils.get(fullConvoMetaData, "tags", [])
+            full_conversation_metadata = await self.generateFullConvoMetaData(full_conversation)
+            full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
+            bt.logging.info(f"Found {len(full_conversation_tags)} tags in FullConvo")
 
             # Make sure there are enough tags to make processing worthwhile
-            minValidTags = self.validateMinimumTags(fullConvoTags)
+            minValidTags = self.validateMinimumTags(full_conversation_tags)
             if minValidTags:
                 # Break the full conversation up into overlapping conversation windows
-                convoWindows = self.getConvoWindows(fullConvo)
+                convoWindows = self.getConvoWindows(full_conversation)
                 numWindows = len(convoWindows)
                 if numWindows > minConvWindows:
                     print("Found %d convo windows. Sending to miners..." % (numWindows))
                     system_mode = c.get('system', 'mode')
                     if system_mode == 'test':
-                        await self.sendWindowsToMiners(convoWindows, fullConvo=fullConvo, fullConvoMetaData=fullConvoMetaData)
+                        await self.send_windows_to_miners(convoWindows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
                     elif system_mode == 'openai':
                         return {
-                            "full_conversation": fullConvo,
-                            "full_conversation_metadata": fullConvoMetaData,
+                            "full_conversation": full_conversation,
+                            "full_conversation_metadata": full_conversationMetaData,
                             "windows": convoWindows,
                         }
                     else:
-                        bt.logging.info("System mode %s not found. Aborting." % (system_mode) )
+                        bt.logging.info(f"System mode {system_mode} not found. Aborting.")
                 else:
-                    print("Not enough convo windows -- only %d. Passing." % (numWindows))
+                    print(f"Not enough convo windows -- only {numWindows}. Passing.")
             else:
                 print("Not enough valid tags for conversation. Passing.")
                 return
+        else:
+            bt.logging.error("9879432: No conversation returned from API. Aborting.")
         return None
 
-    async def getConvo(self, hotkey):
+    async def getConvo(self):
+        hotkey = self.hotkey
         cl = ConvoLib()
-        convo = await cl.getConversation(hotkey)
+        convo = await cl.get_conversation(hotkey)
         return convo
 
     def getConvoWindows(self, fullConvo):
@@ -222,26 +214,26 @@ class ValidatorLib:
     async def outputEmissions(self, convoId, windowId, emissionRewards):
         print("EMISSIONS for %d window %d" % (convoId, windowId), emissionRewards)
 
-    async def sendWindowsToMiners(self, windows, fullConvo=None, fullConvoMetaData=None):
-        cguid = Utils.get(fullConvo, "uid")
-        participantProfiles = Utils.get(fullConvoMetaData, "participantProfiles", [])
-        fullConvoTags = Utils.get(fullConvoMetaData, "tags", [])
-        fullConvoTagVectors = Utils.get(fullConvoMetaData, "tag_vectors", {})
+    async def send_windows_to_miners(self, windows, full_conversation=None, full_conversation_metadata=None):
+        cguid = Utils.get(full_conversation, "uid")
+        participantProfiles = Utils.get(full_conversation_metadata, "participantProfiles", [])
+        full_conversationTags = Utils.get(full_conversation_metadata, "tags", [])
+        full_conversationTagVectors = Utils.get(full_conversation_metadata, "tag_vectors", {})
 
         if self.verbose:
-            print("fullConvoTagVectors", fullConvoTagVectors)
+            print("full_conversationTagVectors", full_conversationTagVectors)
         vectorNeightborhood = []
-        for key, fullConvoTagVector in fullConvoTagVectors.items():
-            #print("fullConvoTagVector", key, fullConvoTagVector)
-            vectorNeightborhood.append(fullConvoTagVector['vectors'])
-            #print("num vectors", len(fullConvoTagVector['vectors']))
+        for key, full_conversationTagVector in full_conversationTagVectors.items():
+            #print("full_conversationTagVector", key, full_conversationTagVector)
+            vectorNeightborhood.append(full_conversationTagVector['vectors'])
+            #print("num vectors", len(full_conversationTagVector['vectors']))
 
         #print("vectorNeightborhood LEN", len(vectorNeightborhood))
         semantic_neighborhood = np.mean(vectorNeightborhood, axis=0)
         #print("Full convo semantic_neighborhood", semantic_neighborhood)
 
         if self.verbose:
-            print("Full convo tags", fullConvoTags)
+            print("Full convo tags", full_conversationTags)
 
         # Loop through rows in db
         success = True
@@ -262,8 +254,8 @@ class ValidatorLib:
                 tags = Utils.get(minerResult, 'tags')
                 vectors = Utils.get(minerResult, 'vectors')
                 #print("VECTORS", vectors)
-                compareResults = Utils.compare_arrays(fullConvoTags, tags)
-                compareResults['total_1'] = len(fullConvoTags)
+                compareResults = Utils.compare_arrays(full_conversationTags, tags)
+                compareResults['total_1'] = len(full_conversationTags)
                 compareResults['total_2'] = len(tags)
                 #print("COMPARE", compareResults)
                 scoreToFullConvo = await self.calculate_base_score(compareResults)
