@@ -28,7 +28,15 @@ class MinerLib:
         out = {"uid":minerUid, "tags":[], "profiles":[], "convoChecksum":11}
 
         #print("Mine result: %ds" % (waitSec))
-        if dryrun:
+        if not dryrun:
+            llml = LlmLib()
+            lines = copy.deepcopy(conversation_window)
+            matches_dict = await llml.conversation_to_tags({"lines":lines})
+            tags = list(matches_dict.keys())
+            out["tags"] = tags
+            out["vectors"] = matches_dict
+            print(out["tags"])
+        else:
             llml = LlmLib()
             exampleSentences = [
                 "Who's there?",
@@ -55,16 +63,6 @@ class MinerLib:
             out["vectors"] = matches_dict
             #waitSec = random.randint(0, 3)
             #await asyncio.sleep(waitSec)
-        else:
-            llml = LlmLib()
-            lines = copy.deepcopy(conversation_window)
-            matches_dict = await llml.conversation_to_tags({"lines":lines})
-            tags = list(matches_dict.keys())
-            out["tags"] = tags
-            out["vectors"] = matches_dict
-            print(out["tags"])
-            #exampleTags = ["realistic", "business-minded", "conciliatory", "responsive", "caring", "understanding", "apologetic", "affectionate", "optimistic", "family-oriented"]
-            #out["tags"].append(random.choice(exampleTags))
         return out
 
 
