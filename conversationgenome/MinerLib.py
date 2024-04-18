@@ -34,7 +34,8 @@ class MinerLib:
             result = await llml.conversation_to_metadata({"lines":lines})
             out["tags"] = result['tags']
             out["vectors"] = result['vectors']
-            print(out["tags"])
+            if self.verbose:
+                print("MINED TAGS", out["tags"])
         else:
             llml = LlmLib()
             exampleSentences = [

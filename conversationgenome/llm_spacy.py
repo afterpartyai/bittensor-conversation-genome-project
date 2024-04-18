@@ -31,7 +31,8 @@ class llm_spacy:
                 print("Model {dataset} downloaded successfully!")
 
             nlp = spacy.load(dataset) # ~600mb
-            print(f"Spacy {dataset} Vector dimensionality: {nlp.vocab.vectors_length}")
+            if self.verbose:
+                print(f"Loaded Spacy {dataset} Vector dimensionality: {nlp.vocab.vectors_length}")
             self.nlp = nlp
         return nlp
 

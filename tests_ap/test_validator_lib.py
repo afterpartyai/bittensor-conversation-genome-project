@@ -27,8 +27,12 @@ async def test_full():
             selected_miner_uids = vl.selectStage1Miners(miner_uids)
             print("Selected miners", selected_miner_uids)
             miner_results = await vl.send_to_miners(conversation_guid, window_idx, conversation_window, selected_miner_uids)
+            for miner_result in miner_results:
+                print(f"RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
 
             # Evaluate results of miners
+            await el.evaluate(full_conversation_metadata, miner_results)
+            break
 
 
 

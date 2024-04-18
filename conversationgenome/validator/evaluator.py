@@ -14,7 +14,10 @@ import numpy as np
 class Evaluator:
     min_tags = 3
 
-    async def evaluate(self, full_convo_tags=None, miner_responses=None, body=None, exampleList=None):
+    async def evaluate(self, full_convo_tags=None, miner_results=None, body=None, exampleList=None):
+        print(f"Evaluating {len(miner_results)} miner results...")
+        return
+
         if not miner_responses and exampleList:
             miner_responses = []
             for idx, examples in enumerate(exampleList):
