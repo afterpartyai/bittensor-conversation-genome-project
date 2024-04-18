@@ -1,14 +1,23 @@
-export WANDB_API_KEY=some_key
+export SYSTEM_MODE=test
+#export SYSTEM_MODE=production
 
-#export LLM_TYPE=spacy
-export LLM_TYPE=openai
+
+export CGP_API_READ_HOST=api.conversationgenome.org
+export CGP_API_READ_PORT=api.conversationgenome.org
+
+export CGP_API_WRITE_HOST=api.conversationgenome.org
+export CGP_API_WRITE_PORT=api.conversationgenome.org
+
+export LLM_TYPE=spacy
+#export LLM_TYPE=openai
+#export LLM_TYPE=textgenui
 #export LLM_TYPE=anthropic
-#export LLM_TYPE=local_llm
 
 # used both by validator and miner:
 export OPENAI_API_KEY=some_key
 export ANTHROPIC_API_KEY=some_key
 
-export LOCAL_LLM_IP=xxx
-export LOCAL_LLM_PORT=xxx
+export TEXTGENUI_IP=some_ip
+export TEXTGENUI_PORT=some_port
 
+export WANDB_API_KEY=some_key
