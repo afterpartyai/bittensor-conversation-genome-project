@@ -38,7 +38,7 @@ async def test_full():
 
             # Evaluate results of miners
             await el.evaluate(full_conversation_metadata, miner_results)
-            #break
+            break
 
 
 

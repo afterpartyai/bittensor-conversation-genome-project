@@ -23,6 +23,7 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
+import wandb
 
 # xxx Refactor to multiple participants. Make abstract class?
 proto = {
@@ -109,6 +110,11 @@ class ValidatorLib:
         result = await self.reserve_conversation()
         if result:
             (full_conversation, full_conversation_metadata, convoWindows) = result
+
+            wandb_data = {"hello":"world"}
+            wandb.loBg(wandb_data)
+            bt.logging.info("WANDB_API_KEY is set")
+            runs = api.runs(f"conversationgenome/{project}")
             print("Found %d convo windows. Sending to miners..." % (numWindows))
             system_mode = c.get('system', 'mode')
             if system_mode == 'test':
@@ -122,8 +128,43 @@ class ValidatorLib:
             else:
                 bt.logging.info(f"System mode {system_mode} not found. Aborting.")
 
+    async def log_wandb(self):
+        api = wandb.Api()
+        project = "CONVERSATION_ID"
+        wandb_api_key = c.get("env", "WANDB_API_KEY")
+        print("APIKEY", wandb_api_key)
+        if not wandb_api_key:
+            raise ValueError("Please log in to wandb using `wandb login` or set the WANDB_API_KEY environment variable.")
+        run = 5
+        print("INIT", wandb_api_key)
+        wandb.init(
+              # Set the project where this run will be logged
+              project="cgp_tests",
+              # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
+              name=f"conversationgenome/cid_{run}",
+              # Track hyperparameters and run metadata
+              config={
+              "learning_rate": 0.02,
+              "architecture": "CNN",
+              "dataset": "CIFAR-100",
+              "epochs": 10,
+        })
+        epochs = 10
+        offset = random.random() / 5
+        for epoch in range(2, epochs):
+            acc = 1 - 2 ** -epoch - random.random() / epoch - offset
+            loss = 2 ** -epoch + random.random() / epoch + offset
+
+            wandb.log({"acc": acc, "loss": loss})
+
+        # Mark the run as finished
+        print("!!!!!!! Wand finish")
+        wandb.finish()
+
 
     async def reserve_conversation(self, minConvWindows = 1):
+        print("WWWWWWWWWWWWWWWWWWWWWWWWWWW")
+        await self.log_wandb()
         # Validator requests a full conversation from the API
         full_conversation = await self.getConvo()
         if self.verbose:
