@@ -33,9 +33,13 @@ from conversationgenome.base.validator import BaseValidatorNeuron
 import conversationgenome.utils
 import conversationgenome.validator
 
+from conversationgenome.ConfigLib import c
+from conversationgenome.Utils import Utils
+
 from conversationgenome.ValidatorLib import ValidatorLib
+from conversationgenome.validator.evaluator import Evaluator
 
-
+from conversationgenome.protocol import CgSynapse
 
 class Validator(BaseValidatorNeuron):
     verbose = True
@@ -56,6 +60,7 @@ class Validator(BaseValidatorNeuron):
             os.makedirs(self.image_dir)
 
     async def forward(self):
+
         # Get random miner IDs
         miner_uids = conversationgenome.utils.uids.get_random_uids(
             self,
@@ -64,21 +69,30 @@ class Validator(BaseValidatorNeuron):
         if self.verbose:
             print("miner_uid pool", miner_uids)
 
-        # Instance of validator library
+        # Instance of validator and eval library
         vl = ValidatorLib()
+        el = Evaluator()
         # xxx -- what does this do?
         vl.validateMinimumTags([])
+        test_mode = True
 
         # Reserve a conversation (so others won't take it) from the conversation API
         result = await vl.reserve_conversation()
 
         if result:
+            miners_per_window = c.get("validator", "miners_per_window", 3)
             (full_conversation, full_conversation_metadata, conversation_windows) = result
+            if test_mode:
+                # In test_mode, to expand the miner scores, remove half of the full convo tags.
+                # This "generates" more unique tags found for the miners
+                half = int(len(full_conversation_metadata['tags'])/2)
+                full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
+            conversation_guid = Utils.get(full_conversation, "uid")
 
             # Loop through conversation windows. Send each window to multiple miners
             for conversation_window in conversation_windows:
                 # Create a synapse to distribute to miners
-                synapse = conversationgenome.protocol.CgSynapse(dummy_input = [conversation])
+                synapse = conversationgenome.protocol.CgSynapse(dummy_input = [full_conversation])
 
                 rewards = None
 
