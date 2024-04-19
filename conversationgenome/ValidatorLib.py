@@ -128,26 +128,25 @@ class ValidatorLib:
             else:
                 bt.logging.info(f"System mode {system_mode} not found. Aborting.")
 
-    async def log_wandb(self):
+    async def log_wandb(self, c_guid):
         api = wandb.Api()
-        project = "CONVERSATION_ID"
         wandb_api_key = c.get("env", "WANDB_API_KEY")
-        print("APIKEY", wandb_api_key)
         if not wandb_api_key:
             raise ValueError("Please log in to wandb using `wandb login` or set the WANDB_API_KEY environment variable.")
         run = 5
         print("INIT", wandb_api_key)
+        epochs = 10
         wandb.init(
               # Set the project where this run will be logged
-              project="cgp_tests",
+              project="cgp_test_run",
               # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
-              name=f"conversationgenome/cid_{run}",
+              name=f"conversationgenome/cguid_{c_guid}",
               # Track hyperparameters and run metadata
               config={
               "learning_rate": 0.02,
               "architecture": "CNN",
               "dataset": "CIFAR-100",
-              "epochs": 10,
+              "epochs": epochs,
         })
         epochs = 10
         offset = random.random() / 5
@@ -158,13 +157,23 @@ class ValidatorLib:
             wandb.log({"acc": acc, "loss": loss})
 
         # Mark the run as finished
-        print("!!!!!!! Wand finish")
+        wandb.finish()
+
+    async def log_wandb_finish(self):
+        epochs = 2
+        offset = random.random() / 5
+        for epoch in range(2, epochs):
+            acc = 1 - 2 ** -epoch - random.random() / epoch - offset
+            loss = 2 ** -epoch + random.random() / epoch + offset
+
+            wandb.log({"acc": acc, "loss": loss})
+
+        # Mark the run as finished
         wandb.finish()
 
 
     async def reserve_conversation(self, minConvWindows = 1):
-        print("WWWWWWWWWWWWWWWWWWWWWWWWWWW")
-        await self.log_wandb()
+        out = None
         # Validator requests a full conversation from the API
         full_conversation = await self.getConvo()
         if self.verbose:
@@ -172,6 +181,7 @@ class ValidatorLib:
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
+            await self.log_wandb(conversation_guid)
             bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
@@ -185,12 +195,15 @@ class ValidatorLib:
                 # Break the full conversation up into overlapping conversation windows
                 convoWindows = self.getConvoWindows(full_conversation)
                 if len(convoWindows) > minConvWindows:
-                    return (full_conversation, full_conversation_metadata, convoWindows)
+                    out = (full_conversation, full_conversation_metadata, convoWindows)
                 else:
                     print(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
+                    out = None
             else:
                 print("Not enough valid tags for conversation. Passing.")
-                return None
+                out = None
+            #await self.log_wandb_finish()
+            return out
         else:
             bt.logging.error("9879432: No conversation returned from API. Aborting.")
         return None
