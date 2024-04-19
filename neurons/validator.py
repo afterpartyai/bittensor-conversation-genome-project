@@ -124,7 +124,7 @@ class Validator(BaseValidatorNeuron):
                 for miner_result in valid_responses:
                     #print("miner_result", miner_result)
                     bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
-                scores = await el.evaluate(full_conversation_metadata, valid_responses)
+                (final_scores, rank_scores) = await el.evaluate(full_conversation_metadata, valid_responses)
                 labels = ["Hello", "World"]
                 # xxx Walk through the rewards per epoch code
                 #print("getting rewards")
@@ -133,7 +133,8 @@ class Validator(BaseValidatorNeuron):
                 #bt.logging.info(f"CGP Scored responses: {rewards}")
 
                 # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
-                #self.update_scores(rewards, miner_uids)
+                #rewards = torch.ones(len(miner_uids))
+                self.update_scores(rank_scores, miner_uids)
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":

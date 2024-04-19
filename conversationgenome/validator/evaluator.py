@@ -76,6 +76,7 @@ class Evaluator:
         scores = torch.zeros(num_responses)
         zero_score_mask = torch.ones(num_responses)
         rank_scores = torch.zeros(num_responses)
+        print("DEVICE for rank_scores", rank_scores.device)
 
         avg_ages = torch.zeros(num_responses)
         avg_age_scores = torch.zeros(num_responses)
@@ -114,12 +115,15 @@ class Evaluator:
                 (0.3 * mean_score)
             ) / 2
             final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
+            #rank_scores[idx] = final_miner_score
             final_scores.append({"uid": miner_result['uid'], "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
             #print(f"__________Tags: {len(miner_result['tags'])} Unique Tags: {scores_unique} Median score: {median_score} Mean score: {mean_score} Min: {min_score} Max: {max_score}" )
 
 
         bt.logging.debug("Complete eval.", final_scores)
-        return final_scores
+        rank_scores = rank_scores.to('cuda')
+        print("DEVICE for rank_scores AFTER", rank_scores.device)
+        return (final_scores, rank_scores)
 
 
     def get_full_convo_tag_score(self, tag):
