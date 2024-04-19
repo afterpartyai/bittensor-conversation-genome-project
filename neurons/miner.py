@@ -19,9 +19,14 @@ import time
 import os
 import hashlib
 import typing
+import sys
+
 
 # Bittensor
 import bittensor as bt
+
+from conversationgenome.ConfigLib import c
+from conversationgenome.Utils import Utils
 
 
 from conversationgenome.base.miner import BaseMinerNeuron
@@ -61,11 +66,15 @@ class Miner(BaseMinerNeuron):
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         # Get data
-        convoWindow = synapse.dummy_input[0]["windows"]
-        bt.logging.info("Miner received %d conversations" % (len(convoWindow)))
+        print("synapse.dummy_input", synapse.dummy_input)
+        window = synapse.dummy_input[0] #[0]["windows"]
+        conversation_guid = Utils.get(window, "guid")
+        window_idx = Utils.get(window, "window_idx")
+        lines = Utils.get(window, "lines")
+        bt.logging.info(f"Miner received {conversation_guid} {window_idx} {len(lines)} conversation lines")
 
         ml = MinerLib()
-        result = await ml.doMining(convoWindow, 1123)
+        result = await ml.do_mining(conversation_guid, window_idx, lines, 17)
         bt.logging.info("Mined vectors and tags: %s" % (", ".join(result['tags'])))
 
         synapse.dummy_output = [result]

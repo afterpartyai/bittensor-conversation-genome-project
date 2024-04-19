@@ -66,8 +66,12 @@ class Validator(BaseValidatorNeuron):
             self,
             k=min(self.config.neuron.sample_size, self.metagraph.n.item())
         )
-        if self.verbose:
+        if True or self.verbose:
             print("miner_uid pool", miner_uids)
+        if len(miner_uids) == 0:
+            print("No miners")
+            time.sleep(30)
+            return
 
         # Instance of validator and eval library
         vl = ValidatorLib()
@@ -87,12 +91,19 @@ class Validator(BaseValidatorNeuron):
                 # This "generates" more unique tags found for the miners
                 half = int(len(full_conversation_metadata['tags'])/2)
                 full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
-            conversation_guid = Utils.get(full_conversation, "uid")
+            conversation_guid = Utils.get(full_conversation, "guid")
+            #print("full_conversation", full_conversation)
+            bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
 
             # Loop through conversation windows. Send each window to multiple miners
-            for conversation_window in conversation_windows:
+            print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
+            for window_idx, conversation_window in enumerate(conversation_windows):
                 # Create a synapse to distribute to miners
-                synapse = conversationgenome.protocol.CgSynapse(dummy_input = [full_conversation])
+                bt.logging.info(f"Sending convo {conversation_guid} window of {len(conversation_window)} lines to miner.")
+                window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
+                #print(window_packet)
+
+                synapse = conversationgenome.protocol.CgSynapse(dummy_input = [window_packet])
 
                 rewards = None
 
@@ -107,8 +118,13 @@ class Validator(BaseValidatorNeuron):
                 for response in responses:
                     if not response.dummy_output:
                         continue
-                    valid_responses.append(response)
                     bt.logging.info(f"CGP Received tags: {response.dummy_output[0]['tags']}")
+                    valid_responses.append(response.dummy_output[0])
+
+                for miner_result in valid_responses:
+                    #print("miner_result", miner_result)
+                    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
+                scores = await el.evaluate(full_conversation_metadata, valid_responses)
                 labels = ["Hello", "World"]
                 # xxx Walk through the rewards per epoch code
                 #print("getting rewards")
