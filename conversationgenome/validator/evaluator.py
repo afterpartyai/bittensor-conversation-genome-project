@@ -4,13 +4,27 @@ import random
 from datetime import datetime, timezone
 from traceback import print_exception
 
-#import torch
+torch = None
+try:
+    import torch
+except:
+    print("torch not installed")
 
 
 import numpy as np
 #from scipy.stats import skew
 
 from conversationgenome.Utils import Utils
+from conversationgenome.MockBt import MockBt
+
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
+
 
 
 class Evaluator:
@@ -57,9 +71,38 @@ class Evaluator:
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
         if self.verbose:
             print("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
+
+        num_responses = len(miner_results)
+        scores = torch.zeros(num_responses)
+        zero_score_mask = torch.ones(num_responses)
+        rank_scores = torch.zeros(num_responses)
+
+        avg_ages = torch.zeros(num_responses)
+        avg_age_scores = torch.zeros(num_responses)
+        uniqueness_scores = torch.zeros(num_responses)
+        credit_author_scores = torch.zeros(num_responses)
+
+        max_avg_age = 0
+
+        spot_check_id_dict = dict()
+
+
         scores_data = []
         for idx, miner_result in enumerate(miner_results):
+            try:
+                # Make sure there are enough tags to make processing worthwhile
+                if miner_result is None or not miner_result or len(miner_result['tags']) < self.min_tags:
+                    bt.logging.info(f"Only {len(miner_result['tags'])} tag(s) found for miner {miner_result['uid']}. Skipping.")
+                    zero_score_mask[idx] = 0
+                    continue
+            except Exception as e:
+                bt.logging.error(f"Error while intitial checking {idx}-th response: {e}, 0 score")
+                bt.logging.debug(print_exception(type(e), e, e.__traceback__))
+                zero_score_mask[idx] = 0
+
+            # Loop through tags that match the full convo and get the scores for those
             results = await self.calc_scores(full_convo_metadata, full_conversation_neighborhood, miner_result)
+
             (scores, scores_both, scores_unique) = results
             mean_score = np.mean(scores)
             median_score = np.median(scores)
@@ -76,38 +119,9 @@ class Evaluator:
 
         return scores_data
 
-        num_responses = len(miner_results)
-        scores = torch.zeros(num_responses)
-        zero_score_mask = torch.ones(num_responses)
-        rank_scores = torch.zeros(num_responses)
-
-        avg_ages = torch.zeros(num_responses)
-        avg_age_scores = torch.zeros(num_responses)
-        uniqueness_scores = torch.zeros(num_responses)
-        credit_author_scores = torch.zeros(num_responses)
-
-        max_avg_age = 0
-
-        spot_check_id_dict = dict()
-
-        return
-
         # quick integrity check and get spot_check_id_dict
         utcnow = datetime.now(timezone.utc)
         for idx, miner_response in enumerate(miner_responses):
-            try:
-                # Make sure there are enough tags to make processing worthwhile
-                if miner_response is None or not miner_response or len(miner_response['tags']) < self.min_tags:
-                    bt.logging.info(f"Only {len(miner_response['tags'])} tag(s) found for miner {miner_response['uid']}. Skipping.")
-                    zero_score_mask[idx] = 0
-                    continue
-                diff = compare_arrays(full_convo_tags, miner_response['tags'])
-                bt.logging.debug(f"uid: {miner_response['uid']} Both tag(s) count:{len(diff['both'])} / Miner unique: {diff['unique_2']} ")
-            except Exception as e:
-                bt.logging.error(f"Error while intitial checking {idx}-th response: {e}, 0 score")
-                bt.logging.debug(print_exception(type(e), e, e.__traceback__))
-                zero_score_mask[idx] = 0
-            # Loop through tags that match the full convo and get the scores for those
             # These are de-emphasized -- they are more for validation
             both_tag_scores = []
             tag_count_ceiling = 5
