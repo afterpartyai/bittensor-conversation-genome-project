@@ -87,7 +87,7 @@ class Evaluator:
         spot_check_id_dict = dict()
 
 
-        scores_data = []
+        final_scores = []
         for idx, miner_result in enumerate(miner_results):
             try:
                 # Make sure there are enough tags to make processing worthwhile
@@ -114,52 +114,13 @@ class Evaluator:
                 (0.3 * mean_score)
             ) / 2
             final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
-            scores_data.append({"uid": miner_result['uid'], "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
+            final_scores.append({"uid": miner_result['uid'], "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
             #print(f"__________Tags: {len(miner_result['tags'])} Unique Tags: {scores_unique} Median score: {median_score} Mean score: {mean_score} Min: {min_score} Max: {max_score}" )
 
-        return scores_data
-
-        # quick integrity check and get spot_check_id_dict
-        utcnow = datetime.now(timezone.utc)
-        for idx, miner_response in enumerate(miner_responses):
-            # These are de-emphasized -- they are more for validation
-            both_tag_scores = []
-            tag_count_ceiling = 5
-            for tag in diff['both']:
-                resp2 = await llm.simple_text_to_tags(tag, min_tokens=0)
-                if len(resp2.keys()) == 0:
-                    print(f"No vectors found for tag '{tag}'. Score of 0.")
-                    both_tag_scores.append(0)
-                    continue
-                neighborhood_vector2 = await llm.get_neighborhood(resp2, tag_count_ceiling=tag_count_ceiling)
-                #print("neighborhood_vector2", neighborhood_vector2)
-                score = llm.score_vector_similarity(neighborhood_vector, neighborhood_vector2)
-                both_tag_scores.append(score)
-                print("Score", tag, score)
-            if len(both_tag_scores) > 0:
-                both_tag_scores_avg = np.mean(both_tag_scores)
-                both_tag_scores_median = np.median(both_tag_scores)
-            else:
-                both_tag_scores_avg = 0.0
-                both_tag_scores_median = 0.0
-            # Calculate unique tags and then take to top 20
-            unique_tag_scores = []
-            for tag in diff['unique_2']:
-                unique_tag_scores.append(self.get_full_convo_tag_score(tag))
-            unique_tag_scores_avg = np.mean(unique_tag_scores)
-
-            # TODO: Take full convo tags and generate semantic neighborhood
-            # Figure out standard deviation for vectors in neighboardhood
-            #       Test each unique term against neighboard -- how many SDs does term similarity score?
-            # Weight score on SD similarity scores
-
-            final_score = (both_tag_scores_avg * 0.3) + (unique_tag_scores_avg * 0.7)
-            bt.logging.debug(f"Final score: {final_score} Both score avg: {both_tag_scores_avg} Unique score avg: {unique_tag_scores_avg}")
-            final_scores.append(final_score)
 
         bt.logging.debug("Complete eval.", final_scores)
-
         return final_scores
+
 
     def get_full_convo_tag_score(self, tag):
         return 0.9
