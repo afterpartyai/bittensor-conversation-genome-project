@@ -15,9 +15,15 @@ async def test_full():
     vl = ValidatorLib()
     el = Evaluator()
     result = await vl.reserve_conversation()
+    test_mode = True
     if result:
         miners_per_window = c.get("validator", "miners_per_window", 3)
         (full_conversation, full_conversation_metadata, conversation_windows) = result
+        if test_mode:
+            # In test_mode, to expand the miner scores, remove half of the full convo tags.
+            # This "generates" more unique tags found for the miners
+            half = int(len(full_conversation_metadata['tags'])/2)
+            full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
         conversation_guid = Utils.get(full_conversation, "uid")
         #await vl.send_windows_to_miners(conversation_windows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
         # Loop through conversation windows. Send each window to multiple miners
@@ -32,7 +38,7 @@ async def test_full():
 
             # Evaluate results of miners
             await el.evaluate(full_conversation_metadata, miner_results)
-            break
+            #break
 
 
 

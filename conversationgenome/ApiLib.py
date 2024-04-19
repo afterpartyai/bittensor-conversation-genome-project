@@ -1,5 +1,6 @@
 import json
 import random
+import requests
 
 from conversationgenome.Utils import Utils
 from conversationgenome.ConfigLib import c
@@ -8,7 +9,7 @@ from conversationgenome.ConfigLib import c
 class ApiLib:
     async def reserveConversation(self, hotkey):
         # Call Convo server and reserve a conversation
-        if c.get('system', 'mode') == 'test':
+        if c.get('env', 'SYSTEM_MODE') == 'test':
             path = 'facebook-chat-data.json'
             f = open(path)
             body = f.read()
@@ -28,8 +29,28 @@ class ApiLib:
                 "lines":Utils.get(selectedConvo, "lines"),
             }
         else:
+            headers = {
+                "Accept": "application/json",
+                "Accept-Language": "en_US",
+            }
+            jsonData = { }
+            postData = None
+            cert = None
+            selectedConvo = {}
+            url = "http://localhost:8000/api/v1/conversation/reserve"
+            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
+            if response.status_code == 200:
+                selectedConvo = response.json()
+                #print("selectedConvo", selectedConvo)
+            else:
+                print("ERROR")
 
-            convo = {"guid":"c1234", "lines":[1,2,3,4], "participants":["Emily", "John"]}
+
+            convo = {
+                "guid":Utils.get(selectedConvo, "guid"),
+                "participants": Utils.get(selectedConvo, "participants"),
+                "lines":Utils.get(selectedConvo, "lines"),
+            }
         return convo
 
     async def completeConversation(self, hotkey, guid, dryrun=False):
