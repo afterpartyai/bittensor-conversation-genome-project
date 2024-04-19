@@ -257,15 +257,18 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.debug("uint_uids", uint_uids)
 
         # Set the weights on chain via our subtensor connection.
-        result, msg = self.subtensor.set_weights(
-            wallet=self.wallet,
-            netuid=self.config.netuid,
-            uids=uint_uids,
-            weights=uint_weights,
-            wait_for_finalization=False,
-            wait_for_inclusion=False,
-            version_key=self.spec_version,
-        )
+        try:
+            result, msg = self.subtensor.set_weights(
+                wallet=self.wallet,
+                netuid=self.config.netuid,
+                uids=uint_uids,
+                weights=uint_weights,
+                wait_for_finalization=False,
+                wait_for_inclusion=False,
+                version_key=self.spec_version,
+            )
+        except:
+            print("ERROR")
         if result is True:
             bt.logging.info("set_weights on chain successfully!")
         else:
@@ -328,6 +331,7 @@ class BaseValidatorNeuron(BaseNeuron):
         uids_tensor = uids_tensor.to(self.scores.device)
         rewards = rewards.to(self.scores.device)
         rewards = torch.ones(len(uids_tensor), device=self.device)
+        rewards[0] = 0.5
         print("TENSORS", uids_tensor, rewards)
 
 
