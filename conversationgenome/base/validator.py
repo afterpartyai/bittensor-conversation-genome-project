@@ -22,6 +22,7 @@ import asyncio
 import argparse
 import threading
 import bittensor as bt
+import random
 
 from typing import List
 from traceback import print_exception
@@ -257,6 +258,8 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.debug("uint_uids", uint_uids)
 
         # Set the weights on chain via our subtensor connection.
+        print("---Set the weights on chain", self.wallet, self.config.netuid, uint_uids, uint_weights, self.spec_version)
+        result = None
         try:
             result, msg = self.subtensor.set_weights(
                 wallet=self.wallet,
@@ -331,7 +334,8 @@ class BaseValidatorNeuron(BaseNeuron):
         uids_tensor = uids_tensor.to(self.scores.device)
         rewards = rewards.to(self.scores.device)
         rewards = torch.ones(len(uids_tensor), device=self.device)
-        rewards[0] = 0.5
+        for idx, reward in enumerate(rewards):
+            rewards[idx] = random.random()
         print("TENSORS", uids_tensor, rewards)
 
 
