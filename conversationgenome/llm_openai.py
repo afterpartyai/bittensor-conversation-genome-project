@@ -48,10 +48,27 @@ class llm_openai:
         out = {"tags":{}}
         #return out
         response = await self.callFunctionFull(convoXmlStr=xml, participants=participants)
-        tags = Utils.get(response, "p0.interests")
-        if not tags:
-            tags = Utils.get(response, "p1.interests")
-        if tags:
+        #print("___________OPENAI response", response)
+        tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
+        participant_names = participants.keys()
+        tag_list = {}
+        for participant_name in participant_names:
+            for tag_category in tag_categories:
+                key = f"{participant_name}.{tag_category}"
+                category_tags = Utils.get(response, key)
+                for category_tag in category_tags:
+                    if not Utils.empty(category_tag):
+                        if not category_tag in tag_list:
+                            tag_list[category_tag] = 0
+                        tag_list[category_tag] += 1
+        tags = list(tag_list.keys())
+        #print("TOTAL tags", tags)
+
+        if False:
+            tags = Utils.get(response, "p0.interests")
+            if not tags:
+                tags = Utils.get(response, "p1.interests")
+        if not Utils.empty(tags):
             print("Found tags", tags)
             out['tags'] = tags
             out['vectors'] = {}
