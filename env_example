@@ -20,6 +20,10 @@ export LLM_TYPE=spacy
 
 # used both by validator and miner:
 export OPENAI_API_KEY=some_key
+export OPENAI_MODEL=gpt-4
+#export OPENAI_MODEL=gpt-3.5-turbo
+export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
+
 export ANTHROPIC_API_KEY=some_key
 
 export TEXTGENUI_IP=some_ip
