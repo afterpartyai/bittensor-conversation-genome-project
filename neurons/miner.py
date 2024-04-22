@@ -59,17 +59,17 @@ class Miner(BaseMinerNeuron):
         This method should be replaced with actual logic relevant to the miner's purpose.
 
         Args:
-            synapse (CgSynapse): The synapse object containing the 'dummy_input' data.
+            synapse (CgSynapse): The synapse object containing the 'cgp_input' data.
 
         Returns:
-            CgSynapse: The synapse object with the 'dummy_output' field set to twice the 'dummy_input' value.
+            CgSynapse: The synapse object with the 'cgp_output' field
 
         The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         # Get data
-        print("synapse.dummy_input", synapse.dummy_input)
-        window = synapse.dummy_input[0] #[0]["windows"]
+        print("synapse.cgp_input", synapse.cgp_input)
+        window = synapse.cgp_input[0] #[0]["windows"]
         conversation_guid = Utils.get(window, "guid")
         window_idx = Utils.get(window, "window_idx")
         lines = Utils.get(window, "lines")
@@ -79,7 +79,7 @@ class Miner(BaseMinerNeuron):
         result = await ml.do_mining(conversation_guid, window_idx, lines, 17)
         bt.logging.info("Mined vectors and tags: %s" % (", ".join(result['tags'])))
 
-        synapse.dummy_output = [result]
+        synapse.cgp_output = [result]
         return synapse
 
     async def blacklist(

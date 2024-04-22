@@ -87,12 +87,12 @@ class MockDendrite(bt.dendrite):
                     s.dendrite.process_time = str(time.time() - start_time)
                     # Update the status code and status message of the dendrite to match the axon
                     # TODO (developer): replace with your own expected synapse data
-                    s.dummy_output = s.dummy_input * 2
+                    s.cgp_output = s.cgp_input * 2
                     s.dendrite.status_code = 200
                     s.dendrite.status_message = "OK"
                     synapse.dendrite.process_time = str(process_time)
                 else:
-                    s.dummy_output = 0
+                    s.cgp_output = 0
                     s.dendrite.status_code = 408
                     s.dendrite.status_message = "Timeout"
                     synapse.dendrite.process_time = str(timeout)

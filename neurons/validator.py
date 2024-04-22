@@ -103,7 +103,7 @@ class Validator(BaseValidatorNeuron):
                 window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
                 #print(window_packet)
 
-                synapse = conversationgenome.protocol.CgSynapse(dummy_input = [window_packet])
+                synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
 
                 rewards = None
 
@@ -114,12 +114,11 @@ class Validator(BaseValidatorNeuron):
                     deserialize=False,
                 )
                 valid_responses = []
-                # xxx Change the dummy_output variable name
                 for response in responses:
-                    if not response.dummy_output:
+                    if not response.cgp_output:
                         continue
-                    bt.logging.info(f"CGP Received tags: {response.dummy_output[0]['tags']}")
-                    valid_responses.append(response.dummy_output[0])
+                    bt.logging.info(f"CGP Received tags: {response.cgp_output[0]['tags']}")
+                    valid_responses.append(response.cgp_output[0])
 
                 for miner_result in valid_responses:
                     #print("miner_result", miner_result)

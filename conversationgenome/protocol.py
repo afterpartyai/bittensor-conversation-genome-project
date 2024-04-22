@@ -32,10 +32,10 @@ class CgSynapse(bt.Synapse):
     """
 
     # Required request input, filled by sending dendrite caller. It is a base64 encoded string.
-    dummy_input: List[dict]
+    cgp_input: List[dict]
 
     # Optional request output, filled by recieving axon.
-    dummy_output: Optional[List[dict]] = None
+    cgp_output: Optional[List[dict]] = None
 
     def deserialize(self) -> List[dict]:
         """
@@ -44,4 +44,4 @@ class CgSynapse(bt.Synapse):
         Returns:
         - List[dict]: The deserialized response, which is a list of dictionaries containing the extracted data.
         """
-        return self.dummy_output
+        return self.cgp_output
