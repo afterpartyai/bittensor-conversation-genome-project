@@ -7,6 +7,21 @@ from conversationgenome.Utils import Utils
 from conversationgenome.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
 
+class MockAxon:
+    uuid = "a"
+    hotkey = ""
+
+
+class MockResponse:
+    responses = {}
+    responses = {}
+    cgp_output = None
+    axon = None
+
+    def __init__(self):
+        self.axon = MockAxon()
+
+
 
 @pytest.mark.asyncio
 async def test_full():
@@ -19,7 +34,8 @@ async def test_full():
     if result:
         miners_per_window = c.get("validator", "miners_per_window", 3)
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        if test_mode:
+        if c.get("env", "LLM_TYPE") == "spacy":
+            print("SPACY TEST MODE")
             # In test_mode, to expand the miner scores, remove half of the full convo tags.
             # This "generates" more unique tags found for the miners
             half = int(len(full_conversation_metadata['tags'])/2)
@@ -33,11 +49,20 @@ async def test_full():
             selected_miner_uids = vl.selectStage1Miners(miner_uids)
             print("Selected miners", selected_miner_uids)
             miner_results = await vl.send_to_miners(conversation_guid, window_idx, conversation_window, selected_miner_uids)
-            for miner_result in miner_results:
+            mock_miner_responses = []
+            for idx, miner_result in enumerate(miner_results):
                 print(f"RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
+                response = MockResponse()
+                response.axon.hotkey = "HK-"+str(idx)
+                response.axon.uuid = str(miner_result['uid'])
+                response.cgp_output = [miner_result]
+
+                mock_miner_responses.append(response)
+
+
 
             # Evaluate results of miners
-            await el.evaluate(full_conversation_metadata, miner_results)
+            await el.evaluate(full_conversation_metadata, mock_miner_responses)
             break
 
 
