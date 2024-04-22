@@ -3,3 +3,5 @@ bittensor
 torch
 faker
 spacy
+openai
+loguru

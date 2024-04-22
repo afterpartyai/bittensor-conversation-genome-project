@@ -40,6 +40,7 @@ class Evaluator:
         #       numeric_vectors = conversation_metadata['vectors'][tag_name]['vectors']
         for tag_name, val in conversation_metadata['vectors'].items():
             all_vectors.append(val['vectors'])
+            #all_vectors.append(val)
             count += 1
             if tag_count_ceiling and count > tag_count_ceiling:
                 break

@@ -36,6 +36,7 @@ from conversationgenome.protocol import CgSynapse
 
 
 class Miner(BaseMinerNeuron):
+    verbose = True
     """
     You may also want to override the blacklist and priority functions according to your needs.
 
@@ -46,6 +47,7 @@ class Miner(BaseMinerNeuron):
 
     def __init__(self, config=None):
         super(Miner, self).__init__(config=config)
+        print("Init miner")
 
         # TODO(developer): Anything specific to your use case you can do here
 
@@ -174,5 +176,6 @@ class Miner(BaseMinerNeuron):
 if __name__ == "__main__":
     with Miner() as miner:
         while True:
+            print("Miner")
             bt.logging.info("CGP Miner running...", time.time())
             time.sleep(5)

@@ -235,18 +235,18 @@ class ValidatorLib:
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)
         tags = result['tags']
-
-        half = int(len(tags) / 2)
-        tagsQ = tags[0:half]
-        tagsA = tags[half:]
-        info = copy.deepcopy(proto)
+        vectors = Utils.get(result, 'vectors', {})
+        #half = int(len(tags) / 2)
+        #tagsQ = tags[0:half]
+        #tagsA = tags[half:]
+        #info = copy.deepcopy(proto)
         #info["interests_of_q"] = tagsQ
         #info["interests_of_a"] = tagsA
         ##print("FullConvo tags",  tags)
         data = {
             "participantProfiles": convo['participants'],
             "tags": tags,
-            "vectors": result['vectors'],
+            "vectors": vectors,
         }
         return data
 

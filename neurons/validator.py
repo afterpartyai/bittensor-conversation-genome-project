@@ -25,7 +25,7 @@ import bittensor as bt
 
 # Bittensor Validator Template:
 import template
-from template.validator import forward
+#from template.validator import forward
 
 # import base validator class which takes care of most of the boilerplate
 from conversationgenome.base.validator import BaseValidatorNeuron
@@ -90,7 +90,7 @@ class Validator(BaseValidatorNeuron):
                 # In test_mode, to expand the miner scores, remove half of the full convo tags.
                 # This "generates" more unique tags found for the miners
                 half = int(len(full_conversation_metadata['tags'])/2)
-                full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
+                #full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
             conversation_guid = Utils.get(full_conversation, "guid")
             #print("full_conversation", full_conversation)
             bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")

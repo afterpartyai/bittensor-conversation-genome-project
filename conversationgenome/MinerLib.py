@@ -21,7 +21,7 @@ from conversationgenome.LlmLib import LlmLib
 
 
 class MinerLib:
-    verbose = False
+    verbose = True
 
     async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
         #print("MINERCONVO", convoWindow, minerUid)
