@@ -62,9 +62,12 @@ class Validator(BaseValidatorNeuron):
     async def forward(self):
 
         # Get random miner IDs
+        miners_per_window = c.get("validator", "miners_per_window", 3)
+        miner_sample_size = min(self.config.neuron.sample_size, self.metagraph.n.item())
+        print("miner_sample_size", miner_sample_size, self.config.neuron.sample_size, self.metagraph.n.item())
         miner_uids = conversationgenome.utils.uids.get_random_uids(
             self,
-            k=min(self.config.neuron.sample_size, self.metagraph.n.item())
+            k= miner_sample_size
         )
         if True or self.verbose:
             print("miner_uid pool", miner_uids)
@@ -84,7 +87,6 @@ class Validator(BaseValidatorNeuron):
         result = await vl.reserve_conversation()
 
         if result:
-            miners_per_window = c.get("validator", "miners_per_window", 3)
             (full_conversation, full_conversation_metadata, conversation_windows) = result
             if test_mode:
                 # In test_mode, to expand the miner scores, remove half of the full convo tags.
@@ -107,23 +109,26 @@ class Validator(BaseValidatorNeuron):
 
                 rewards = None
 
-                # Is this blocking?
                 responses = self.dendrite.query(
                     axons=[self.metagraph.axons[uid] for uid in miner_uids],
                     synapse=synapse,
                     deserialize=False,
                 )
-                valid_responses = []
-                for response in responses:
-                    if not response.cgp_output:
-                        continue
-                    bt.logging.info(f"CGP Received tags: {response.cgp_output[0]['tags']}")
-                    valid_responses.append(response.cgp_output[0])
+                #print("RAW RESPONSES", len(responses))
+                #valid_responses = []
+                #for response in responses:
+                #    if not response.cgp_output:
+                #        print("BAD RESPONSE", response.axon.uuid, response.axon.hotkey, )
+                #        continue
+                #    print("GOOD RESPONSE", response.axon, response.axon.uuid, response.axon.hotkey, )
+                #    bt.logging.info(f"CGP Received tags: {response.cgp_output[0]['tags']}")
+                #    valid_responses.append(response.cgp_output[0])
 
-                for miner_result in valid_responses:
-                    #print("miner_result", miner_result)
-                    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
-                (final_scores, rank_scores) = await el.evaluate(full_conversation_metadata, valid_responses)
+                #for miner_result in valid_responses:
+                #    #print("miner_result", miner_result)
+                #    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
+                (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
+                #print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
                 # Walk through the rewards per epoch code
                 #bt.logging.info(f"CGP Scored responses: {rewards}")
 

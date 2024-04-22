@@ -332,11 +332,11 @@ class BaseValidatorNeuron(BaseNeuron):
         # shape: [ metagraph.n ]
         print("SCATTER DEVICE", self.scores.device)
         uids_tensor = uids_tensor.to(self.scores.device)
-        rewards = rewards.to(self.scores.device)
-        rewards = torch.ones(len(uids_tensor), device=self.device)
+        rewards2 = rewards.to(self.scores.device)
+        rewards2 = torch.ones(len(uids_tensor), device=self.device)
         for idx, reward in enumerate(rewards):
-            rewards[idx] = random.random()
-        print("TENSORS", uids_tensor, rewards)
+            rewards2[idx] = rewards[idx]
+        print("TENSORS", uids_tensor, rewards2)
 
 
         scattered_rewards: torch.FloatTensor = self.scores.scatter(
