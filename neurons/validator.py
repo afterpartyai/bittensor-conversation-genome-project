@@ -124,11 +124,7 @@ class Validator(BaseValidatorNeuron):
                     #print("miner_result", miner_result)
                     bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 (final_scores, rank_scores) = await el.evaluate(full_conversation_metadata, valid_responses)
-                labels = ["Hello", "World"]
-                # xxx Walk through the rewards per epoch code
-                #print("getting rewards")
-                #rewards = conversationgenome.validator.reward.get_rewards(self, labels=labels, responses=validResponses)
-
+                # Walk through the rewards per epoch code
                 #bt.logging.info(f"CGP Scored responses: {rewards}")
 
                 # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
