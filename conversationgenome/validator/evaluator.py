@@ -92,7 +92,7 @@ class Evaluator:
         final_scores = []
         for idx, response in enumerate(miner_responses):
             if not response.cgp_output:
-                #print("BAD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
+                print("BAD RESPONSE", idx, "HOTKEY", response.axon.hotkey, )
                 final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
             else:
                 #print("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
