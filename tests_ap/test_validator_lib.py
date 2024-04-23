@@ -38,10 +38,10 @@ async def test_full():
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        #print("full_conversation", full_conversation)
+        print("full_conversation", full_conversation)
         llm_type = c.get("env", "LLM_TYPE")
         conversation_guid = Utils.get(full_conversation, "guid")
-        full_conversation_tag_count = len(Utils.get(full_conversation, "tags", []))
+        full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
         lines = Utils.get(full_conversation, "lines", [])
         participants = Utils.get(full_conversation, "participants", [])
         miners_per_window = c.get("validator", "miners_per_window", 3)
@@ -84,15 +84,21 @@ async def test_full():
                 response.cgp_output = [miner_result]
 
                 mock_miner_responses.append(response)
-            # Log seperate rows for each miner
-            # Summary log
-
-
             # Evaluate results of miners
             scores = await el.evaluate(full_conversation_metadata, mock_miner_responses)
-            print("SCORES", scores)
+            for idx, score in enumerate(scores[0]):
+                print("score", score)
+                uid = str(Utils.get(score, "uuid"))
+                await wl.log({
+                    "conversation_guid."+uid: conversation_guid,
+                    "window_id."+uid: window_idx,
+                    "uuid."+uid: Utils.get(score, "uuid"),
+                    "hotkey."+uid: Utils.get(score, "hotkey"),
+                    "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                    "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                })
             break
-    await wl.end_log_wandb("ABC")
+    await wl.end_log_wandb()
 
 
 

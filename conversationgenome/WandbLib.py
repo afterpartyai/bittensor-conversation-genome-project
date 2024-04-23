@@ -70,7 +70,7 @@ class WandbLib:
             print("WANDB LOG", data)
         wandb.log(data)
 
-    async def end_log_wandb(self, c_guid):
+    async def end_log_wandb(self):
         # Mark the run as finished
         wandb.finish()
 

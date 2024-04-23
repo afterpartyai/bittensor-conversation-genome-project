@@ -123,7 +123,7 @@ class Evaluator:
                 ) / 2
                 final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
                 #rank_scores[idx] = final_miner_score
-                final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
+                final_scores.append({"uid": idx+1, "uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
                 #bt.logging.info(f"__________Tags: {len(miner_result['tags'])} Unique Tags: {scores_unique} Median score: {median_score} Mean score: {mean_score} Min: {min_score} Max: {max_score}" )
 
 
