@@ -186,7 +186,7 @@ class ValidatorLib:
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
-            await self.begin_log_wandb(conversation_guid)
+            #await self.begin_log_wandb(conversation_guid)
             #for i in range(5):
             #    await self.do_log_wandb(conversation_guid)
             #    time.sleep(2)
