@@ -12,6 +12,16 @@ except:
     # python -m spacy download en_core_web_sm
     # python -m spacy download en_core_web_lg
 
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
+
+
+
 class llm_spacy:
     nlp = None
     verbose = False
@@ -26,13 +36,13 @@ class llm_spacy:
             # en_core_web_sm and en_core_web_md
 
             if not spacy.util.is_package(dataset):
-                print(f"Downloading spacy model {dataset}...")
+                bt.logging.info(f"Downloading spacy model {dataset}...")
                 spacy.cli.download(dataset)
-                print("Model {dataset} downloaded successfully!")
+                bt.logging.info("Model {dataset} downloaded successfully!")
 
             nlp = spacy.load(dataset) # ~600mb
             if self.verbose:
-                print(f"Loaded Spacy {dataset} Vector dimensionality: {nlp.vocab.vectors_length}")
+                bt.logging.info(f"Loaded Spacy {dataset} Vector dimensionality: {nlp.vocab.vectors_length}")
             self.nlp = nlp
         return nlp
 
@@ -52,17 +62,17 @@ class llm_spacy:
 
         doc = nlp( body )
         if self.verbose:
-            print("DOC", doc)
+            bt.logging.info("DOC", doc)
         matches = matcher(doc)
         matches_dict = {}
         for match_id, start, end in matches:
             span = doc[start:end]
             if self.verbose:
-                print("Span text", span.text)
+                bt.logging.info("Span text", span.text)
             matchPhrase = span.lemma_
             if len(matchPhrase) > min_tokens:
                 if self.verbose:
-                    print(f"Original: {span.text}, Lemma: {span.lemma_} Vectors: {span.vector.tolist()}")
+                    bt.logging.info(f"Original: {span.text}, Lemma: {span.lemma_} Vectors: {span.vector.tolist()}")
                 if not matchPhrase in matches_dict:
                     matches_dict[matchPhrase] = {"tag":matchPhrase, "count":0, "vectors":span.vector.tolist()}
                 matches_dict[matchPhrase]['count'] += 1
@@ -78,7 +88,7 @@ class llm_spacy:
             if tag_count_ceiling and count > tag_count_ceiling:
                 break
         if self.verbose:
-            print("all_vectors",all_vectors )
+            bt.logging.info("all_vectors",all_vectors )
         # Create a vector representing the entire content by averaging the vectors of all tokens
         if len(all_vectors) > 0:
             neighborhood_vector = np.mean(all_vectors, axis=0)
@@ -93,7 +103,7 @@ class llm_spacy:
             return 0
         # Calculate the cosine similarity between two sets of vectors
         similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
-        #print(f"Similarity score between the content and the tag: {similarity_score}")
+        #bt.logging.info(f"Similarity score between the content and the tag: {similarity_score}")
         return similarity_score
 
 

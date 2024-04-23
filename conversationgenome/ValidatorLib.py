@@ -44,14 +44,14 @@ class ValidatorLib:
     def __init__(self):
         super(ValidatorLib, self).__init__()
 
-        #print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
+        #bt.logging.info("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
 
     # Deprecated: remove
     async def calculate_base_score(self, result_dict):
         total_1 = result_dict['total_1']
         total_2 = result_dict['total_2']
         if not total_2:
-            print("ERROR: total_2 empty -- nothing to eval")
+            bt.logging.info("ERROR: total_2 empty -- nothing to eval")
             return 0
 
         unique_1_count = len(result_dict['unique_1'])
@@ -115,7 +115,7 @@ class ValidatorLib:
             wandb.loBg(wandb_data)
             bt.logging.info("WANDB_API_KEY is set")
             runs = api.runs(f"conversationgenome/{project}")
-            print("Found %d convo windows. Sending to miners..." % (numWindows))
+            bt.logging.info("Found %d convo windows. Sending to miners..." % (numWindows))
             system_mode = c.get('system', 'mode')
             if system_mode == 'test':
                 await self.send_windows_to_test_miners(convoWindows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
@@ -134,7 +134,7 @@ class ValidatorLib:
         if not wandb_api_key:
             raise ValueError("Please log in to wandb using `wandb login` or set the WANDB_API_KEY environment variable.")
         run = 5
-        print("INIT", wandb_api_key)
+        bt.logging.info("INIT", wandb_api_key)
         epochs = 10
         wandb.init(
               # Set the project where this run will be logged
@@ -177,7 +177,7 @@ class ValidatorLib:
         # Validator requests a full conversation from the API
         full_conversation = await self.getConvo()
         if self.verbose:
-            print("full_conversation", full_conversation)
+            bt.logging.info("full_conversation", full_conversation)
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
@@ -200,10 +200,10 @@ class ValidatorLib:
                 if len(convoWindows) > minConvWindows:
                     out = (full_conversation, full_conversation_metadata, convoWindows)
                 else:
-                    print(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
+                    bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
                     out = None
             else:
-                print("Not enough valid tags for conversation. Passing.")
+                bt.logging.info("Not enough valid tags for conversation. Passing.")
                 out = None
             #await self.log_wandb_finish()
             return out
@@ -233,7 +233,7 @@ class ValidatorLib:
 
     async def generateFullConvoMetaData(self, convo):
         #cl = ConvoLib()
-        print("generateFullConvoMetaData participants", convo['participants'])
+        bt.logging.info("generateFullConvoMetaData participants", convo['participants'])
 
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)
@@ -248,7 +248,7 @@ class ValidatorLib:
         #info = copy.deepcopy(proto)
         #info["interests_of_q"] = tagsQ
         #info["interests_of_a"] = tagsA
-        ##print("FullConvo tags",  tags)
+        ##bt.logging.info("FullConvo tags",  tags)
         data = {
             "participantProfiles": convo['participants'],
             "tags": tags,
@@ -257,7 +257,7 @@ class ValidatorLib:
         return data
 
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
-        print("Send to miners", miner_uids)
+        bt.logging.info("Send to miners", miner_uids)
         results = []
         ml = MinerLib()
         tasks = [asyncio.create_task(ml.do_mining(conversation_guid, window_idx, conversation_window, minerUid)) for minerUid in miner_uids]
@@ -268,7 +268,7 @@ class ValidatorLib:
 
     def validateMinimumTags(self, tags):
         # TODO: Validate tags
-        #print("Validating tags", tags)
+        #bt.logging.info("Validating tags", tags)
         return True
 
     def selectStage1Miners(self, uids, num=3):
@@ -277,7 +277,7 @@ class ValidatorLib:
         return selectedMiners
 
     async def outputEmissions(self, convoId, windowId, emissionRewards):
-        print("EMISSIONS for %d window %d" % (convoId, windowId), emissionRewards)
+        bt.logging.info("EMISSIONS for %d window %d" % (convoId, windowId), emissionRewards)
 
     async def send_windows_to_test_miners(self, windows, full_conversation=None, full_conversation_metadata=None):
         conversation_guid = Utils.get(full_conversation, "uid")
@@ -286,19 +286,19 @@ class ValidatorLib:
         full_conversationTagVectors = Utils.get(full_conversation_metadata, "tag_vectors", {})
 
         if self.verbose:
-            print("full_conversationTagVectors", full_conversationTagVectors)
+            bt.logging.info("full_conversationTagVectors", full_conversationTagVectors)
         vectorNeightborhood = []
         for key, full_conversationTagVector in full_conversationTagVectors.items():
-            #print("full_conversationTagVector", key, full_conversationTagVector)
+            #bt.logging.info("full_conversationTagVector", key, full_conversationTagVector)
             vectorNeightborhood.append(full_conversationTagVector['vectors'])
-            #print("num vectors", len(full_conversationTagVector['vectors']))
+            #bt.logging.info("num vectors", len(full_conversationTagVector['vectors']))
 
-        #print("vectorNeightborhood LEN", len(vectorNeightborhood))
+        #bt.logging.info("vectorNeightborhood LEN", len(vectorNeightborhood))
         semantic_neighborhood = np.mean(vectorNeightborhood, axis=0)
-        #print("Full convo semantic_neighborhood", semantic_neighborhood)
+        #bt.logging.info("Full convo semantic_neighborhood", semantic_neighborhood)
 
         if self.verbose:
-            print("Full convo tags", full_conversationTags)
+            bt.logging.info("Full convo tags", full_conversationTags)
 
         # Loop through rows in db
         success = True
@@ -309,7 +309,7 @@ class ValidatorLib:
             miners = self.selectStage1Miners(uids, minersPerWindow)
             # Send first window to miners
             miner_results = await self.send_to_miners(conversation_guid, idx, window, miners)
-            #print("Miner results", minerResults)
+            #bt.logging.info("Miner results", minerResults)
             # TODO: Each miner returns data, write data into local db
             # TODO: Write up incomplete errors, such as if timeout happens for miner, send to another miner
 
@@ -318,11 +318,11 @@ class ValidatorLib:
                 uid = Utils.get(minerResult, 'uid')
                 tags = Utils.get(minerResult, 'tags')
                 vectors = Utils.get(minerResult, 'vectors')
-                #print("VECTORS", vectors)
+                #bt.logging.info("VECTORS", vectors)
                 compareResults = Utils.compare_arrays(full_conversationTags, tags)
                 compareResults['total_1'] = len(full_conversationTags)
                 compareResults['total_2'] = len(tags)
-                #print("COMPARE", compareResults)
+                #bt.logging.info("COMPARE", compareResults)
                 scoreToFullConvo = await self.calculate_base_score(compareResults)
                 minerResult['score'] = scoreToFullConvo
                 similarity_scores = []
@@ -331,7 +331,7 @@ class ValidatorLib:
                     for unique_tag in uniqueTags:
                         if unique_tag in vectors:
                             tagVectors = vectors[unique_tag]['vectors']
-                            #print("VECTOR", unique_tag, tagVectors[0:2])
+                            #bt.logging.info("VECTOR", unique_tag, tagVectors[0:2])
                             # similarity_score
                             #  0 = orthogonal (perpendicular), no similarity
                             #  1 = identical in orientation, maximum similarity
@@ -339,11 +339,11 @@ class ValidatorLib:
                             similarity_score = 0
                             if not Utils.is_empty_vector(tagVectors):
                                 similarity_score = np.dot(semantic_neighborhood, tagVectors) / (np.linalg.norm(semantic_neighborhood) * np.linalg.norm(tagVectors))
-                                #print(f"Similarity score between the content and the tag '{unique_tag}': {similarity_score}")
+                                #bt.logging.info(f"Similarity score between the content and the tag '{unique_tag}': {similarity_score}")
                             similarity_scores.append(similarity_score)
-                    print("MEDIAN similarity_score of %d unique tags for miner %s" % (len(uniqueTags), str(uid)), np.median(similarity_scores), similarity_scores)
+                    bt.logging.info("MEDIAN similarity_score of %d unique tags for miner %s" % (len(uniqueTags), str(uid)), np.median(similarity_scores), similarity_scores)
                 else:
-                    print( "No unique tags for miner %s" % (str(uid)) )
+                    bt.logging.info( "No unique tags for miner %s" % (str(uid)) )
 
             await self.calculate_emission_rewards(minerResults, 'score')
 
@@ -358,12 +358,12 @@ class ValidatorLib:
             await cl.markConversionComplete(self.hotkey, cguid)
 
     async def neighborhood_test(self):
-        print("Quick test for semantic neighborhood with vectors")
+        bt.logging.info("Quick test for semantic neighborhood with vectors")
         llml = LlmLib()
         await llml.test_neighborhood()
 
     async def llm_test(self):
-        print("Quick test for LLM")
+        bt.logging.info("Quick test for LLM")
         llml = LlmLib()
         await llml.test_tagging()
 

@@ -24,10 +24,10 @@ class MinerLib:
     verbose = True
 
     async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
-        #print("MINERCONVO", convoWindow, minerUid)
+        #bt.logging.info("MINERCONVO", convoWindow, minerUid)
         out = {"uid":minerUid, "tags":[], "profiles":[], "convoChecksum":11}
 
-        #print("Mine result: %ds" % (waitSec))
+        #bt.logging.info("Mine result: %ds" % (waitSec))
         if not dryrun:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
@@ -35,7 +35,7 @@ class MinerLib:
             out["tags"] = result['tags']
             out["vectors"] = result['vectors']
             if self.verbose:
-                print("MINED TAGS", out["tags"])
+                bt.logging.info("MINED TAGS", out["tags"])
         else:
             llml = LlmLib()
             exampleSentences = [

@@ -8,7 +8,7 @@ torch = None
 try:
     import torch
 except:
-    print("torch not installed")
+    bt.logging.info("torch not installed")
 
 
 import numpy as np
@@ -45,7 +45,7 @@ class Evaluator:
             if tag_count_ceiling and count > tag_count_ceiling:
                 break
         if self.verbose:
-            print("all_vectors",all_vectors )
+            bt.logging.info("all_vectors",all_vectors )
         # Create a vector representing the entire content by averaging the vectors of all tokens
         if len(all_vectors) > 0:
             neighborhood_vectors = np.mean(all_vectors, axis=0)
@@ -60,24 +60,24 @@ class Evaluator:
             return 0
         # Calculate the cosine similarity between two sets of vectors
         similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
-        #print(f"Similarity score between the content and the tag: {similarity_score}")
+        #bt.logging.info(f"Similarity score between the content and the tag: {similarity_score}")
         return similarity_score
 
 
 
     async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None):
-        #print("FULL convo tags", full_convo_metadata['tags'])
+        #bt.logging.info("FULL convo tags", full_convo_metadata['tags'])
         final_scores = []
         now = datetime.now(timezone.utc)
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
         if self.verbose:
-            print("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
+            bt.logging.info("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
 
         num_responses = len(miner_responses)
         scores = torch.zeros(num_responses)
         zero_score_mask = torch.ones(num_responses)
         rank_scores = torch.zeros(num_responses)
-        print("DEVICE for rank_scores", rank_scores.device)
+        bt.logging.info("DEVICE for rank_scores", rank_scores.device)
 
         avg_ages = torch.zeros(num_responses)
         avg_age_scores = torch.zeros(num_responses)
@@ -92,10 +92,10 @@ class Evaluator:
         final_scores = []
         for idx, response in enumerate(miner_responses):
             if not response.cgp_output:
-                print("BAD RESPONSE", idx, "HOTKEY", response.axon.hotkey, )
+                bt.logging.info("BAD RESPONSE", idx, "HOTKEY", response.axon.hotkey, )
                 final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
             else:
-                #print("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
+                #bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
                 miner_result = response.cgp_output[0]
                 try:
                     # Make sure there are enough tags to make processing worthwhile
@@ -124,12 +124,12 @@ class Evaluator:
                 final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
                 #rank_scores[idx] = final_miner_score
                 final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
-                #print(f"__________Tags: {len(miner_result['tags'])} Unique Tags: {scores_unique} Median score: {median_score} Mean score: {mean_score} Min: {min_score} Max: {max_score}" )
+                #bt.logging.info(f"__________Tags: {len(miner_result['tags'])} Unique Tags: {scores_unique} Median score: {median_score} Mean score: {mean_score} Min: {min_score} Max: {max_score}" )
 
 
         bt.logging.debug("Complete eval.", final_scores)
         rank_scores = rank_scores.to('cuda')
-        #print("DEVICE for rank_scores AFTER", rank_scores.device)
+        #bt.logging.info("DEVICE for rank_scores AFTER", rank_scores.device)
         return (final_scores, rank_scores)
 
 
@@ -151,9 +151,9 @@ class Evaluator:
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
-            #print(example, resp2)
+            #bt.logging.info(example, resp2)
             if not tag in tag_vector_dict:
-                print(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
+                bt.logging.info(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
                 scores.append(0)
                 if is_unique:
                     scores_unique.append(0)
@@ -162,19 +162,19 @@ class Evaluator:
                 continue
             tag_vectors = tag_vector_dict[tag]['vectors']
             score = self.score_vector_similarity(full_conversation_neighborhood, tag_vectors)
-            #print("score", score)
+            #bt.logging.info("score", score)
             scores.append(score)
             if is_unique:
                 scores_unique.append(score)
             else:
                 scores_both.append(score)
-            #print(f"Score for {tag}: {score} -- Unique: {is_unique}")
-        print(f"Scores len: {len(scores)} Unique: {len(scores_unique)} full convo tags: {len(full_convo_tags)}")
+            #bt.logging.info(f"Score for {tag}: {score} -- Unique: {is_unique}")
+        bt.logging.info(f"Scores len: {len(scores)} Unique: {len(scores_unique)} full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique)
 
 if __name__ == "__main__":
-    print("Setting up test data...")
+    bt.logging.info("Setting up test data...")
 
     body = """Today for lunch, I decided to have a colorful and healthy meal. I started off with a bowl of mixed greens, topped with some cherry tomatoes, cucumbers, and sliced avocado. I love incorporating fruits and vegetables into my meals as they are packed with vitamins and minerals that are essential for our bodies. The fresh and crisp vegetables added a nice crunch to my salad, making it a refreshing and satisfying choice.
     Next, I had a grilled chicken wrap with a side of steamed broccoli. The wrap was filled with tender and juicy chicken, lettuce, tomatoes, and a drizzle of ranch dressing. It was a perfect balance of protein and veggies, making it a well-rounded meal. The steamed broccoli was a great addition as it provided a good source of fiber and other nutrients.
@@ -219,10 +219,10 @@ if __name__ == "__main__":
         e = Evaluator()
         # Find the max tags returned for the y-axis of the plot
         max_len = len(max(miner_tag_lists, key=len))
-        print("max_len", max_len)
+        bt.logging.info("max_len", max_len)
         scoreData = []
         for idx, tags in enumerate(miner_tag_lists):
-            print(f"\n\n__________________ User {idx} __________________")
+            bt.logging.info(f"\n\n__________________ User {idx} __________________")
             skewness = 0
             results = await e.calc_scores(ground_tags, neighborhood_vector, tags)
             (scores, scores_both, scores_unique) = results
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 
 
             #y1 =  sorted(scores)
-            #print(scores)
+            #bt.logging.info(scores)
             freq, bins = np.histogram(scores, bins=10, range=(0,1))
             mean = np.mean(scores)
             std = np.std(scores)
@@ -271,18 +271,18 @@ if __name__ == "__main__":
 
             scoreData.append({"uid": idx, "adjustedScore":adjusted_score, "final_score":final_score, "tags":tags})
 
-            print(f"__________Tags: {len(tags)} Unique Tags: {len(scores_unique)} Median score: {median_score} Mean score: {mean_score} Skewness: {skewness} Min: {min_score} Max: {max_score}" )
-        print("Complete. Score sets:")
+            bt.logging.info(f"__________Tags: {len(tags)} Unique Tags: {len(scores_unique)} Median score: {median_score} Mean score: {mean_score} Skewness: {skewness} Min: {min_score} Max: {max_score}" )
+        bt.logging.info("Complete. Score sets:")
         scoreData = sort_dict_list(scoreData, "adjustedScore", ascending=False)
         Code(json.dumps(scoreData, indent=4))
         #render_json()
 
-    print("Running basic spacy keyword test...")
+    bt.logging.info("Running basic spacy keyword test...")
     llm = llm_spacy()
     #response = await llm.simple_text_to_tags(body, min_tokens=0)
     ground_tags = list(response.keys())
-    print(f"Found tags for main conversation: {ground_tags}")
+    bt.logging.info(f"Found tags for main conversation: {ground_tags}")
     #neighborhood_vector = await llm.get_neighborhood(response)
-    #print("neighborhood_vector", neighborhood_vector)
-    print("Processing tag sets...")
+    #bt.logging.info("neighborhood_vector", neighborhood_vector)
+    bt.logging.info("Processing tag sets...")
     #await calculate_final_scores(ground_tags, miner_tag_lists)

@@ -27,7 +27,7 @@ class LlmLib:
             llm_type = c.get("env", "LLM_TYPE")
         llm_class = "llm_"+llm_type
         if self.verbose:
-            print("Factory generate LLM class of type %s" % (llm_type))
+            bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
         out = None
         # Import the required LLM class dynamically
         class_name = "conversationgenome.%s" % (llm_class)
@@ -35,7 +35,7 @@ class LlmLib:
         try:
             module = __import__(class_name)
         except:
-            print("LLM class %s not found" % (class_name))
+            bt.logging.info("LLM class %s not found" % (class_name))
 
         if module:
             # Get the class from the imported module
@@ -56,7 +56,7 @@ class LlmLib:
 
 
 if __name__ == "__main__":
-    print("Dynamically load LLM class by factory")
+    bt.logging.info("Dynamically load LLM class by factory")
     # Import the required LLM class dynamically
     llm_class = "llm_spacy"
     #llm_class = "llm_openai"
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     try:
         module = __import__(class_name)
     except:
-        print("LLM class %s not found" % (class_name))
+        bt.logging.info("LLM class %s not found" % (class_name))
 
     if module:
         # Get the class from the imported module
@@ -75,4 +75,4 @@ if __name__ == "__main__":
         llm_instance = main_class()
         convo = {}
         llm_instance.conversation_to_metadata(convo)
-    print("Done")
+    bt.logging.info("Done")
