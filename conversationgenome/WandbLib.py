@@ -15,6 +15,8 @@ except:
 import wandb
 
 class WandbLib:
+    verbose = True
+
     async def init_wandb(self, data=None):
         if c.get("env", "WANDB_DISABLE"):
             return
@@ -64,6 +66,8 @@ class WandbLib:
         wandb.log({"miner_uuid":10, "miner_hotkey":"a8348-123123", "score": random.random()})
 
     async def log(self, data):
+        if self.verbose:
+            print("WANDB LOG", data)
         wandb.log(data)
 
     async def end_log_wandb(self, c_guid):

@@ -25,7 +25,7 @@ class ApiLib:
 
             convo = {
                 "guid":Utils.get(selectedConvo, "guid"),
-                "participants": Utils.get(selectedConvo, "participants"),
+                "participants": Utils.get(selectedConvo, "participants", ["p1","p2"]),
                 "lines":Utils.get(selectedConvo, "lines"),
             }
         else:
@@ -50,7 +50,7 @@ class ApiLib:
 
             convo = {
                 "guid":Utils.get(selectedConvo, "guid"),
-                "participants": Utils.get(selectedConvo, "participants"),
+                "participants": Utils.get(selectedConvo, "participants", ["p1","p2"]),
                 "lines":Utils.get(selectedConvo, "lines"),
             }
         return convo

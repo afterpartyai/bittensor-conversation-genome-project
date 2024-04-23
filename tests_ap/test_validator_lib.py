@@ -37,17 +37,34 @@ async def test_full():
     result = await vl.reserve_conversation()
     test_mode = True
     if result:
-        # LOG: conversation id, num_lines, num_participants, convo windows values
-        #
-        miners_per_window = c.get("validator", "miners_per_window", 3)
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        if c.get("env", "LLM_TYPE") == "spacy":
+        #print("full_conversation", full_conversation)
+        llm_type = c.get("env", "LLM_TYPE")
+        conversation_guid = Utils.get(full_conversation, "guid")
+        full_conversation_tag_count = len(Utils.get(full_conversation, "tags", []))
+        lines = Utils.get(full_conversation, "lines", [])
+        participants = Utils.get(full_conversation, "participants", [])
+        miners_per_window = c.get("validator", "miners_per_window", 3)
+        min_lines = c.get("convo_window", "min_lines", 5)
+        max_lines = c.get("convo_window", "max_lines", 10)
+        overlap_lines = c.get("convo_window", "overlap_lines", 2)
+        await wl.log({
+           "llm_type": llm_type,
+           "conversation_guid": conversation_guid,
+           "full_convo_tag_count": full_conversation_tag_count,
+           "num_lines": len(lines),
+           "num_participants": len(participants),
+           "num_convo_windows": len(conversation_windows),
+           "convo_windows_min_lines": min_lines,
+           "convo_windows_max_lines": max_lines,
+           "convo_windows_overlap_lines": overlap_lines,
+        })
+        if llm_type == "spacy":
             print("SPACY TEST MODE")
             # In test_mode, to expand the miner scores, remove half of the full convo tags.
             # This "generates" more unique tags found for the miners
             half = int(len(full_conversation_metadata['tags'])/2)
             full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
-        conversation_guid = Utils.get(full_conversation, "uid")
         #await vl.send_windows_to_miners(conversation_windows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
         # Loop through conversation windows. Send each window to multiple miners
         print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
