@@ -128,7 +128,7 @@ class ValidatorLib:
             else:
                 bt.logging.error(f"ERROR:287323487. System mode {system_mode} not found. Aborting.")
 
-    async def log_wandb(self, c_guid):
+    async def begin_log_wandb(self, c_guid):
         api = wandb.Api()
         wandb_api_key = c.get("env", "WANDB_API_KEY")
         if not wandb_api_key:
@@ -148,6 +148,8 @@ class ValidatorLib:
               "dataset": "CIFAR-100",
               "epochs": epochs,
         })
+    async def do_log_wandb(self, c_guid):
+        print("Do log....")
         epochs = 10
         offset = random.random() / 5
         for epoch in range(2, epochs):
@@ -155,7 +157,9 @@ class ValidatorLib:
             loss = 2 ** -epoch + random.random() / epoch + offset
 
             wandb.log({"acc": acc, "loss": loss})
+        wandb.log({"miner_uuid":10, "miner_hotkey":"a8348-123123", "score": random.random()})
 
+    async def end_log_wandb(self, c_guid):
         # Mark the run as finished
         wandb.finish()
 
@@ -173,6 +177,7 @@ class ValidatorLib:
 
 
     async def reserve_conversation(self, minConvWindows = 1):
+        import time
         out = None
         # Validator requests a full conversation from the API
         full_conversation = await self.getConvo()
@@ -181,7 +186,12 @@ class ValidatorLib:
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
-            await self.log_wandb(conversation_guid)
+            await self.begin_log_wandb(conversation_guid)
+            #for i in range(5):
+            #    await self.do_log_wandb(conversation_guid)
+            #    time.sleep(2)
+            #await self.end_log_wandb(conversation_guid)
+            #return None
             bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
@@ -205,7 +215,8 @@ class ValidatorLib:
             else:
                 bt.logging.info("Not enough valid tags for conversation. Passing.")
                 out = None
-            #await self.log_wandb_finish()
+            #await self.end_log_wandb(conversation_guid)
+            #return None
             return out
         else:
             bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")

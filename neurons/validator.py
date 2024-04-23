@@ -24,7 +24,7 @@ import hashlib
 import bittensor as bt
 
 # Bittensor Validator Template:
-import template
+#import template
 #from template.validator import forward
 
 # import base validator class which takes care of most of the boilerplate
