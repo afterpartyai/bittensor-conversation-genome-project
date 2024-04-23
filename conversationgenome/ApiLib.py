@@ -37,8 +37,8 @@ class ApiLib:
             postData = None
             cert = None
             selectedConvo = {}
-            read_host_url = c.get('env', 'CGP_API_READ_HOST')
-            read_host_port = c.get('env', 'CGP_API_READ_PORT')
+            read_host_url = c.get('env', 'CGP_API_READ_HOST', 'http://api.conversationgenome.org')
+            read_host_port = c.get('env', 'CGP_API_READ_PORT', '80')
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
             response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
             if response.status_code == 200:
