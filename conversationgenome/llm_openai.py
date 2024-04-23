@@ -6,6 +6,8 @@ from conversationgenome.ConfigLib import c
 
 
 openai = None
+AsyncOpenAI = None
+OpenAI = None
 try:
     from openai import OpenAI
 
@@ -22,6 +24,9 @@ class llm_openai:
     embeddings_model = "text-embedding-ada-002"
 
     def __init__(self):
+        if not OpenAI:
+            print('Open AI not installed.')
+            return
         OpenAI.api_key = os.environ.get("OPENAI_API_KEY")
         if not OpenAI.api_key:
             raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
@@ -53,6 +58,9 @@ class llm_openai:
         out = {"tags":{}}
         #return out
         response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
+        if not response:
+            print("No tagging response. Aborting")
+            return None
         #print("___________OPENAI response", response)
         tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
         participant_names = participants.keys()
@@ -91,6 +99,9 @@ class llm_openai:
 
 
     async def call_llm_function(self):
+        if not openai:
+            print("OpenAI not installed. Aborting.")
+            return None
         print("call_llm_function...")
         if not openai.api_key:
             print("No OpenAI key")
@@ -186,6 +197,9 @@ class llm_openai:
         return conversation
 
     async def call_llm_tag_function(self, convoXmlStr=None, participants=None):
+        if not OpenAI:
+            print("OpenAI not installed")
+            return
         if self.verbose:
             print("Calling OpenAi...")
         if not OpenAI.api_key:

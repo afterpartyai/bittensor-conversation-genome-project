@@ -90,7 +90,7 @@ class ValidatorLib:
             try:
                 normal = math.exp(-(x - mean) ** 2 / (2 * stdev ** 2)) / (stdev * math.sqrt(2 * math.pi))
             except:
-                print("ERROR: normal_pdf --", " x: ", x, " mean: ", mean, " stdev: ", stdev)
+                bt.logging.error(f"ERROR:84921793 normal_pdf --", " x: ", x, " mean: ", mean, " stdev: ", stdev)
             return normal
 
         rewards = []
@@ -126,7 +126,7 @@ class ValidatorLib:
                     "windows": convoWindows,
                 }
             else:
-                bt.logging.info(f"System mode {system_mode} not found. Aborting.")
+                bt.logging.error(f"ERROR:287323487. System mode {system_mode} not found. Aborting.")
 
     async def log_wandb(self, c_guid):
         api = wandb.Api()
@@ -186,6 +186,9 @@ class ValidatorLib:
 
             # Do overview tagging and generate base participant profiles
             full_conversation_metadata = await self.generateFullConvoMetaData(full_conversation)
+            if not full_conversation_metadata:
+                bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
+                return None
             full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
             bt.logging.info(f"Found {len(full_conversation_tags)} tags in FullConvo")
 
@@ -205,7 +208,7 @@ class ValidatorLib:
             #await self.log_wandb_finish()
             return out
         else:
-            bt.logging.error("9879432: No conversation returned from API. Aborting.")
+            bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
         return None
 
     async def getConvo(self):
@@ -234,6 +237,9 @@ class ValidatorLib:
 
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)
+        if not result:
+            bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
+            return None
         tags = result['tags']
         vectors = Utils.get(result, 'vectors', {})
         #half = int(len(tags) / 2)

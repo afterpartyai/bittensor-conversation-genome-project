@@ -6,6 +6,13 @@ import numpy as np
 
 from conversationgenome.ConfigLib import c
 
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
 
 
 class LlmLib:
