@@ -55,12 +55,16 @@ class Evaluator:
             return None
 
     def score_vector_similarity(self, neighborhood_vectors, individual_vectors):
+        similarity_score = 0
         # Calculate the similarity score between the neighborhood_vectors and the individual_vectors
         # If all vectors are 0.0, the vector wasn't found for scoring in the embedding score
         if np.all(individual_vectors==0):
             return 0
         # Calculate the cosine similarity between two sets of vectors
-        similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
+        try:
+            similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
+        except:
+            print("Error generating similarity_score. Setting to zero.")
         #bt.logging.info(f"Similarity score between the content and the tag: {similarity_score}")
         return similarity_score
 
