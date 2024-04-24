@@ -125,7 +125,7 @@ class Validator(BaseValidatorNeuron):
             print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
             for window_idx, conversation_window in enumerate(conversation_windows):
                 # Create a synapse to distribute to miners
-                bt.logging.info(f"Sending convo {conversation_guid} window of {len(conversation_window)} lines to miner.")
+                print(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miner.")
                 window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
                 #print(window_packet)
 
@@ -152,18 +152,18 @@ class Validator(BaseValidatorNeuron):
                 #    #print("miner_result", miner_result)
                 #    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
-            for idx, score in enumerate(final_scores):
-                print("score", score)
-                uid = str(Utils.get(score, "uuid"))
-                wl.log({
-                    "conversation_guid."+uid: conversation_guid,
-                    "window_id."+uid: window_idx,
-                    "uuid."+uid: Utils.get(score, "uuid"),
-                    "hotkey."+uid: Utils.get(score, "hotkey"),
-                    "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
-                    "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
-                })
-                #print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
+                for idx, score in enumerate(final_scores):
+                    print("score", score)
+                    uid = str(Utils.get(score, "uuid"))
+                    wl.log({
+                        "conversation_guid."+uid: conversation_guid,
+                        "window_id."+uid: window_idx,
+                        "uuid."+uid: Utils.get(score, "uuid"),
+                        "hotkey."+uid: Utils.get(score, "hotkey"),
+                        "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                        "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                    })
+                    #print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
 
                 # Update the scores based on the rewards.
                 self.update_scores(rank_scores, miner_uids)

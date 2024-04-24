@@ -335,8 +335,8 @@ class BaseValidatorNeuron(BaseNeuron):
         rewards2 = rewards.to(self.scores.device)
         rewards2 = torch.ones(len(uids_tensor), device=self.device)
         for idx, reward in enumerate(rewards):
-            rewards2[idx] = rewards[idx]
-        #print("TENSORS", uids_tensor, rewards2)
+            rewards2[idx] = random.random() * 10 #rewards[idx]
+        print("TENSORS", uids_tensor, rewards, rewards2)
 
 
         scattered_rewards: torch.FloatTensor = self.scores.scatter(

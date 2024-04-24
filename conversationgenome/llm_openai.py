@@ -81,7 +81,10 @@ class llm_openai:
             print("No tagging response. Aborting")
             return None
         if type(response) == str:
-            response = json.loads(response)
+            try:
+                response = json.loads(response)
+            except:
+                print("Error decoding response")
         print("response", response)
         #print("___________OPENAI response", response)
         tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]

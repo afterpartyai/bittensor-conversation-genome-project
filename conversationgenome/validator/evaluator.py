@@ -59,12 +59,14 @@ class Evaluator:
         # Calculate the similarity score between the neighborhood_vectors and the individual_vectors
         # If all vectors are 0.0, the vector wasn't found for scoring in the embedding score
         if np.all(individual_vectors==0):
+            print("All empty vectors")
             return 0
         # Calculate the cosine similarity between two sets of vectors
         try:
             similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
         except:
             print("Error generating similarity_score. Setting to zero.")
+        print(f"similarity_score: {similarity_score}")
         #bt.logging.info(f"Similarity score between the content and the tag: {similarity_score}")
         return similarity_score
 
@@ -152,13 +154,14 @@ class Evaluator:
         # Remove duplicate tags
         tag_set = list(set(tags))
         diff = Utils.compare_arrays(full_convo_tags, tag_set)
+        print("calc_scores", tag_set)
         for tag in tag_set:
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
             #bt.logging.info(example, resp2)
             if not tag in tag_vector_dict:
-                bt.logging.info(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
+                print(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
                 scores.append(0)
                 if is_unique:
                     scores_unique.append(0)
