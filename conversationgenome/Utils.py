@@ -115,6 +115,44 @@ class Utils:
         return out
 
     @staticmethod
+    def post_url(url, postData=None, jsonData=None, headers=None, cert=None, key=None, returnContent=False, isPut=False, verbose=False):
+        out = {"success":False, "body":None, "json": None, "code":-1, "errors":[]}
+        if not requests:
+            msg = "No requests library in Utils"
+            print(msg)
+            out['errors'].append({"id":142674, "msg":msg})
+            return out
+        if not headers:
+            headers = {
+                "Accept": "application/json",
+                "Accept-Language": "en_US",
+            }
+        if verbose:
+            print("url", url, "headers", headers, "jsonData", jsonData)
+        if isPut:
+            response = requests.put(url, headers=headers, json=jsonData, data=postData, cert=cert)
+        else:
+            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
+        #print(response.text)
+        out["code"] = response.status_code
+        if out["code"] == 200:
+            out["success"] = True
+            if not returnContent:
+                out["body"] = response.text
+                try:
+                    out["json"] = response.json()
+                except:
+                    pass
+            else:
+                print("CONTENT", response.content)
+                out["body"] = response.content
+        else:
+            out['errors'].append({"id":19839009, "msg":response.text})
+
+
+        return out
+
+    @staticmethod
     def empty(val):
         out = True
         #print("TYPE", type(val))

@@ -13,7 +13,8 @@ try:
 
     client = OpenAI()
 except:
-    print("No openai package")
+    if not c.get('env', "OPENAI_DIRECT_CALL"):
+        print("No openai package")
 
 
 
@@ -21,14 +22,23 @@ class llm_openai:
     verbose = False
     model = "gpt-4"
     embeddings_model = "text-embedding-ada-002"
+    direct_call = False
 
     def __init__(self):
-        if not OpenAI:
+        self.direct_call = c.get('env', "OPENAI_DIRECT_CALL")
+        print("direct_call", self.direct_call)
+        self.api_key = c.get('env', "OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
+            return
+
+        if not self.direct_call and not OpenAI:
             print('Open AI not installed.')
             return
-        OpenAI.api_key = os.environ.get("OPENAI_API_KEY")
-        if not OpenAI.api_key:
-            raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
+
+        if not self.direct_call:
+            OpenAI.api_key = self.api_key
+
         model = c.get("env", "OPENAI_MODEL")
         if model:
             self.model = model
@@ -36,6 +46,16 @@ class llm_openai:
         if embeddings_model:
             self.embeddings_model = embeddings_model
 
+    # OpenAI Python library has more than a few compatibility issues. Allow
+    # direct call to API to bypass issues.
+    def do_direct_call(self, data, url = "https://api.openai.com/v1/chat/completions"):
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % (self.api_key),
+        }
+        response = Utils.post_url(url, jsonData=data, headers=headers)
+        #print("response", response)
+        return response
 
     async def conversation_to_metadata(self,  convo):
         #print("CONVO OPENAI", convo)
@@ -199,16 +219,18 @@ class llm_openai:
         return conversation
 
     async def call_llm_tag_function(self, convoXmlStr=None, participants=None):
+        out = {}
+        direct_call = c.get('env', "OPENAI_DIRECT_CALL")
         if not OpenAI:
-            print("OpenAI not installed")
-            return
+            if not OpenAI and not direct_call:
+                print("OpenAI not installed")
+                return
         if self.verbose:
             print("Calling OpenAi...")
-        if not OpenAI.api_key:
+        if not self.direct_call and not OpenAI.api_key:
             print("No OpenAI key")
             return
 
-        client = AsyncOpenAI(timeout=60.0)
         prompt1 = 'Analyze conversations in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions from Mary and <p1> has the answers . Return JSON structured like this: {"p0":{"interests":["baseball", "math"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[] },"p1":{"interests":["flute",...]}} Take a moment to reflect on this and provide a thorough response. Only return the JSON without any English commentary.'
         prompt = prompt1 + "\n\n\n"
         if convoXmlStr:
@@ -245,26 +267,35 @@ class llm_openai:
             #print(funcs)
             #print(funcs['location'])
         elif True:
-            completion = await client.chat.completions.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": prompt} ],
-            )
-        reply_content = completion.choices[0].message
-        #print("reply_content", reply_content.content)
-        #print("reply_content", json.loads(reply_content.content))
-        out = {}
-        try:
-            out = json.loads(reply_content.content)
-        except:
-            print("Error parsing LLM reply. RESPONSE:", completion)
+            if not direct_call:
+                client = AsyncOpenAI(timeout=60.0)
+                completion = await client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt} ],
+                )
+                reply_content = completion.choices[0].message
+                try:
+                    out = json.loads(reply_content.content)
+                except:
+                    print("Error parsing LLM reply. RESPONSE:", completion)
+            else:
+                data = {
+                  "model": self.model,
+                  "messages": [{"role": "user", "content": prompt}],
+                }
+                completion = self.do_direct_call(data)
+                out = completion['json']['choices'][0]['message']['content']
+                print("________completion", out)
+                #reply_content = completion['json']['choices'][0]['message'] #Utils.get(completion, "json.choices.0.message")
         return out
 
     async def test_tagging(self):
 
         #print("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
         OpenAI.api_key = os.environ.get("OPENAI_API_KEY")
-        if not OpenAI.api_key:
+        if not self.direct_call and not OpenAI.api_key:
             raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
+            return
 
         #client = AsyncOpenAI(timeout=60.0)
         if True:
