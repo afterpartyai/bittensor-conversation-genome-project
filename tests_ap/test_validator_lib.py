@@ -40,6 +40,7 @@ async def test_full():
         (full_conversation, full_conversation_metadata, conversation_windows) = result
         #print("full_conversation", full_conversation)
         llm_type = c.get("env", "LLM_TYPE")
+        model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
         full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
         lines = Utils.get(full_conversation, "lines", [])
@@ -50,6 +51,7 @@ async def test_full():
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
         wl.log({
            "llm_type": llm_type,
+           "model": model,
            "conversation_guid": conversation_guid,
            "full_convo_tag_count": full_conversation_tag_count,
            "num_lines": len(lines),

@@ -22,11 +22,11 @@ class llm_openai:
     verbose = False
     model = "gpt-4"
     embeddings_model = "text-embedding-ada-002"
-    direct_call = False
+    direct_call = 0
 
     def __init__(self):
-        self.direct_call = c.get('env', "OPENAI_DIRECT_CALL")
-        print("direct_call", self.direct_call)
+        self.direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"), 0)
+        #print("direct_call", self.direct_call)
         self.api_key = c.get('env', "OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")
@@ -80,7 +80,8 @@ class llm_openai:
         if not response:
             print("No tagging response. Aborting")
             return None
-        response = json.loads(response)
+        if type(response) == str:
+            response = json.loads(response)
         print("response", response)
         #print("___________OPENAI response", response)
         tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
@@ -114,6 +115,8 @@ class llm_openai:
                 if self.verbose:
                     print("Get vectors for tag: %s" % (tag))
                 vectors = await self.get_vector_embeddings(tag)
+                if not vectors:
+                    print("ERRRRRRRRROR -- no vectors", vectors)
                 out['vectors'][tag] = {"vectors":vectors}
             if self.verbose:
                 print("VECTORS", tag, vectors)

@@ -176,3 +176,12 @@ class Utils:
         else:
             print("EMPTY doesn't work with type %s" % (valType))
         return out
+
+    @staticmethod
+    def _int(val, default=None):
+        out = default
+        try:
+            out = int(val)
+        except:
+            pass
+        return out
