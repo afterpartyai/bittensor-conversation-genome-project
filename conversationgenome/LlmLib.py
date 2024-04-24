@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 import numpy as np
 
 from conversationgenome.ConfigLib import c
+from conversationgenome.MockBt import MockBt
 
+verbose = False
 bt = None
 try:
     import bittensor as bt

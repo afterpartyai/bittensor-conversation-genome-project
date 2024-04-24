@@ -1,8 +1,12 @@
 import random
 import json
 
+verbose = False
+
+
 from conversationgenome.Utils import Utils
 from conversationgenome.ConfigLib import c
+from conversationgenome.MockBt import MockBt
 
 bt = None
 try:
@@ -13,6 +17,7 @@ except:
     bt = MockBt()
 
 import wandb
+
 
 class WandbLib:
     verbose = False

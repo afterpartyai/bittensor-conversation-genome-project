@@ -4,6 +4,7 @@ import random
 from datetime import datetime, timezone
 from traceback import print_exception
 
+verbose = False
 torch = None
 try:
     import torch
@@ -92,7 +93,7 @@ class Evaluator:
         final_scores = []
         for idx, response in enumerate(miner_responses):
             if not response.cgp_output:
-                bt.logging.info("BAD RESPONSE", idx, "HOTKEY", response.axon.hotkey, )
+                bt.logging.info(f"BAD RESPONSE: {idx} HOTKEY: {response.axon.hotkey}")
                 final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
             else:
                 #bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )

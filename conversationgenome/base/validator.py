@@ -330,13 +330,13 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
-        print("SCATTER DEVICE", self.scores.device)
+        #print("SCATTER DEVICE", self.scores.device)
         uids_tensor = uids_tensor.to(self.scores.device)
         rewards2 = rewards.to(self.scores.device)
         rewards2 = torch.ones(len(uids_tensor), device=self.device)
         for idx, reward in enumerate(rewards):
             rewards2[idx] = rewards[idx]
-        print("TENSORS", uids_tensor, rewards2)
+        #print("TENSORS", uids_tensor, rewards2)
 
 
         scattered_rewards: torch.FloatTensor = self.scores.scatter(

@@ -9,10 +9,9 @@ openai = None
 AsyncOpenAI = None
 OpenAI = None
 try:
-    from openai import OpenAI
+    from openai import OpenAI, AsyncOpenAI
 
     client = OpenAI()
-    from openai import AsyncOpenAI, OpenAI
 except:
     print("No openai package")
 
@@ -68,7 +67,10 @@ class llm_openai:
         for participant_name in participant_names:
             for tag_category in tag_categories:
                 key = f"{participant_name}.{tag_category}"
-                category_tags = Utils.get(response, key)
+                category_tags = Utils.get(response, key, [])
+                #if not category_tags:
+                #    print(f"No category tags found for key {key} -- response: {response}")
+                #    continue
                 for category_tag in category_tags:
                     if not Utils.empty(category_tag):
                         if not category_tag in tag_list:
@@ -207,7 +209,7 @@ class llm_openai:
             return
 
         client = AsyncOpenAI(timeout=60.0)
-        prompt1 = 'Analyze conversations in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions from Mary and <p1> has the answers . Return JSON structured like this: {"p0":{"interests":["baseball", "math"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[], },"p1":{"interests":["flute",...]}} Take a moment to reflect on this and provide a thorough response. Only return the JSON without any English commentary.'
+        prompt1 = 'Analyze conversations in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions from Mary and <p1> has the answers . Return JSON structured like this: {"p0":{"interests":["baseball", "math"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[] },"p1":{"interests":["flute",...]}} Take a moment to reflect on this and provide a thorough response. Only return the JSON without any English commentary.'
         prompt = prompt1 + "\n\n\n"
         if convoXmlStr:
             prompt += convoXmlStr

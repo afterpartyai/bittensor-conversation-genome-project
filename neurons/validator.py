@@ -150,12 +150,20 @@ class Validator(BaseValidatorNeuron):
                 #    #print("miner_result", miner_result)
                 #    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
+            for idx, score in enumerate(final_scores):
+                print("score", score)
+                uid = str(Utils.get(score, "uuid"))
+                wl.log({
+                    "conversation_guid."+uid: conversation_guid,
+                    "window_id."+uid: window_idx,
+                    "uuid."+uid: Utils.get(score, "uuid"),
+                    "hotkey."+uid: Utils.get(score, "hotkey"),
+                    "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                    "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                })
                 #print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
-                # Walk through the rewards per epoch code
-                #bt.logging.info(f"CGP Scored responses: {rewards}")
 
-                # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
-                #rewards = torch.ones(len(miner_uids))
+                # Update the scores based on the rewards.
                 self.update_scores(rank_scores, miner_uids)
 
 # The main function parses the configuration and runs the validator.
@@ -168,7 +176,7 @@ if __name__ == "__main__":
             while True:
                 bt.logging.info("CGP Validator running...", time.time())
                 # xxx Remove for Prod? Add for mode test?
-                #time.sleep(5)
+                time.sleep(5)
     except KeyboardInterrupt:
         bt.logging.info("Keyboard interrupt detected. Exiting validator.")
     finally:

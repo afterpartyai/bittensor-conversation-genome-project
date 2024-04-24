@@ -16,6 +16,7 @@ try:
 except:
     if verbose:
         print("bittensor not installed")
+    bt = MockBt()
 
 from conversationgenome.LlmLib import LlmLib
 

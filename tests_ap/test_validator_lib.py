@@ -85,8 +85,8 @@ async def test_full():
 
                 mock_miner_responses.append(response)
             # Evaluate results of miners
-            scores = await el.evaluate(full_conversation_metadata, mock_miner_responses)
-            for idx, score in enumerate(scores[0]):
+            (final_scores, rank_scores) = await el.evaluate(full_conversation_metadata, mock_miner_responses)
+            for idx, score in enumerate(final_scores):
                 print("score", score)
                 uid = str(Utils.get(score, "uuid"))
                 wl.log({
