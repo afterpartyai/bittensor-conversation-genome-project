@@ -36,6 +36,8 @@ import conversationgenome.validator
 from conversationgenome.ConfigLib import c
 from conversationgenome.Utils import Utils
 
+from conversationgenome.WandbLib import WandbLib
+
 from conversationgenome.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
 
@@ -44,7 +46,6 @@ from conversationgenome.protocol import CgSynapse
 class Validator(BaseValidatorNeuron):
     verbose = True
     """
-    xxx
     Keeping a moving average of the scores of the miners and using them to set weights at the end of each epoch. Additionally, the scores are reset for new hotkeys at the end of each epoch.
     """
 
@@ -54,12 +55,10 @@ class Validator(BaseValidatorNeuron):
         bt.logging.info("load_state()")
         self.load_state()
 
-        # xxx
-        self.image_dir = './data/conversations/'
-        if not os.path.exists(self.image_dir):
-            os.makedirs(self.image_dir)
+
 
     async def forward(self):
+        wl = WandbLib()
 
         # Get random miner IDs
         miners_per_window = c.get("validator", "miners_per_window", 3)
@@ -69,7 +68,7 @@ class Validator(BaseValidatorNeuron):
             self,
             k= miner_sample_size
         )
-        if True or self.verbose:
+        if self.verbose:
             print("miner_uid pool", miner_uids)
         if len(miner_uids) == 0:
             print("No miners")
@@ -96,6 +95,29 @@ class Validator(BaseValidatorNeuron):
             conversation_guid = Utils.get(full_conversation, "guid")
             #print("full_conversation", full_conversation)
             bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
+
+
+            llm_type = c.get("env", "LLM_TYPE")
+            conversation_guid = Utils.get(full_conversation, "guid")
+            full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
+            lines = Utils.get(full_conversation, "lines", [])
+            participants = Utils.get(full_conversation, "participants", [])
+            miners_per_window = c.get("validator", "miners_per_window", 3)
+            min_lines = c.get("convo_window", "min_lines", 5)
+            max_lines = c.get("convo_window", "max_lines", 10)
+            overlap_lines = c.get("convo_window", "overlap_lines", 2)
+            wl.log({
+               "llm_type": llm_type,
+               "conversation_guid": conversation_guid,
+               "full_convo_tag_count": full_conversation_tag_count,
+               "num_lines": len(lines),
+               "num_participants": len(participants),
+               "num_convo_windows": len(conversation_windows),
+               "convo_windows_min_lines": min_lines,
+               "convo_windows_max_lines": max_lines,
+               "convo_windows_overlap_lines": overlap_lines,
+            })
+
 
             # Loop through conversation windows. Send each window to multiple miners
             print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
@@ -138,8 +160,17 @@ class Validator(BaseValidatorNeuron):
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
-    with Validator() as validator:
-        while True:
-            bt.logging.info("CGP Validator running...", time.time())
-            # xxx Remove for Prod? Add for mode test?
-            time.sleep(5)
+    wl = WandbLib()
+    wl.init_wandb()
+
+    try:
+        with Validator() as validator:
+            while True:
+                bt.logging.info("CGP Validator running...", time.time())
+                # xxx Remove for Prod? Add for mode test?
+                #time.sleep(5)
+    except KeyboardInterrupt:
+        bt.logging.info("Keyboard interrupt detected. Exiting validator.")
+    finally:
+        print("Done. Writing final to wandb.")
+        wl.end_log_wandb()

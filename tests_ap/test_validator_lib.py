@@ -27,18 +27,18 @@ class MockResponse:
 @pytest.mark.asyncio
 async def test_full():
     wl = WandbLib()
-    await wl.init_wandb()
+    wl.init_wandb()
     # Config variables
     c.set('system', 'mode', 'test')
     miner_uids = [1,2,3,4,5,6,7,8,9]
     vl = ValidatorLib()
     el = Evaluator()
-    await wl.log_example_data("ABC")
+    #await wl.log_example_data("ABC")
     result = await vl.reserve_conversation()
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        print("full_conversation", full_conversation)
+        #print("full_conversation", full_conversation)
         llm_type = c.get("env", "LLM_TYPE")
         conversation_guid = Utils.get(full_conversation, "guid")
         full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
@@ -48,7 +48,7 @@ async def test_full():
         min_lines = c.get("convo_window", "min_lines", 5)
         max_lines = c.get("convo_window", "max_lines", 10)
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
-        await wl.log({
+        wl.log({
            "llm_type": llm_type,
            "conversation_guid": conversation_guid,
            "full_convo_tag_count": full_conversation_tag_count,
@@ -89,7 +89,7 @@ async def test_full():
             for idx, score in enumerate(scores[0]):
                 print("score", score)
                 uid = str(Utils.get(score, "uuid"))
-                await wl.log({
+                wl.log({
                     "conversation_guid."+uid: conversation_guid,
                     "window_id."+uid: window_idx,
                     "uuid."+uid: Utils.get(score, "uuid"),
@@ -98,7 +98,7 @@ async def test_full():
                     "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
                 })
             break
-    await wl.end_log_wandb()
+    wl.end_log_wandb()
 
 
 

@@ -15,9 +15,9 @@ except:
 import wandb
 
 class WandbLib:
-    verbose = True
+    verbose = False
 
-    async def init_wandb(self, data=None):
+    def init_wandb(self, data=None):
         if c.get("env", "WANDB_DISABLE"):
             return
         api = wandb.Api()
@@ -54,7 +54,7 @@ class WandbLib:
               name=run_name, #f"conversationgenome/cguid_{c_guid}",
               config=config
         )
-    async def log_example_data(self, data):
+    def log_example_data(self, data):
         print("Do log....")
         epochs = 10
         offset = random.random() / 5
@@ -65,12 +65,12 @@ class WandbLib:
             wandb.log({"acc": acc, "loss": loss})
         wandb.log({"miner_uuid":10, "miner_hotkey":"a8348-123123", "score": random.random()})
 
-    async def log(self, data):
+    def log(self, data):
         if self.verbose:
             print("WANDB LOG", data)
         wandb.log(data)
 
-    async def end_log_wandb(self):
+    def end_log_wandb(self):
         # Mark the run as finished
         wandb.finish()
 
