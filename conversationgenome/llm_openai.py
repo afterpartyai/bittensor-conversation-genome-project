@@ -308,15 +308,31 @@ class llm_openai:
         return response
 
     async def get_vector_embeddings(self, text):
-       response = client.embeddings.create(
-           model=self.embeddings_model,
-           input = text.replace("\n"," ")
-       )
-       embedding = response.data[0].embedding
-       if self.verbose:
-           print("OpenAI embeddings USAGE", response.usage)
-           print("OpenAI embeddings generated", len(embedding))
-       return embedding
+        embedding = None
+        text =  text.replace("\n"," ")
+        if not self.direct_call:
+           response = client.embeddings.create(
+               model=self.embeddings_model,
+               input = text
+           )
+           embedding = response.data[0].embedding
+        else:
+           data = {
+               "input": text,
+               "model": self.embeddings_model,
+           }
+           url = "https://api.openai.com/v1/embeddings"
+           response = self.do_direct_call(url, data)
+           if response['code'] == 200:
+               responseData = Utils.get(response, 'json.data')
+               print("responseData", responseData)
+               embedding = responseData[0]['embedding']
+           else:
+               print("ERROR getting embedding", response)
+        if self.verbose:
+            print("OpenAI embeddings USAGE", response.usage)
+            print("OpenAI embeddings generated", len(embedding))
+        return embedding
 
 
 
