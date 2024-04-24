@@ -195,7 +195,7 @@ class ValidatorLib:
             bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
-            full_conversation_metadata = await self.generateFullConvoMetaData(full_conversation)
+            full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
             if not full_conversation_metadata:
                 bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
                 return None
@@ -242,9 +242,9 @@ class ValidatorLib:
 
 
 
-    async def generateFullConvoMetaData(self, convo):
+    async def generate_full_convo_metadata(self, convo):
         #cl = ConvoLib()
-        bt.logging.info("generateFullConvoMetaData participants", convo['participants'])
+        bt.logging.info("generate_full_convo_metadata participants", convo['participants'])
 
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)

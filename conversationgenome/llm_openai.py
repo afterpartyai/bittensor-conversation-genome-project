@@ -80,17 +80,20 @@ class llm_openai:
         if not response:
             print("No tagging response. Aborting")
             return None
+        response = json.loads(response)
+        print("response", response)
         #print("___________OPENAI response", response)
         tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
         participant_names = participants.keys()
         tag_list = {}
         for participant_name in participant_names:
+            print("participant_name", participant_name)
             for tag_category in tag_categories:
                 key = f"{participant_name}.{tag_category}"
-                category_tags = Utils.get(response, key, [])
-                #if not category_tags:
-                #    print(f"No category tags found for key {key} -- response: {response}")
-                #    continue
+                category_tags = Utils.get(response, key)
+                if not category_tags:
+                    #print(f"No category tags found for key {key} -- response: {response}")
+                    continue
                 for category_tag in category_tags:
                     if not Utils.empty(category_tag):
                         if not category_tag in tag_list:
@@ -104,7 +107,7 @@ class llm_openai:
             if not tags:
                 tags = Utils.get(response, "p1.interests")
         if not Utils.empty(tags):
-            print("Found tags", tags)
+            print(f"------- Found tags: {tags}. Getting vectors for tag...")
             out['tags'] = tags
             out['vectors'] = {}
             for tag in tags:
@@ -285,7 +288,7 @@ class llm_openai:
                 }
                 completion = self.do_direct_call(data)
                 out = completion['json']['choices'][0]['message']['content']
-                print("________completion", out)
+                #print("________completion", out)
                 #reply_content = completion['json']['choices'][0]['message'] #Utils.get(completion, "json.choices.0.message")
         return out
 
@@ -322,10 +325,10 @@ class llm_openai:
                "model": self.embeddings_model,
            }
            url = "https://api.openai.com/v1/embeddings"
-           response = self.do_direct_call(url, data)
+           response = self.do_direct_call(data, url)
            if response['code'] == 200:
                responseData = Utils.get(response, 'json.data')
-               print("responseData", responseData)
+               #print("responseData", responseData)
                embedding = responseData[0]['embedding']
            else:
                print("ERROR getting embedding", response)
