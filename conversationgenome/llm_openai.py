@@ -23,6 +23,8 @@ class llm_openai:
     model = "gpt-4"
     embeddings_model = "text-embedding-ada-002"
     direct_call = 0
+    root_url = "https://api.openai.com"
+    #root_url = "http://127.0.0.1:5000"
 
     def __init__(self):
         self.direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"), 0)
@@ -48,7 +50,8 @@ class llm_openai:
 
     # OpenAI Python library has more than a few compatibility issues. Allow
     # direct call to API to bypass issues.
-    def do_direct_call(self, data, url = "https://api.openai.com/v1/chat/completions"):
+    def do_direct_call(self, data, url_path = "/v1/chat/completions"):
+        url = self.root_url + url_path
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer %s" % (self.api_key),
@@ -240,7 +243,8 @@ class llm_openai:
             print("No OpenAI key")
             return
 
-        prompt1 = 'Analyze conversations in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions from Mary and <p1> has the answers . Return JSON structured like this: {"p0":{"interests":["baseball", "math"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[] },"p1":{"interests":["flute",...]}} Take a moment to reflect on this and provide a thorough response. Only return the JSON without any English commentary.'
+        prompt1 = 'Analyze conversations in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return JSON structured like this: {"p0":{"interests":["baseball", "math"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[] },"p1":{"interests":["flute",...]}} Take a moment to reflect on this and provide a thorough response. Only return the JSON without any English commentary.'
+        prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return JSON structured putting the tags in the appropriate places: {"p0":{"interests":["tag"], "hobbies":[], "personality_traits":[], "preferences":[], "technology":[], "age_generation":[], "ethnicity":[] },"p1":{"interests":[]}} Only return the JSON without any English commentary.'
         prompt = prompt1 + "\n\n\n"
         if convoXmlStr:
             prompt += convoXmlStr
@@ -293,8 +297,8 @@ class llm_openai:
                   "messages": [{"role": "user", "content": prompt}],
                 }
                 completion = self.do_direct_call(data)
+                #print("________completion", completion)
                 out = completion['json']['choices'][0]['message']['content']
-                #print("________completion", out)
                 #reply_content = completion['json']['choices'][0]['message'] #Utils.get(completion, "json.choices.0.message")
         return out
 
@@ -330,8 +334,8 @@ class llm_openai:
                "input": text,
                "model": self.embeddings_model,
            }
-           url = "https://api.openai.com/v1/embeddings"
-           response = self.do_direct_call(data, url)
+           url_path = "/v1/embeddings"
+           response = self.do_direct_call(data, url_path=url_path)
            if response['code'] == 200:
                responseData = Utils.get(response, 'json.data')
                #print("responseData", responseData)

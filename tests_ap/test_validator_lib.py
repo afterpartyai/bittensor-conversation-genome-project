@@ -70,7 +70,7 @@ async def test_full():
         #await vl.send_windows_to_miners(conversation_windows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
         # Loop through conversation windows. Send each window to multiple miners
         print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
-
+        #conversation_windows = []
         for window_idx, conversation_window in enumerate(conversation_windows):
             print(f"conversation_window {window_idx}", conversation_window)
             selected_miner_uids = vl.selectStage1Miners(miner_uids)
