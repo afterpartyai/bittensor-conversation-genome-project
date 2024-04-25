@@ -72,12 +72,14 @@ class Evaluator:
 
 
 
-    async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None):
+    async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None, verbose=None):
+        if verbose == None:
+            verbose = self.verbose
         #bt.logging.info("FULL convo tags", full_convo_metadata['tags'])
         final_scores = []
         now = datetime.now(timezone.utc)
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
-        if self.verbose:
+        if verbose:
             bt.logging.info("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
 
         num_responses = len(miner_responses)

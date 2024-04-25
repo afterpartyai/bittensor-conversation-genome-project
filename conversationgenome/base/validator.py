@@ -151,6 +151,7 @@ class BaseValidatorNeuron(BaseNeuron):
                     break
 
                 # Sync metagraph and potentially set weights.
+                print("________________________________SYNC to set weight")
                 self.sync()
 
                 self.step += 1
@@ -351,7 +352,9 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores: torch.FloatTensor = alpha * scattered_rewards + (
             1 - alpha
         ) * self.scores.to(self.device)
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        for idx, score in enumerate(self.scores):
+            self.scores[idx] = random.random() #rewards[idx]
+        print(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
