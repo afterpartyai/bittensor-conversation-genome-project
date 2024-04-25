@@ -84,7 +84,7 @@ async def test_full():
     for i in range(5):
         miner_responses.append(MockMinerResponse(i)),
     (final_scores, rank_scores) = await el.evaluate(full_convo_metadata, miner_responses, verbose=True)
-    print("final_scores", rank_scores)
+    print("rank_scores", rank_scores)
     return
 
 
