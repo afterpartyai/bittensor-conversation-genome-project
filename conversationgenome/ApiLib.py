@@ -58,6 +58,20 @@ class ApiLib:
     async def completeConversation(self, hotkey, guid, dryrun=False):
         return True
 
+    async def put_conversation_data(self, c_guid, jsonData):
+        write_host_url = c.get('env', 'CGP_API_WRITE_HOST', 'http://api.conversationgenome.org')
+        write_host_port = c.get('env', 'CGP_API_WRITE_PORT', '80')
+        url = f"{write_host_url}:{write_host_port}/api/v1/conversation/record/{c_guid}"
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": "en_US",
+        }
+        response = requests.put(url, headers=headers, json=jsonData)
+        if response.status_code == 200:
+            print("PUT success", response.json())
+        else:
+            print("PUT ERROR", response)
+        return True
 
 if __name__ == "__main__":
     print("Test convo get")

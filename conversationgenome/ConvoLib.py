@@ -17,3 +17,11 @@ class ConvoLib:
         result = await api.completeConversation(hotkey, cguid, dryrun=dryrun)
         return result
 
+    async def put_conversation(self, hotkey, c_guid, data):
+        output = {
+            "hotkey": hotkey,
+            "data": data,
+        }
+        api = ApiLib()
+        result = await api.put_conversation_data(c_guid, output)
+        return result

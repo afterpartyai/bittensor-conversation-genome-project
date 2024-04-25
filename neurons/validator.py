@@ -154,7 +154,8 @@ class Validator(BaseValidatorNeuron):
                     print("GOOD RESPONSE", response.axon.uuid, response.axon.hotkey, response.axon,  )
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
-                    print(f"CGP Received tags: {response.cgp_output[0]['tags']}")
+                    print(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
+                    await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0])
                 #    valid_responses.append(response.cgp_output[0])
 
                 #for miner_result in valid_responses:

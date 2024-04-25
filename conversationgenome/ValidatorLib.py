@@ -228,6 +228,12 @@ class ValidatorLib:
         convo = await cl.get_conversation(hotkey)
         return convo
 
+    async def put_convo(self, hotkey, c_guid, data):
+        cl = ConvoLib()
+        convo = await cl.put_conversation(hotkey, c_guid, data)
+        return convo
+
+
     def getConvoWindows(self, fullConvo):
         minLines = c.get("convo_window", "min_lines", 5)
         maxLines = c.get("convo_window", "max_lines", 10)
