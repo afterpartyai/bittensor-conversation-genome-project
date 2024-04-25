@@ -1,6 +1,8 @@
 import json
 import random
+import os
 
+import hashlib
 
 from fastapi import FastAPI, Request
 
@@ -56,3 +58,34 @@ def post_request():
         "lines": lines,
     }
     return convo
+
+def write_directory(key, dictionary, base_path='.'):
+    # generate md5 from key
+    md5 = hashlib.md5(key.encode()).hexdigest()
+
+    # create directory with first letter of md5
+    first_dir = os.path.join(base_path, md5[0])
+    os.makedirs(first_dir, exist_ok=True)
+
+    # create directory within first directory with last letter of md5
+    last_dir = md5[-1]
+    final_path = os.path.join(first_dir, last_dir)
+    os.makedirs(final_path, exist_ok=True)
+    print(f"DIR PATH: {final_path}")
+
+    # create filename with md5 and key
+    filename = f"{md5}-{key}.json"
+
+    # create file with filename and write dictionary as JSON string
+    full_path = os.path.join(first_dir, last_dir, filename)
+    print(f"Full path: {full_path}")
+    with open(full_path, "w") as file:
+        json.dump(dictionary, file)
+
+    return filename
+
+
+@app.put("/api/v1/conversation/record/{c_guid}")
+def put_record_request(c_guid):
+    fname = write_directory(c_guid, {"hello":"world"})
+    return {"message": f"Stored data for {c_guid} / {fname}"}
