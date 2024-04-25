@@ -32,15 +32,29 @@ class MockMinerResponse:
 
     def __init__(self, uid):
         self.axon = MockAxon()
+        possible_tags = {
+            "goodbye":{"vectors":[-0.1, -0.5]},
+            "world":{"vectors":[0.9, 0.81]},
+            "basketball":{"vectors":[0.5, 0.51]},
+            "pizza":{"vectors":[0.4, 0.41]},
+            "egg":{"vectors":[0.0, 9.41]},
+            "bacon":{"vectors":[2.0, 6.41]},
+            "bread":{"vectors":[3.3, 3.41]},
+            "candycane":{"vectors":[-1.0, -1.41]},
+        }
+        possible_tag_keys = list(possible_tags.keys())
+        tags = []
+        vectors = {}
+        num_tags = random.randint(0, len(possible_tags)) + 3
+        for i in range(num_tags):
+            tag = random.choice(possible_tag_keys)
+            tags.append(tag)
+            vectors[tag] = possible_tags[tag]
+
         self.cgp_output = [
             {
-                "tags":["goodbye", "world", "basketball", "pizza"],
-                "vectors": {
-                    "goodbye":{"vectors":[-0.1, -0.5]},
-                    "world":{"vectors":[0.9, 0.81]},
-                    "basketball":{"vectors":[0.5, 0.51]},
-                    "pizza":{"vectors":[0.4, 0.41]},
-                },
+                "tags":tags,
+                "vectors": vectors,
                 "uid":uid,
             },
         ]
@@ -70,6 +84,7 @@ async def test_full():
     for i in range(5):
         miner_responses.append(MockMinerResponse(i)),
     (final_scores, rank_scores) = await el.evaluate(full_convo_metadata, miner_responses, verbose=True)
+    print("final_scores", rank_scores)
     return
 
 

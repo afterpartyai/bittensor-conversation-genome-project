@@ -138,6 +138,9 @@ class Evaluator:
 
         bt.logging.debug("Complete eval.", final_scores)
         rank_scores = rank_scores.to('cuda')
+        for idx, final_score in enumerate(final_scores):
+            #print("loop", idx, idx in final_score)
+            rank_scores[idx] = final_scores[idx]['adjustedScore']
         #bt.logging.info("DEVICE for rank_scores AFTER", rank_scores.device)
         return (final_scores, rank_scores)
 
