@@ -3,6 +3,7 @@ import random
 import os
 
 import hashlib
+import sqlite3
 
 from fastapi import FastAPI, Request
 
@@ -84,8 +85,26 @@ def write_directory(key, dictionary, base_path='.'):
 
     return filename
 
+def insert_into_table(hotkey, key, dictionary):
+    db_name = "cgp_tags.sqlite"
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    #cursor.execute('CREATE TABLE IF NOT EXISTS tags (key TEXT, value TEXT)')
+    cursor.execute('INSERT INTO tags (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
+    conn.commit()
+    conn.close()
 
 @app.put("/api/v1/conversation/record/{c_guid}")
-def put_record_request(c_guid):
-    fname = write_directory(c_guid, {"hello":"world"})
-    return {"message": f"Stored data for {c_guid} / {fname}"}
+def put_record_request(c_guid, data: dict):
+    out = {"success": 0, "errors":[], "data":{}}
+    if "hotkey" in data:
+        print("data", c_guid, data)
+        hotkey = data['hotkey']
+        #fname = write_directory(data['hotkey'], c_guid, data)
+        insert_into_table(hotkey, c_guid, data)
+        out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
+        out['success'] = 1
+    else:
+        out['errors'].append([9893843, "Missing hotkey",])
+    return out
+
