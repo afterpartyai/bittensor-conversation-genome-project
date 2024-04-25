@@ -352,8 +352,8 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores: torch.FloatTensor = alpha * scattered_rewards + (
             1 - alpha
         ) * self.scores.to(self.device)
-        for idx, score in enumerate(self.scores):
-            self.scores[idx] = random.random() #rewards[idx]
+        #for idx, score in enumerate(self.scores):
+        #    self.scores[idx] = random.random() #rewards[idx]
         print(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):

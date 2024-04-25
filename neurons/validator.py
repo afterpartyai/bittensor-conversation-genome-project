@@ -60,20 +60,14 @@ class Validator(BaseValidatorNeuron):
     async def forward(self):
         wl = WandbLib()
 
-        # Get random miner IDs
+        # Get random miner sample size
         miners_per_window = c.get("validator", "miners_per_window", 3)
         miner_sample_size = min(self.config.neuron.sample_size, self.metagraph.n.item())
         print("miner_sample_size", miner_sample_size, self.config.neuron.sample_size, self.metagraph.n.item())
-        miner_uids = conversationgenome.utils.uids.get_random_uids(
-            self,
-            k= miner_sample_size
-        )
-        if self.verbose:
-            print("miner_uid pool", miner_uids)
-        if len(miner_uids) == 0:
-            print("No miners")
-            time.sleep(30)
-            return
+
+        # Get hotkeys to watch for debugging
+        hot_keys = c.get("env", "HIGHLIGHT_HOTKEYS", "")
+        hot_key_watchlist = hot_keys.split(",")
 
         # Instance of validator and eval library
         vl = ValidatorLib()
@@ -124,6 +118,17 @@ class Validator(BaseValidatorNeuron):
             # Loop through conversation windows. Send each window to multiple miners
             print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
             for window_idx, conversation_window in enumerate(conversation_windows):
+                miner_uids = conversationgenome.utils.uids.get_random_uids(
+                    self,
+                    k= miner_sample_size
+                )
+                if self.verbose:
+                    print("miner_uid pool", miner_uids)
+                if len(miner_uids) == 0:
+                    print("No miners")
+                    time.sleep(30)
+                    return
+
                 # Create a synapse to distribute to miners
                 print(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miner.")
                 window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
@@ -140,12 +145,16 @@ class Validator(BaseValidatorNeuron):
                 )
                 #print("RAW RESPONSES", len(responses))
                 #valid_responses = []
-                #for response in responses:
-                #    if not response.cgp_output:
-                #        print("BAD RESPONSE", response.axon.uuid, response.axon.hotkey, )
-                #        continue
-                #    print("GOOD RESPONSE", response.axon, response.axon.uuid, response.axon.hotkey, )
-                #    bt.logging.info(f"CGP Received tags: {response.cgp_output[0]['tags']}")
+                for response in responses:
+                    if not response.cgp_output:
+                        print("BAD RESPONSE", response.axon.uuid, response.axon.hotkey, response.cgp_output)
+                        if response.axon.hotkey in hot_key_watchlist:
+                            print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
+                        continue
+                    print("GOOD RESPONSE", response.axon.uuid, response.axon.hotkey, response.axon,  )
+                    if response.axon.hotkey in hot_key_watchlist:
+                        print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
+                    print(f"CGP Received tags: {response.cgp_output[0]['tags']}")
                 #    valid_responses.append(response.cgp_output[0])
 
                 #for miner_result in valid_responses:

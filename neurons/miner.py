@@ -68,12 +68,12 @@ class Miner(BaseMinerNeuron):
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         # Get data
-        print("synapse.cgp_input", synapse.cgp_input)
+        print("______Received Packet from validator. synapse.cgp_input", synapse.cgp_input)
         window = synapse.cgp_input[0] #[0]["windows"]
         conversation_guid = Utils.get(window, "guid")
         window_idx = Utils.get(window, "window_idx")
         lines = Utils.get(window, "lines")
-        bt.logging.info(f"Miner received {conversation_guid} {window_idx} {len(lines)} conversation lines")
+        print(f"^^^^^^ Miner received {conversation_guid} {window_idx} {len(lines)} conversation lines")
 
         ml = MinerLib()
         result = await ml.do_mining(conversation_guid, window_idx, lines, 17)

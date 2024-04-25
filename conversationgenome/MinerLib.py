@@ -33,6 +33,7 @@ class MinerLib:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
             result = await llml.conversation_to_metadata({"lines":lines})
+            print("TAGS", result['tags'], conversation_window)
             out["tags"] = result['tags']
             out["vectors"] = result['vectors']
             if self.verbose:
