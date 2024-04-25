@@ -114,16 +114,18 @@ class llm_openai:
             if not tags:
                 tags = Utils.get(response, "p1.interests")
         if not Utils.empty(tags):
-            print(f"------- Found tags: {tags}. Getting vectors for tag...")
+            print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
             out['vectors'] = {}
+            tag_logs = []
             for tag in tags:
-                if self.verbose:
-                    print("Get vectors for tag: %s" % (tag))
                 vectors = await self.get_vector_embeddings(tag)
                 if not vectors:
                     print("ERRRRRRRRROR -- no vectors", vectors)
+                elif True or self.verbose:
+                    tag_logs.append(f"{tag}={len(vectors)}vs")
                 out['vectors'][tag] = {"vectors":vectors}
+            print("        " + ", ".join(tag_logs))
             if self.verbose:
                 print("VECTORS", tag, vectors)
             #print("OUT", out)
