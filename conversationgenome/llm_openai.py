@@ -103,6 +103,9 @@ class llm_openai:
                     continue
                 for category_tag in category_tags:
                     if not Utils.empty(category_tag):
+                        if type(category_tag) == dict:
+                            print(f"Parsing error: LLM returned Dict instead of string {category_tag}.")
+                            category_tag = str(category_tag)
                         if not category_tag in tag_list:
                             tag_list[category_tag] = 0
                         tag_list[category_tag] += 1
