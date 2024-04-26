@@ -24,6 +24,7 @@ import sys
 
 # Bittensor
 import bittensor as bt
+bt.logging.enable_debug(True)
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.Utils import Utils

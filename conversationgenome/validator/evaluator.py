@@ -126,14 +126,25 @@ class Evaluator:
                 min_score = np.min(scores)
                 max_score = np.max(scores)
                 std = np.std(scores)
-                adjusted_score = (
-                    (0.7 * median_score) +
-                    (0.3 * mean_score)
-                ) / 2
+                sorted_scores = np.sort(scores)
+                top_3_mean = np.mean(sorted_scores[-3:])
+                if False:
+                    adjusted_score = (
+                        (0.7 * median_score) +
+                        (0.3 * mean_score)
+                    ) / 2
+                else:
+                    adjusted_score = (
+                        (0.5 * top_3_mean)+
+                        (0.2 * median_score) +
+                        (0.2 * mean_score) +
+                        (0.1 * max_score)  # new
+                    )
+
                 final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
                 #rank_scores[idx] = final_miner_score
                 final_scores.append({"uid": idx+1, "uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
-                #bt.logging.info(f"__________Tags: {len(miner_result['tags'])} Unique Tags: {scores_unique} Median score: {median_score} Mean score: {mean_score} Min: {min_score} Max: {max_score}" )
+                print(f"_______ {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
 
 
         bt.logging.debug("Complete eval.", final_scores)
@@ -216,7 +227,7 @@ if __name__ == "__main__":
     ]
     miner_tag_lists = tagLists
 
-    async def calculate_penalty(score, num_tags, num_unique_tags,  min_score, max_score):
+    async def calculate_penalty_old(score, num_tags, num_unique_tags,  min_score, max_score):
         final_score = score
         # All junk tags. Penalize
         if max_score < .2:
@@ -227,6 +238,38 @@ if __name__ == "__main__":
         if num_unique_tags < 1:
             final_score *= 0.3
         return score
+
+    async def calculate_penalty(uid, score, num_tags, num_unique_tags, min_score, max_score):
+        final_score = score
+
+        # All junk tags. Penalize
+        if max_score < .2:
+            print("all junk tag")
+            final_score *= 0.5
+
+        # Very few tags. Penalize.
+        if num_tags < 2:
+            print("very few tags")
+            final_score *= 0.2
+
+        # no unique tags. Penalize
+        if num_unique_tags < 1:
+            print("less than 1 unique tag")
+            final_score *= 0.75
+        elif num_unique_tags < 2:
+            print("less than 2 unique tags")
+            final_score *= 0.8
+        elif num_unique_tags < 3:
+            print("less than 3 unique tags")
+            final_score *= 0.85
+        elif num_unique_tags < 4:
+            print("less than 4 unique tags")
+            final_score *= 0.9
+        elif num_unique_tags < 5:
+            print("less than 5 unique tags")
+            final_score *= 0.95
+
+        return final_score
 
     async def calculate_final_scores(ground_tags, miner_tag_lists):
         e = Evaluator()
