@@ -31,6 +31,12 @@ except:
 class Evaluator:
     min_tags = 3
     verbose = False
+    scoring_factors = {
+        "top_3_mean": 0.5,
+        "median_score": 0.2,
+        "mean_score": 0.2,
+        "max_score": 0.1,
+    }
 
     # Tag all the vectors from all the tags and return set of vectors defining the neighborhood
     async def calculate_semantic_neighborhood(self, conversation_metadata, tag_count_ceiling=None):
@@ -134,11 +140,12 @@ class Evaluator:
                         (0.3 * mean_score)
                     ) / 2
                 else:
+                    scoring_factors = self.scoring_factors
                     adjusted_score = (
-                        (0.5 * top_3_mean)+
-                        (0.2 * median_score) +
-                        (0.2 * mean_score) +
-                        (0.1 * max_score)  # new
+                        (scoring_factors['top_3_mean'] * top_3_mean)+
+                        (scoring_factors['median_score'] * median_score) +
+                        (scoring_factors['mean_score'] * mean_score) +
+                        (scoring_factors['max_score'] * max_score)
                     )
 
                 final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)

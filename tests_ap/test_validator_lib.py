@@ -26,8 +26,10 @@ class MockResponse:
 
 @pytest.mark.asyncio
 async def test_full():
-    wl = WandbLib()
-    wl.init_wandb()
+    wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
+    if wandb_enabled:
+        wl = WandbLib()
+        wl.init_wandb()
     # Config variables
     c.set('system', 'mode', 'test')
     miner_uids = [1,2,3,4,5,6,7,8,9]
@@ -49,18 +51,19 @@ async def test_full():
         min_lines = c.get("convo_window", "min_lines", 5)
         max_lines = c.get("convo_window", "max_lines", 10)
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
-        wl.log({
-           "llm_type": llm_type,
-           "model": model,
-           "conversation_guid": conversation_guid,
-           "full_convo_tag_count": full_conversation_tag_count,
-           "num_lines": len(lines),
-           "num_participants": len(participants),
-           "num_convo_windows": len(conversation_windows),
-           "convo_windows_min_lines": min_lines,
-           "convo_windows_max_lines": max_lines,
-           "convo_windows_overlap_lines": overlap_lines,
-        })
+        if wandb_enabled:
+            wl.log({
+               "llm_type": llm_type,
+               "model": model,
+               "conversation_guid": conversation_guid,
+               "full_convo_tag_count": full_conversation_tag_count,
+               "num_lines": len(lines),
+               "num_participants": len(participants),
+               "num_convo_windows": len(conversation_windows),
+               "convo_windows_min_lines": min_lines,
+               "convo_windows_max_lines": max_lines,
+               "convo_windows_overlap_lines": overlap_lines,
+            })
         if llm_type == "spacy":
             print("SPACY TEST MODE")
             # In test_mode, to expand the miner scores, remove half of the full convo tags.
@@ -91,16 +94,18 @@ async def test_full():
             for idx, score in enumerate(final_scores):
                 print("score", score)
                 uid = str(Utils.get(score, "uuid"))
-                wl.log({
-                    "conversation_guid."+uid: conversation_guid,
-                    "window_id."+uid: window_idx,
-                    "uuid."+uid: Utils.get(score, "uuid"),
-                    "hotkey."+uid: Utils.get(score, "hotkey"),
-                    "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
-                    "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
-                })
+                if wandb_enabled:
+                    wl.log({
+                        "conversation_guid."+uid: conversation_guid,
+                        "window_id."+uid: window_idx,
+                        "uuid."+uid: Utils.get(score, "uuid"),
+                        "hotkey."+uid: Utils.get(score, "hotkey"),
+                        "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                        "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                    })
             break
-    wl.end_log_wandb()
+    if wandb_enabled:
+        wl.end_log_wandb()
 
 
 
