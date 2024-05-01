@@ -9,10 +9,11 @@ import numpy as np
 
 
 from conversationgenome.Utils import Utils
+from conversationgenome.ConfigLib import c
+
 from conversationgenome.MinerLib import MinerLib
 from conversationgenome.ConvoLib import ConvoLib
 from conversationgenome.LlmLib import LlmLib
-from conversationgenome.ConfigLib import c
 from conversationgenome.MockBt import MockBt
 
 bt = None
@@ -148,6 +149,7 @@ class ValidatorLib:
               "dataset": "CIFAR-100",
               "epochs": epochs,
         })
+
     async def do_log_wandb(self, c_guid):
         print("Do log....")
         epochs = 10
@@ -228,9 +230,9 @@ class ValidatorLib:
         convo = await cl.get_conversation(hotkey)
         return convo
 
-    async def put_convo(self, hotkey, c_guid, data):
+    async def put_convo(self, hotkey, c_guid, data, type="validator", batch_num=None):
         cl = ConvoLib()
-        convo = await cl.put_conversation(hotkey, c_guid, data)
+        convo = await cl.put_conversation(hotkey, c_guid, data, type=type, batch_num=batch_num)
         return convo
 
 
@@ -249,7 +251,6 @@ class ValidatorLib:
 
 
     async def generate_full_convo_metadata(self, convo):
-        #cl = ConvoLib()
         bt.logging.info("generate_full_convo_metadata participants", convo['participants'])
 
         llml = LlmLib()
@@ -259,13 +260,6 @@ class ValidatorLib:
             return None
         tags = result['tags']
         vectors = Utils.get(result, 'vectors', {})
-        #half = int(len(tags) / 2)
-        #tagsQ = tags[0:half]
-        #tagsA = tags[half:]
-        #info = copy.deepcopy(proto)
-        #info["interests_of_q"] = tagsQ
-        #info["interests_of_a"] = tagsA
-        ##bt.logging.info("FullConvo tags",  tags)
         data = {
             "participantProfiles": convo['participants'],
             "tags": tags,

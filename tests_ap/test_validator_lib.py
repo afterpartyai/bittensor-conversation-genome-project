@@ -44,13 +44,21 @@ async def test_full():
         llm_type = c.get("env", "LLM_TYPE")
         model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
-        full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
+        tags = Utils.get(full_conversation_metadata, "tags", [])
+        full_conversation_tag_count = len(tags)
         lines = Utils.get(full_conversation, "lines", [])
         participants = Utils.get(full_conversation, "participants", [])
         miners_per_window = c.get("validator", "miners_per_window", 3)
         min_lines = c.get("convo_window", "min_lines", 5)
         max_lines = c.get("convo_window", "max_lines", 10)
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
+        batch_num = random.randint(100000, 9999999)
+
+        validatorHotkey = "VHK-0"
+
+        await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":[]}, type="validator", batch_num=batch_num)
+
+
         if wandb_enabled:
             wl.log({
                "llm_type": llm_type,
@@ -87,6 +95,8 @@ async def test_full():
                 response.axon.hotkey = "HK-"+str(idx)
                 response.axon.uuid = str(miner_result['uid'])
                 response.cgp_output = [miner_result]
+                print(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
+                await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner", batch_num=batch_num)
 
                 mock_miner_responses.append(response)
             # Evaluate results of miners
@@ -103,6 +113,7 @@ async def test_full():
                         "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
                         "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
                     })
+
             break
     if wandb_enabled:
         wl.end_log_wandb()

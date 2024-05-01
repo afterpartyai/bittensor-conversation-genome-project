@@ -1,5 +1,8 @@
 import requests
 
+from conversationgenome.Utils import Utils
+from conversationgenome.ConfigLib import c
+
 from conversationgenome.ApiLib import ApiLib
 
 
@@ -12,14 +15,14 @@ class ConvoLib:
     async def getConvoPromptTemplate(self):
         return "Parse this"
 
-    async def markConversionComplete(self, hotkey, cguid, dryrun=False):
-        api = ApiLib()
-        result = await api.completeConversation(hotkey, cguid, dryrun=dryrun)
-        return result
-
-    async def put_conversation(self, hotkey, c_guid, data):
+    async def put_conversation(self, hotkey, c_guid, data, type="validator", batch_num=None):
         output = {
+            "type": type,
+            "mode": c.get('env', 'SYSTEM_MODE'),
+            "model": c.get('env', 'OPENAI_MODEL'),
             "hotkey": hotkey,
+            "llm_type" : c.get('env', 'LLM_TYPE'),
+            "batch_num" : batch_num,
             "data": data,
         }
         api = ApiLib()

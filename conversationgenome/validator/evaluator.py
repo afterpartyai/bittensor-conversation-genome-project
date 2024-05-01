@@ -134,19 +134,14 @@ class Evaluator:
                 std = np.std(scores)
                 sorted_scores = np.sort(scores)
                 top_3_mean = np.mean(sorted_scores[-3:])
-                if False:
-                    adjusted_score = (
-                        (0.7 * median_score) +
-                        (0.3 * mean_score)
-                    ) / 2
-                else:
-                    scoring_factors = self.scoring_factors
-                    adjusted_score = (
-                        (scoring_factors['top_3_mean'] * top_3_mean)+
-                        (scoring_factors['median_score'] * median_score) +
-                        (scoring_factors['mean_score'] * mean_score) +
-                        (scoring_factors['max_score'] * max_score)
-                    )
+
+                scoring_factors = self.scoring_factors
+                adjusted_score = (
+                    (scoring_factors['top_3_mean'] * top_3_mean)+
+                    (scoring_factors['median_score'] * median_score) +
+                    (scoring_factors['mean_score'] * mean_score) +
+                    (scoring_factors['max_score'] * max_score)
+                )
 
                 final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
                 #rank_scores[idx] = final_miner_score
