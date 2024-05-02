@@ -9,16 +9,18 @@
   * [Benefits](./#benefits)
   * [System Design](./#system-design)
   * [Rewards and Incentives](./#rewards-and-incentives)
-* Getting Started
+* [Getting Started](./#getting-started)
   * [Installation](./#installation)
   * [Quickstart Mock Tests](./#quickstart-mock-tests)
-  * [Configuration & API Tests](./#quickstart-configuration-and-api-tests)
-* Subnet Roles
+  * [Configuration](./#configuration)
+  * [Registration](./#registration)
+* [Subnet Roles](./#subnet-roles)
   * [Mining](./#mining)
   * [Validating](./#validating)
-* Helpful Guides
+* [Helpful Guides](./#helpful-guides)
   * [Using Runpod](./#Using-Runpod)
   * [Managing Processes](./#Managing-Processes)
+* [License](./#license)
 
 ***
 
@@ -54,7 +56,11 @@ flowchart TD
 * Open-source dataset for training and fine-tuning conversational AI models
 * Incentivized mining and validation system for data contribution and integrity
 
-## Installation
+***
+
+## Getting Started
+
+### Installation
 
 This repository requires python3.{} or higher. To install it, simply clone this repository and install the dependencies:
 
@@ -64,7 +70,9 @@ cd ap-cg-subnet
 pip install -r requirements.txt
 ```
 
-## Quickstart Mock Tests
+***
+
+### Quickstart Mock Tests
 
 The best way to begin to understand the Conversation Genome (CG) is to run the example test script. This script is meant to provide verbose output so you can see how the process works. It also executes against mock data sources and APIs so you don't need to have anything set up in terms of keys, etc. to see how this operates.
 
@@ -81,7 +89,9 @@ You can follow the output to see the miner executes the following flow:
 * Miners generate tags on the window they are sent, generates embeddings for those tags, and sends back to validator
 * Validator Scores tags and generates final scores for each miner on this step
 
-## Quickstart Configuration and API Tests
+***
+
+### Configuration
 
 Now that you've seen the process execute, let's configure your instance and run the tests that verify everything is setup properly.
 
@@ -97,17 +107,17 @@ Use your editor to add your settings. You will need a ChatGPT key and a Bittenso
 nano .env
 ```
 
-If everything is working properly, you are ready to run against the testnet. Simply run this file:
+***
 
-```console
-bash run_testnet.sh
-```
+### Registration
 
-When you're ready to register and run on mainnet, use this file:
+Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website [here](https://docs.bittensor.com/subnets/register-validate-mine).
 
-```console
-bash run_mainnet.sh
-```
+To register on testnet, add the flag `--subtensor.network test` to your registration command, and specify `--netuid 138` which is our testnet subnet uid
+
+***
+
+## Subnet Roles
 
 ### Mining
 
@@ -132,6 +142,10 @@ If you are running on runpod, please read instructions [here](./#using-runpod)
 ```
 python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port ID>
 ```
+
+***
+
+## Helpful Guides
 
 ### Using Runpod
 
@@ -168,6 +182,8 @@ Every process will require a unique port, so if you run a second neuron, you wil
 #### Running a Subtensor on Runpod
 
 Unfortunately, there is no straight-forward or reliable way to run a local subtensor on a Runpod Instance. You can, however, leverage another cloud provider of your choice to run a Subtensor, and connect to that local subtensor using the `--subtensor.chain_endpoint <your chain endpoint>` flag in your neuron start command. For further information on running a local subtensor, please see the [Bittensor Docs](https://docs.bittensor.com/subtensor-nodes/).
+
+***
 
 ### Managing Processes
 
@@ -220,6 +236,32 @@ mindmap
       Twitter
       Chat
 ```
+
+
+
+## Conversation Genome Project Overview (continued)
+
+### Benefits
+
+* Addresses the lack of personalization in current conversational AI models
+* Enables natural and engaging conversations tailored to individual contexts and preferences
+* Provides a comprehensive and annotated dataset for conversational AI development
+* Encourages open-source community contributions and advancements
+* Maintains data integrity through validation and scoring mechanisms
+
+### System Design
+
+* Data stores: Primary source of truth, conversation windows, participant profiles, and vector database
+* Validator roles: Pull data, ground conversations, create windows, and score submissions
+* Miner roles: Process conversation windows, provide metadata and tags
+* Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
+
+### Rewards and Incentives
+
+* Miners rewarded for accurate and valuable metadata contributions
+* Bell curve distribution of rewards to encourage high-quality submissions
+* Cross-referencing and vector space analysis to ensure data integrity
+* Boring Index algorithm for assessing conversation quality (not yet used for miner rewards)
 
 
 
