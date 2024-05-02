@@ -163,11 +163,17 @@ Miners using the out-of-the-box \_\_\_ LLM will need a GPU with at least \_\_GB 
 
 Runpod Instances are dockerized. As a result, there are tricky configurations with ports to be able to run processes over the network.
 
-When you have selected your instance, click "Edit Template."
+When you are launching your pod, and have selected your instance, click "Edit Template."
 
-With the editing window open, you adjust your container disk space and/or volume diskspace to match the needs of your neuron, and you can expose additional ports. You will need to expose symmetrical TCP Ports, which requires you to specify non-standard ports >=700000 in the "Expose TCP ports" field. Add however many ports you will need (we recommend at least 2, or more if you want to run additional miners).
+<figure><img src=".gitbook/assets/Screenshot 2024-05-02 at 4.15.27 PM.png" alt=""><figcaption></figcaption></figure>
+
+With the editing window open, you adjust your container disk space and/or volume diskspace to match the needs of your neuron, and you can expose additional ports. You will need to expose symmetrical TCP Ports, which requires you to specify non-standard ports >=70000 in the "Expose TCP ports" field. Add however many ports you will need (we recommend at least 2, or more if you want to run additional miners).
+
+<figure><img src=".gitbook/assets/Screenshot 2024-05-02 at 4.17.23 PM.png" alt=""><figcaption></figcaption></figure>
 
 Now, you can deploy your instance. Once it is deployed, navigate to your pods, find the instance you just launched, click "Connect" and navigate to the "TCP Port Mappings" tab. here, you should see your Symmetrical TCP Port IDs.
+
+<figure><img src=".gitbook/assets/Screenshot 2024-05-02 at 4.18.55 PM.png" alt=""><figcaption><p>NOTE: Even though the port does not match the original values of 70000 and 70001, two symmetrical port mappings were created. These can be used for bittensor neurons</p></figcaption></figure>
 
 #### Starting Your Neuron
 
