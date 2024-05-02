@@ -125,6 +125,7 @@ class BaseNeuron(ABC):
         ...
 
     def sync(self):
+        #print("!!! Start sync")
         """
         Wrapper for synchronizing the state of the network for the given miner or validator.
         """
@@ -134,7 +135,9 @@ class BaseNeuron(ABC):
         if self.should_sync_metagraph():
             self.resync_metagraph()
 
+        #print("!!! Start sync2")
         if self.should_set_weights():
+            print("!!! Setting weights")
             self.set_weights()
 
         # Always save state.

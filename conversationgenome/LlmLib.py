@@ -1,95 +1,80 @@
 import json
-import spacy
+import os
+
+from dotenv import load_dotenv
 import numpy as np
 
-spacy = None
-Matcher = None
+from conversationgenome.ConfigLib import c
+from conversationgenome.MockBt import MockBt
+
+verbose = False
+bt = None
 try:
-    import spacy
-    from spacy.matcher import Matcher
+    import bittensor as bt
 except:
-    print("Please install spacy to run locally")
-    # en_core_web_sm model vectors = 96 dimensions.
-    # en_core_web_md and en_core_web_lg = 300 dimensions
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
 
 
 class LlmLib:
-    nlp = None
+    verbose = False
+    factory_llm = None
 
-    async def callFunction(self, functionName, parameters):
-        pass
+    #def __init__(self):
+    #    self.generate_llm_instance()
 
-    def get_nlp(self):
-        nlp = self.nlp
-        if not nlp:
-            # python -m spacy download en_core_web_sm
-            #nlp = spacy.load("en_core_web_sm")
-            #nlp = spacy.load("en_core_web_md")
-            nlp = spacy.load("en_core_web_lg") # ~600mb
-            #print(f"Vector dimensionality: {nlp.vocab.vectors_length}")
-            self.nlp = nlp
-        return nlp
+    async def generate_llm_instance(self, llm_type=None):
+        if not llm_type:
+            llm_type = c.get("env", "LLM_TYPE")
+        llm_class = "llm_"+llm_type
+        if self.verbose:
+            bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
+        out = None
+        # Import the required LLM class dynamically
+        class_name = "conversationgenome.%s" % (llm_class)
+        module = None
+        try:
+            module = __import__(class_name)
+        except:
+            bt.logging.info("LLM class %s not found" % (class_name))
 
-    async def conversation_to_tags(self,  convo, dryrun=True):
-        # Get prompt template
-        #pt = await cl.getConvoPromptTemplate()
-        #llml =  LlmApi()
-        #data = await llml.callFunction("convoParse", convo)
-        if dryrun:
-            matches_dict = await self.simple_text_to_tags(json.dumps(convo['lines']))
-        else:
-            print("Send conversation to the LLM")
-        return matches_dict
+        if module:
+            # Get the class from the imported module
+            module_class_obj = getattr(module, llm_class)
+            main_class = getattr(module_class_obj, llm_class)
+            llm_instance = main_class()
+            out = llm_instance
+
+        return out
+
+    async def conversation_to_metadata(self,  conversation):
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+
+        response = await self.factory_llm.conversation_to_metadata(conversation)
+        return response
 
 
 
-    async def simple_text_to_tags(self, body):
-        nlp = self.get_nlp()
+if __name__ == "__main__":
+    bt.logging.info("Dynamically load LLM class by factory")
+    # Import the required LLM class dynamically
+    llm_class = "llm_spacy"
+    #llm_class = "llm_openai"
 
-        # Define patterns
-        adj_noun_pattern = [{"POS": "ADJ"}, {"POS": "NOUN"}]
-        pronoun_pattern = [{"POS": "PRON"}]
-        unique_word_pattern = [{"POS": {"IN": ["NOUN", "VERB", "ADJ"]}, "IS_STOP": False}]
+    class_name = "conversationgenome.%s" % (llm_class)
+    module = None
+    try:
+        module = __import__(class_name)
+    except:
+        bt.logging.info("LLM class %s not found" % (class_name))
 
-        # Initialize the Matcher with the shared vocabulary
-        matcher = Matcher(nlp.vocab)
-        matcher.add("ADJ_NOUN_PATTERN", [adj_noun_pattern])
-        matcher.add("PRONOUN_PATTERN", [pronoun_pattern])
-        matcher.add("UNIQUE_WORD_PATTERN", [unique_word_pattern])
-
-        doc = nlp( body )
-        #print("DOC", doc)
-        matches = matcher(doc)
-        matches_dict = {}
-        for match_id, start, end in matches:
-            span = doc[start:end]
-            #matchPhrase = span.text
-            matchPhrase = span.lemma_
-            if len(matchPhrase) > 5:
-                #print(f"Original: {span.text}, Lemma: {span.lemma_} Vectors: {span.vector.tolist()}")
-                if not matchPhrase in matches_dict:
-                    matches_dict[matchPhrase] = {"tag":matchPhrase, "count":0, "vectors":span.vector.tolist()}
-                matches_dict[matchPhrase]['count'] += 1
-
-        return matches_dict
-
-    async def test(self):
-        print("STRT")
-        nlp = self.get_nlp()
-
-        # Process the content and the individual tag
-        content = "I love playing football and basketball. Sports are a great way to stay active."
-        tag = "sports"
-        content_doc = nlp(content)
-        tag_doc = nlp(tag)
-
-        allVectors = [token.vector for token in content_doc]
-        #print("allVectors",allVectors )
-        # Create a vector representing the entire content by averaging the vectors of all tokens
-        content_vector = np.mean(allVectors, axis=0)
-        #print("content_vector", content_vector)
-
-        # Calculate the similarity score between the content vector and the tag vector
-        tag_vector = tag_doc[0].vector
-        similarity_score = np.dot(content_vector, tag_vector) / (np.linalg.norm(content_vector) * np.linalg.norm(tag_vector))
-        print(f"Similarity score between the content and the tag '{tag}': {similarity_score}")
+    if module:
+        # Get the class from the imported module
+        module_class_obj = getattr(module, llm_class)
+        main_class = getattr(module_class_obj, llm_class)
+        llm_instance = main_class()
+        convo = {}
+        llm_instance.conversation_to_metadata(convo)
+    bt.logging.info("Done")

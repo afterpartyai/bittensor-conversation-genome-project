@@ -22,6 +22,7 @@ import asyncio
 import argparse
 import threading
 import bittensor as bt
+import random
 
 from typing import List
 from traceback import print_exception
@@ -150,6 +151,7 @@ class BaseValidatorNeuron(BaseNeuron):
                     break
 
                 # Sync metagraph and potentially set weights.
+                print("________________________________SYNC to set weight")
                 self.sync()
 
                 self.step += 1
@@ -219,7 +221,7 @@ class BaseValidatorNeuron(BaseNeuron):
         """
         Sets the validator weights to the metagraph hotkeys based on the scores it has received from the miners. The weights determine the trust and incentive level the validator assigns to miner nodes on the network.
         """
-
+        msg = None
         # Check if self.scores contains any NaN values and log a warning if it does.
         if torch.isnan(self.scores).any():
             bt.logging.warning(
@@ -257,15 +259,20 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.debug("uint_uids", uint_uids)
 
         # Set the weights on chain via our subtensor connection.
-        result, msg = self.subtensor.set_weights(
-            wallet=self.wallet,
-            netuid=self.config.netuid,
-            uids=uint_uids,
-            weights=uint_weights,
-            wait_for_finalization=False,
-            wait_for_inclusion=False,
-            version_key=self.spec_version,
-        )
+        print("---Set the weights on chain", self.wallet, self.config.netuid, uint_uids, uint_weights, self.spec_version)
+        result = None
+        try:
+            result, msg = self.subtensor.set_weights(
+                wallet=self.wallet,
+                netuid=self.config.netuid,
+                uids=uint_uids,
+                weights=uint_weights,
+                wait_for_finalization=False,
+                wait_for_inclusion=False,
+                version_key=self.spec_version,
+            )
+        except:
+            print("ERROR")
         if result is True:
             bt.logging.info("set_weights on chain successfully!")
         else:
@@ -324,9 +331,19 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
+        #print("SCATTER DEVICE", self.scores.device)
+        uids_tensor = uids_tensor.to(self.scores.device)
+        rewards2 = rewards.to(self.scores.device)
+        rewards2 = torch.ones(len(uids_tensor), device=self.device)
+        for idx, reward in enumerate(rewards):
+            rewards2[idx] = rewards[idx] #random.random() #
+        print(f"BEFORE SCATTER uids_tensor: {uids_tensor} rewards: {rewards} rewards2: {rewards2}")
+
+
         scattered_rewards: torch.FloatTensor = self.scores.scatter(
             0, uids_tensor, rewards
         ).to(self.device)
+
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update scores with rewards produced by this step.
@@ -335,7 +352,9 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores: torch.FloatTensor = alpha * scattered_rewards + (
             1 - alpha
         ) * self.scores.to(self.device)
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        #for idx, score in enumerate(self.scores):
+        #    self.scores[idx] = random.random() #rewards[idx]
+        print(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""

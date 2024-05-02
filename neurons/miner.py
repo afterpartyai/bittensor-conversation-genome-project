@@ -19,9 +19,15 @@ import time
 import os
 import hashlib
 import typing
+import sys
+
 
 # Bittensor
 import bittensor as bt
+bt.logging.enable_debug(True)
+
+from conversationgenome.ConfigLib import c
+from conversationgenome.Utils import Utils
 
 
 from conversationgenome.base.miner import BaseMinerNeuron
@@ -31,6 +37,7 @@ from conversationgenome.protocol import CgSynapse
 
 
 class Miner(BaseMinerNeuron):
+    verbose = True
     """
     You may also want to override the blacklist and priority functions according to your needs.
 
@@ -41,6 +48,7 @@ class Miner(BaseMinerNeuron):
 
     def __init__(self, config=None):
         super(Miner, self).__init__(config=config)
+        print("Init miner")
 
         # TODO(developer): Anything specific to your use case you can do here
 
@@ -52,23 +60,27 @@ class Miner(BaseMinerNeuron):
         This method should be replaced with actual logic relevant to the miner's purpose.
 
         Args:
-            synapse (CgSynapse): The synapse object containing the 'dummy_input' data.
+            synapse (CgSynapse): The synapse object containing the 'cgp_input' data.
 
         Returns:
-            CgSynapse: The synapse object with the 'dummy_output' field set to twice the 'dummy_input' value.
+            CgSynapse: The synapse object with the 'cgp_output' field
 
         The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         # Get data
-        convoWindow = synapse.dummy_input[0]["windows"]
-        bt.logging.info("Miner received %d conversations" % (len(convoWindow)))
+        print("______Received Packet from validator. synapse.cgp_input", synapse.cgp_input)
+        window = synapse.cgp_input[0] #[0]["windows"]
+        conversation_guid = Utils.get(window, "guid")
+        window_idx = Utils.get(window, "window_idx")
+        lines = Utils.get(window, "lines")
+        print(f"^^^^^^ Miner received {conversation_guid} {window_idx} {len(lines)} conversation lines")
 
         ml = MinerLib()
-        result = await ml.doMining(convoWindow, 1123)
+        result = await ml.do_mining(conversation_guid, window_idx, lines, 17)
         bt.logging.info("Mined vectors and tags: %s" % (", ".join(result['tags'])))
 
-        synapse.dummy_output = [result]
+        synapse.cgp_output = [result]
         return synapse
 
     async def blacklist(
@@ -165,5 +177,6 @@ class Miner(BaseMinerNeuron):
 if __name__ == "__main__":
     with Miner() as miner:
         while True:
+            print("Miner")
             bt.logging.info("CGP Miner running...", time.time())
             time.sleep(5)

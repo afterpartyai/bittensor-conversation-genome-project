@@ -1,0 +1,33 @@
+#export SYSTEM_MODE=test
+export SYSTEM_MODE=production
+
+export WANDB_API_KEY=some_key
+
+export CGP_API_READ_HOST=http://api.conversationgenome.org
+export CGP_API_READ_PORT=80
+
+export CGP_API_WRITE_HOST=http://api.conversationgenome.org
+export CGP_API_WRITE_PORT=80
+
+#export CGP_API_READ_HOST=http://localhost
+#export CGP_API_READ_PORT=8000
+
+
+export LLM_TYPE=spacy
+#export LLM_TYPE=openai
+#export LLM_TYPE=textgenui
+#export LLM_TYPE=anthropic
+
+# used both by validator and miner:
+export OPENAI_API_KEY=some_key
+#export OPENAI_DIRECT_CALL=1
+
+export OPENAI_MODEL=gpt-4
+#export OPENAI_MODEL=gpt-3.5-turbo
+export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
+
+export ANTHROPIC_API_KEY=some_key
+
+export TEXTGENUI_IP=some_ip
+export TEXTGENUI_PORT=some_port
+

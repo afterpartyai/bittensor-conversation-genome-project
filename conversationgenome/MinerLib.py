@@ -16,19 +16,30 @@ try:
 except:
     if verbose:
         print("bittensor not installed")
+    bt = MockBt()
 
 from conversationgenome.LlmLib import LlmLib
 
 
 class MinerLib:
-    verbose = False
+    verbose = True
 
-    async def doMining(self, convoWindow, minerUid, dryrun=True):
-        #print("MINERCONVO", convoWindow, minerUid)
+    async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
+        #bt.logging.info("MINERCONVO", convoWindow, minerUid)
         out = {"uid":minerUid, "tags":[], "profiles":[], "convoChecksum":11}
 
-        #print("Mine result: %ds" % (waitSec))
-        if dryrun:
+        #bt.logging.info("Mine result: %ds" % (waitSec))
+        if not dryrun:
+            llml = LlmLib()
+            lines = copy.deepcopy(conversation_window)
+            result = await llml.conversation_to_metadata({"lines":lines})
+            tags = Utils.get(result, 'tags')
+            print("TAGS", tags, conversation_window)
+            out["tags"] = tags
+            out["vectors"] = Utils.get(result, 'vectors', {})
+            if self.verbose:
+                bt.logging.info("MINED TAGS", out["tags"])
+        else:
             llml = LlmLib()
             exampleSentences = [
                 "Who's there?",
@@ -49,16 +60,12 @@ class MinerLib:
             lines = copy.deepcopy(convoWindow)
             lines.append(random.choice(exampleSentences))
             lines.append(random.choice(exampleSentences))
-            matches_dict = await llml.conversation_to_tags({"lines":lines})
+            matches_dict = await llml.conversation_to_tags({"lines":conversation_window})
             tags = list(matches_dict.keys())
             out["tags"] = tags
             out["vectors"] = matches_dict
             #waitSec = random.randint(0, 3)
             #await asyncio.sleep(waitSec)
-        else:
-            # TODO: Make this actually tag content
-            exampleTags = ["realistic", "business-minded", "conciliatory", "responsive", "caring", "understanding", "apologetic", "affectionate", "optimistic", "family-oriented"]
-            out["tags"].append(random.choice(exampleTags))
         return out
 
 

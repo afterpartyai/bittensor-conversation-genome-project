@@ -1,4 +1,7 @@
-bittensor
-torch
-faker
-spacy
+python-dotenv==1.0.1
+bittensor==6.9.0
+torch==2.1.1
+spacy==3.2.6
+openai==0.28.1
+loguru==0.7.0
+wandb

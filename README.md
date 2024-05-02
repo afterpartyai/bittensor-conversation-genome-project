@@ -128,7 +128,9 @@ First duplicate the dotenv file:
 cp example.env .env
 ```
 
-Use your editor to add your settings. You will need a ChatGPT key and a Bittensor hotkey. If you're on a Linux box, the nano editor is usually the easiest:
+Use your editor to add your settings. You will need a Weights and Biases key, ChatGPT key and a Bittensor hotkey.
+
+If you're on a Linux box, the nano editor is usually the easiest:
 
 ```console
 nano .env
@@ -158,6 +160,13 @@ When you're ready to register and run on mainnet, use this file:
 ```console
 bash run_mainnet.sh
 ```
+
+Add a hosts file entry with Gasmask or to the /etc/hosts file that makes the api domain:
+
+```console
+54.193.70.198 api.conversationgenome.org
+```
+
 
 # Conversation Genome Project Overview
 
