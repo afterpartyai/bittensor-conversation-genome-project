@@ -56,7 +56,7 @@ async def test_full():
 
         validatorHotkey = "VHK-0"
 
-        await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":[]}, type="validator", batch_num=batch_num)
+        await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":[]}, type="validator", batch_num=batch_num, window=999)
 
 
         if wandb_enabled:
@@ -96,7 +96,7 @@ async def test_full():
                 response.axon.uuid = str(miner_result['uid'])
                 response.cgp_output = [miner_result]
                 print(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
-                await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner", batch_num=batch_num)
+                await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner", batch_num=batch_num, window=idx)
 
                 mock_miner_responses.append(response)
             # Evaluate results of miners

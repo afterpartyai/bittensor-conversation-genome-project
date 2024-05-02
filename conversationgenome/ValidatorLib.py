@@ -230,9 +230,9 @@ class ValidatorLib:
         convo = await cl.get_conversation(hotkey)
         return convo
 
-    async def put_convo(self, hotkey, c_guid, data, type="validator", batch_num=None):
+    async def put_convo(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):
         cl = ConvoLib()
-        convo = await cl.put_conversation(hotkey, c_guid, data, type=type, batch_num=batch_num)
+        convo = await cl.put_conversation(hotkey, c_guid, data, type=type, batch_num=batch_num, window=window)
         return convo
 
 

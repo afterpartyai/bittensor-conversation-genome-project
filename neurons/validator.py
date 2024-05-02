@@ -19,6 +19,7 @@
 import time
 import os
 import hashlib
+import random
 
 # Bittensor
 import bittensor as bt
@@ -94,7 +95,6 @@ class Validator(BaseValidatorNeuron):
 
             llm_type = c.get("env", "LLM_TYPE")
             model = c.get("env", "OPENAI_MODEL")
-            conversation_guid = Utils.get(full_conversation, "guid")
             full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
             lines = Utils.get(full_conversation, "lines", [])
             participants = Utils.get(full_conversation, "participants", [])
@@ -102,6 +102,9 @@ class Validator(BaseValidatorNeuron):
             min_lines = c.get("convo_window", "min_lines", 5)
             max_lines = c.get("convo_window", "max_lines", 10)
             overlap_lines = c.get("convo_window", "overlap_lines", 2)
+            batch_num = random.randint(100000, 9999999)
+            await vl.put_convo("FINDHOTKEY", conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
+
             wl.log({
                "llm_type": llm_type,
                "model": model,
@@ -146,7 +149,7 @@ class Validator(BaseValidatorNeuron):
                 )
                 #print("RAW RESPONSES", len(responses))
                 #valid_responses = []
-                for response in responses:
+                for window_idx, response in enumerate(responses):
                     if not response.cgp_output:
                         print("BAD RESPONSE", response.axon.uuid, response.axon.hotkey, response.cgp_output)
                         if response.axon.hotkey in hot_key_watchlist:
@@ -156,7 +159,7 @@ class Validator(BaseValidatorNeuron):
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                     print(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
-                    await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0])
+                    await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner",  batch_num=batch_num, window=window_idx)
                 #    valid_responses.append(response.cgp_output[0])
 
                 #for miner_result in valid_responses:
