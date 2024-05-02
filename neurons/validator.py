@@ -23,7 +23,7 @@ import random
 
 # Bittensor
 import bittensor as bt
-bt.logging.enable_debug(True)
+#bt.logging.enable_debug(True)
 
 # Bittensor Validator Template:
 #import template
