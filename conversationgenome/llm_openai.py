@@ -302,7 +302,7 @@ class llm_openai:
                   "messages": [{"role": "user", "content": prompt}],
                 }
                 completion = self.do_direct_call(data)
-                #print("________completion", completion)
+                print("________completion", completion)
                 out = completion['json']['choices'][0]['message']['content']
                 #reply_content = completion['json']['choices'][0]['message'] #Utils.get(completion, "json.choices.0.message")
         return out

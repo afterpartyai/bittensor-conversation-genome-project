@@ -183,11 +183,13 @@ class ValidatorLib:
         out = None
         # Validator requests a full conversation from the API
         full_conversation = await self.getConvo()
+        #print("FULLCONVO", full_conversation)
         if self.verbose:
             bt.logging.info("full_conversation", full_conversation)
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
+            print("CONVERSATION_GUID", conversation_guid)
             #await self.begin_log_wandb(conversation_guid)
             #for i in range(5):
             #    await self.do_log_wandb(conversation_guid)
@@ -195,6 +197,7 @@ class ValidatorLib:
             #await self.end_log_wandb(conversation_guid)
             #return None
             bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
+            print(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
             full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
