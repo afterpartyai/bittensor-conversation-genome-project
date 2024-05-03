@@ -45,6 +45,7 @@ async def test_full():
         model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
         tags = Utils.get(full_conversation_metadata, "tags", [])
+        vectors = Utils.get(full_conversation_metadata, "vectors", [])
         full_conversation_tag_count = len(tags)
         lines = Utils.get(full_conversation, "lines", [])
         participants = Utils.get(full_conversation, "participants", [])
@@ -56,7 +57,7 @@ async def test_full():
 
         validatorHotkey = "VHK-0"
 
-        await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":[]}, type="validator", batch_num=batch_num, window=999)
+        await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":vectors}, type="validator", batch_num=batch_num, window=999)
 
 
         if wandb_enabled:
