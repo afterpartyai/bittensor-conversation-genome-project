@@ -98,7 +98,7 @@ Now that you've seen the process execute, let's configure your instance and run 
 First duplicate the dotenv file:
 
 ```console
-cp example.env .env
+cp env_example .env
 ```
 
 Use your editor to add your settings. You will need a ChatGPT key and a Bittensor hotkey. If you're on a Linux box, the nano editor is usually the easiest:
