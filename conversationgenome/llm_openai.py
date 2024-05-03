@@ -20,6 +20,7 @@ except:
 
 class llm_openai:
     verbose = False
+    return_json = True
     model = "gpt-4"
     embeddings_model = "text-embedding-ada-002"
     direct_call = 0
@@ -83,33 +84,36 @@ class llm_openai:
         if not response:
             print("No tagging response. Aborting")
             return None
-        if type(response) == str:
-            try:
-                response = json.loads(response)
-            except:
-                print("Error decoding response")
-        print("response", response)
-        #print("___________OPENAI response", response)
-        tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
-        participant_names = participants.keys()
-        tag_list = {}
-        for participant_name in participant_names:
-            print("participant_name", participant_name)
-            for tag_category in tag_categories:
-                key = f"{participant_name}.{tag_category}"
-                category_tags = Utils.get(response, key)
-                if not category_tags:
-                    #print(f"No category tags found for key {key} -- response: {response}")
-                    continue
-                for category_tag in category_tags:
-                    if not Utils.empty(category_tag):
-                        if type(category_tag) == dict:
-                            print(f"Parsing error: LLM returned Dict instead of string {category_tag}.")
-                            category_tag = str(category_tag)
-                        if not category_tag in tag_list:
-                            tag_list[category_tag] = 0
-                        tag_list[category_tag] += 1
-        tags = list(tag_list.keys())
+        if self.return_json:
+            if type(response) == str:
+                try:
+                    response = json.loads(response)
+                except:
+                    print("Error decoding response")
+            print("response", response)
+            #print("___________OPENAI response", response)
+            tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
+            participant_names = participants.keys()
+            tag_list = {}
+            for participant_name in participant_names:
+                print("participant_name", participant_name)
+                for tag_category in tag_categories:
+                    key = f"{participant_name}.{tag_category}"
+                    category_tags = Utils.get(response, key)
+                    if not category_tags:
+                        #print(f"No category tags found for key {key} -- response: {response}")
+                        continue
+                    for category_tag in category_tags:
+                        if not Utils.empty(category_tag):
+                            if type(category_tag) == dict:
+                                print(f"Parsing error: LLM returned Dict instead of string {category_tag}.")
+                                category_tag = str(category_tag)
+                            if not category_tag in tag_list:
+                                tag_list[category_tag] = 0
+                            tag_list[category_tag] += 1
+            tags = list(tag_list.keys())
+        else:
+            tags = response.split(",")
         #print("TOTAL tags", tags)
 
         if False:
