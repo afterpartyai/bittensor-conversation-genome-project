@@ -95,7 +95,9 @@ class Validator(BaseValidatorNeuron):
 
             llm_type = c.get("env", "LLM_TYPE")
             model = c.get("env", "OPENAI_MODEL")
-            full_conversation_tag_count = len(Utils.get(full_conversation_metadata, "tags", []))
+            full_convo_tags = Utils.get(full_conversation_metadata, "tags", [])
+            full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
+            full_conversation_tag_count = len(full_convo_tags)
             lines = Utils.get(full_conversation, "lines", [])
             participants = Utils.get(full_conversation, "participants", [])
             miners_per_window = c.get("validator", "miners_per_window", 3)
@@ -103,7 +105,8 @@ class Validator(BaseValidatorNeuron):
             max_lines = c.get("convo_window", "max_lines", 10)
             overlap_lines = c.get("convo_window", "overlap_lines", 2)
             batch_num = random.randint(100000, 9999999)
-            await vl.put_convo("FINDHOTKEY", conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
+            validatorHotkey = "FINDHOTKEY"
+            await vl.put_convo(validatorHotkey, conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
 
             wl.log({
                "llm_type": llm_type,

@@ -51,11 +51,13 @@ async def test_full():
         participants = Utils.get(full_conversation, "participants", [])
         miners_per_window = c.get("validator", "miners_per_window", 3)
         min_lines = c.get("convo_window", "min_lines", 5)
-        max_lines = c.get("convo_window", "max_lines", 10)
+        max_lines = c.get("convo_window", "max_lines", 50)
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
         batch_num = random.randint(100000, 9999999)
 
         validatorHotkey = "VHK-0"
+        #print("FULLCONVO", tags)
+        #return
 
         await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":vectors}, type="validator", batch_num=batch_num, window=999)
 
