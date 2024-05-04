@@ -40,7 +40,7 @@ async def test_full():
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        #print("full_conversation", full_conversation)
+        print("full_conversation", full_conversation)
         llm_type = c.get("env", "LLM_TYPE")
         model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
