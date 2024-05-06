@@ -78,6 +78,37 @@ class llm_openai:
         xml += "</conversation>"
         return (xml, participants)
 
+
+    def process_json_tag_return(self, response):
+        if type(response) == str:
+            try:
+                response = json.loads(response)
+            except:
+                print("Error decoding response")
+        #print("___________OPENAI response", response)
+        tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
+        participant_names = participants.keys()
+        tag_list = {}
+        for participant_name in participant_names:
+            #print("participant_name", participant_name)
+            for tag_category in tag_categories:
+                key = f"{participant_name}.{tag_category}"
+                category_tags = Utils.get(response, key)
+                if not category_tags:
+                    #print(f"No category tags found for key {key} -- response: {response}")
+                    continue
+                for category_tag in category_tags:
+                    if not Utils.empty(category_tag):
+                        if type(category_tag) == dict:
+                            print(f"Parsing error: LLM returned Dict instead of string {category_tag}.")
+                            category_tag = str(category_tag)
+                        if not category_tag in tag_list:
+                            tag_list[category_tag] = 0
+                        tag_list[category_tag] += 1
+        tags = list(tag_list.keys())
+        return tags
+
+
     async def conversation_to_metadata(self,  convo):
         (xml, participants) = self.generate_convo_xml(convo)
         out = {"tags":{}}
@@ -86,33 +117,9 @@ class llm_openai:
         if not response:
             print("No tagging response. Aborting")
             return None
+
         if self.return_json:
-            if type(response) == str:
-                try:
-                    response = json.loads(response)
-                except:
-                    print("Error decoding response")
-            #print("___________OPENAI response", response)
-            tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
-            participant_names = participants.keys()
-            tag_list = {}
-            for participant_name in participant_names:
-                #print("participant_name", participant_name)
-                for tag_category in tag_categories:
-                    key = f"{participant_name}.{tag_category}"
-                    category_tags = Utils.get(response, key)
-                    if not category_tags:
-                        #print(f"No category tags found for key {key} -- response: {response}")
-                        continue
-                    for category_tag in category_tags:
-                        if not Utils.empty(category_tag):
-                            if type(category_tag) == dict:
-                                print(f"Parsing error: LLM returned Dict instead of string {category_tag}.")
-                                category_tag = str(category_tag)
-                            if not category_tag in tag_list:
-                                tag_list[category_tag] = 0
-                            tag_list[category_tag] += 1
-            tags = list(tag_list.keys())
+            tags = self.process_json_tag_return(response)
         else:
             tags = response.split(",")
 
@@ -125,7 +132,7 @@ class llm_openai:
             for tag in tags:
                 vectors = await self.get_vector_embeddings(tag)
                 if not vectors:
-                    print("ERRRRRRRRROR -- no vectors", vectors)
+                    print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
                 else:
                     tag_logs.append(f"{tag}={len(vectors)}vs")
                 out['vectors'][tag] = {"vectors":vectors}
