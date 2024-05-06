@@ -36,11 +36,11 @@ class LlmLib:
         try:
             module = __import__(class_name)
         except Exception as e:
-            bt.logging.error(f"LLM class '{class_name}' failed to instance: {e}")
+            bt.logging.error(f"LLM class '{class_name}' failed to import: {e}")
 
         if module:
             # Get the class from the imported module
-            module_class_obj = getattr(module, llm_class)
+            module_class_obj = getattr(module.llm, llm_class)
             main_class = getattr(module_class_obj, llm_class)
             llm_instance = main_class()
             out = llm_instance
