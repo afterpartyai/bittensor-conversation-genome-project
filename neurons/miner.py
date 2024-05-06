@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2024 Afterparty, Inc.
+# Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -24,7 +24,6 @@ import sys
 
 # Bittensor
 import bittensor as bt
-#bt.logging.enable_debug(True)
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
@@ -37,26 +36,16 @@ from conversationgenome.protocol import CgSynapse
 
 
 class Miner(BaseMinerNeuron):
-    verbose = True
-    """
-    You may also want to override the blacklist and priority functions according to your needs.
-
-    This class inherits from the BaseMinerNeuron class, which in turn inherits from BaseNeuron. The BaseNeuron class takes care of routine tasks such as setting up wallet, subtensor, metagraph, logging directory, parsing config, etc. You can override any of the methods in BaseNeuron if you need to customize the behavior.
-
-    This class provides reasonable default behavior for a miner such as blacklisting unrecognized hotkeys, prioritizing requests based on stake, and forwarding requests to the forward function. If you need to define custom
-    """
+    verbose = False
 
     def __init__(self, config=None):
         super(Miner, self).__init__(config=config)
-
-        # TODO(developer): Anything specific to your use case you can do here
 
     async def forward(
         self, synapse: CgSynapse
     ) -> CgSynapse:
         """
         Processes the incoming 'CgSynapse' synapse by performing a predefined operation on the input data.
-        This method should be replaced with actual logic relevant to the miner's purpose.
 
         Args:
             synapse (CgSynapse): The synapse object containing the 'cgp_input' data.
@@ -64,16 +53,15 @@ class Miner(BaseMinerNeuron):
         Returns:
             CgSynapse: The synapse object with the 'cgp_output' field
 
-        The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
-        the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
-        # Get data
-        print("______Received Packet from validator. synapse.cgp_input", synapse.cgp_input)
-        window = synapse.cgp_input[0] #[0]["windows"]
+
+        bt.logging.info("______Received Packet from validator. synapse.cgp_input", synapse.cgp_input)
+        window = synapse.cgp_input[0]
         conversation_guid = Utils.get(window, "guid")
         window_idx = Utils.get(window, "window_idx")
         lines = Utils.get(window, "lines")
-        print(f"^^^^^^ Miner received {conversation_guid} {window_idx} {len(lines)} conversation lines")
+
+        bt.logging.info(f"Miner received {conversation_guid} / {window_idx} with {len(lines)} conversation lines")
 
         ml = MinerLib()
         result = await ml.do_mining(conversation_guid, window_idx, lines, 17)

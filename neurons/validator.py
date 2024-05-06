@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2024 Afterparty, Inc.
+# Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -21,9 +21,7 @@ import os
 import hashlib
 import random
 
-# Bittensor
 import bittensor as bt
-#bt.logging.enable_debug(True)
 
 from conversationgenome.base.validator import BaseValidatorNeuron
 
@@ -52,12 +50,9 @@ class Validator(BaseValidatorNeuron):
         bt.logging.info("load_state()")
         self.load_state()
 
-
-
-    async def forward(self):
+    async def forward(self, test_mode=False):
         wl = WandbLib()
 
-        # Get random miner sample size
         miners_per_window = c.get("validator", "miners_per_window", 3)
         miner_sample_size = min(self.config.neuron.sample_size, self.metagraph.n.item())
         bt.logging.debug(f"miner_sample_size: {miner_sample_size}, {self.config.neuron.sample_size}, {self.metagraph.n.item()}")
@@ -69,11 +64,8 @@ class Validator(BaseValidatorNeuron):
         # Instance of validator and eval library
         vl = ValidatorLib()
         el = Evaluator()
-        # xxx -- what does this do?
-        vl.validateMinimumTags([])
-        test_mode = True
 
-        # Reserve a conversation (so others won't take it) from the conversation API
+        # Reserve a conversation from the conversation API
         result = await vl.reserve_conversation()
 
         if result:
@@ -83,10 +75,10 @@ class Validator(BaseValidatorNeuron):
                 # This "generates" more unique tags found for the miners
                 half = int(len(full_conversation_metadata['tags'])/2)
                 #full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
+
             conversation_guid = Utils.get(full_conversation, "guid")
             #print("full_conversation", full_conversation)
             bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
-
 
             llm_type = c.get("env", "LLM_TYPE")
             model = c.get("env", "OPENAI_MODEL")
@@ -146,8 +138,9 @@ class Validator(BaseValidatorNeuron):
                     synapse=synapse,
                     deserialize=False,
                 )
-                #print("RAW RESPONSES", len(responses))
-                #valid_responses = []
+                if self.verbose:
+                    print("RAW RESPONSES", len(responses))
+
                 for window_idx, response in enumerate(responses):
                     if not response.cgp_output:
                         bt.logging.error(f"BAD RESPONSE: uuid: {response.axon.uuid} hotkey: {response.axon.hotkey} output: {response.cgp_output}")
@@ -159,12 +152,9 @@ class Validator(BaseValidatorNeuron):
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                     bt.logging.debug(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
                     await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner",  batch_num=batch_num, window=window_idx)
-                #    valid_responses.append(response.cgp_output[0])
 
-                #for miner_result in valid_responses:
-                #    #print("miner_result", miner_result)
-                #    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
+
                 for idx, score in enumerate(final_scores):
                     bt.logging.info(f"score {score}")
                     uid = str(Utils.get(score, "uuid"))
@@ -176,10 +166,13 @@ class Validator(BaseValidatorNeuron):
                         "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
                         "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
                     })
-                    #print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
+                    if self.verbose:
+                        print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
 
                 # Update the scores based on the rewards.
                 self.update_scores(rank_scores, miner_uids)
+        else:
+            bt.logging.error(f"No conversation received from endpoint")
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
@@ -190,7 +183,6 @@ if __name__ == "__main__":
         with Validator() as validator:
             while True:
                 bt.logging.info("CGP Validator running...", time.time())
-                # xxx Remove for Prod? Add for mode test?
                 time.sleep(5)
     except KeyboardInterrupt:
         bt.logging.info("Keyboard interrupt detected. Exiting validator.")
