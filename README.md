@@ -6,9 +6,9 @@
 - [Conversation Genome Project](#conversation-genome-project-overview)
   - [Key Features](#key-features)
 - [Quickstart](#quickstart)
-  - Quickstart - Configuration (#quickstart----configuration)
-  - Quickstart - Running the tests (#quickstart----running-the-tests)
-- [Conversation Genome Project Overview]
+  - [Quickstart - Configuration](#quickstart----configuration)
+  - [Quickstart - Running the tests](#quickstart----running-the-tests)
+- [Conversation Genome Project Overview](#conversation-genome-project-overview)
   - [Benefits](#benefits)
   - [System Design](#system-design)
   - [Rewards and Incentives](#rewards-and-incentives)
