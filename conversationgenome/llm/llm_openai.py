@@ -61,7 +61,7 @@ class llm_openai:
         #print("response", response)
         return response
 
-    async def conversation_to_metadata(self,  convo):
+    def generate_convo_xml(self, convo):
         #print("CONVO OPENAI", convo)
         xml = "<conversation id='%d'>" % (83945)
         participants = {}
@@ -75,8 +75,11 @@ class llm_openai:
                 participants[participant] = 0
             # Count number entries for each participant -- may need it later
             participants[participant] += 1
-
         xml += "</conversation>"
+        return (xml, participants)
+
+    async def conversation_to_metadata(self,  convo):
+        (xml, participants) = self.generate_convo_xml(convo)
         #print(xml)
         out = {"tags":{}}
         #return out
