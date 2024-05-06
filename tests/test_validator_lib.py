@@ -2,11 +2,11 @@ import pytest
 import random
 
 from conversationgenome.ConfigLib import c
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 
-from conversationgenome.ValidatorLib import ValidatorLib
+from conversationgenome.validator.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
-from conversationgenome.WandbLib import WandbLib
+from conversationgenome.analytics.WandbLib import WandbLib
 
 class MockAxon:
     uuid = "a"

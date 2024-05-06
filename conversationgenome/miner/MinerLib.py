@@ -4,10 +4,10 @@ import copy
 import random
 import asyncio
 from conversationgenome.ConfigLib import c
-from conversationgenome.MockBt import MockBt
+from conversationgenome.mock.MockBt import MockBt
 
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 
 
 bt = None
@@ -18,7 +18,7 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
-from conversationgenome.LlmLib import LlmLib
+from conversationgenome.llm.LlmLib import LlmLib
 
 
 class MinerLib:

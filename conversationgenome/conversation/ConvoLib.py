@@ -1,9 +1,9 @@
 import requests
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
-from conversationgenome.ApiLib import ApiLib
+from conversationgenome.api.ApiLib import ApiLib
 
 
 class ConvoLib:

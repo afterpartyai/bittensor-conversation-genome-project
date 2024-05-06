@@ -1,7 +1,7 @@
 import os
 import json
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
 

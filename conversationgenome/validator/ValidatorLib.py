@@ -8,13 +8,13 @@ import os
 import numpy as np
 
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
-from conversationgenome.MinerLib import MinerLib
-from conversationgenome.ConvoLib import ConvoLib
-from conversationgenome.LlmLib import LlmLib
-from conversationgenome.MockBt import MockBt
+from conversationgenome.miner.MinerLib import MinerLib
+from conversationgenome.conversation.ConvoLib import ConvoLib
+from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.mock.MockBt import MockBt
 
 bt = None
 try:

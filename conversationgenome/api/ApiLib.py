@@ -2,7 +2,7 @@ import json
 import random
 import requests
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
 

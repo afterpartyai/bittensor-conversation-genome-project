@@ -13,10 +13,9 @@ except:
 
 
 import numpy as np
-#from scipy.stats import skew
 
-from conversationgenome.Utils import Utils
-from conversationgenome.MockBt import MockBt
+from conversationgenome.utils.Utils import Utils
+from conversationgenome.mock.MockBt import MockBt
 
 bt = None
 try:

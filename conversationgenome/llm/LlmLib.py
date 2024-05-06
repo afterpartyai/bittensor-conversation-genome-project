@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 import numpy as np
 
 from conversationgenome.ConfigLib import c
-from conversationgenome.MockBt import MockBt
+from conversationgenome.mock.MockBt import MockBt
+#from conversationgenome.llm.llm_openai import llm_openai
 
 verbose = False
 bt = None
@@ -21,9 +22,6 @@ class LlmLib:
     verbose = False
     factory_llm = None
 
-    #def __init__(self):
-    #    self.generate_llm_instance()
-
     async def generate_llm_instance(self, llm_type=None):
         if not llm_type:
             llm_type = c.get("env", "LLM_TYPE")
@@ -31,13 +29,14 @@ class LlmLib:
         if self.verbose:
             bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
         out = None
+
         # Import the required LLM class dynamically
-        class_name = "conversationgenome.%s" % (llm_class)
+        class_name = f"conversationgenome.llm.{llm_class}"
         module = None
         try:
             module = __import__(class_name)
-        except:
-            bt.logging.info("LLM class %s not found" % (class_name))
+        except Exception as e:
+            bt.logging.error(f"LLM class '{class_name}' failed to instance: {e}")
 
         if module:
             # Get the class from the imported module
@@ -51,6 +50,9 @@ class LlmLib:
     async def conversation_to_metadata(self,  conversation):
         if not self.factory_llm:
             self.factory_llm = await self.generate_llm_instance()
+            if not self.factory_llm:
+                bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
+                return
 
         response = await self.factory_llm.conversation_to_metadata(conversation)
         return response

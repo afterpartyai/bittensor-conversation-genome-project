@@ -7,10 +7,6 @@ try:
     from spacy.matcher import Matcher
 except:
     print("Please install spacy to run locally")
-    # en_core_web_sm model vectors = 96 dimensions.
-    # en_core_web_md and en_core_web_lg = 300 dimensions
-    # python -m spacy download en_core_web_sm
-    # python -m spacy download en_core_web_lg
 
 bt = None
 try:
@@ -20,7 +16,7 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
-
+# NOTE: spacy is all local, so good for framework testing, but embeddings incompatible with LLMs
 
 class llm_spacy:
     nlp = None
@@ -31,9 +27,12 @@ class llm_spacy:
         dataset = "en_core_web_lg"  # ~600mb
         if not nlp:
             # Manual download
-            # python -m spacy download en_core_web_sm
+            # en_core_web_sm model vectors = 96 dimensions.
+            # en_core_web_md and en_core_web_lg = 300 dimensions
             # Faster small and medium models:
-            # en_core_web_sm and en_core_web_md
+            # python -m spacy download en_core_web_sm
+            # python -m spacy download en_core_web_md
+            # python -m spacy download en_core_web_lg
 
             if not spacy.util.is_package(dataset):
                 bt.logging.info(f"Downloading spacy model {dataset}...")
