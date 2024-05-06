@@ -20,6 +20,11 @@ except:
 
 from conversationgenome.llm.LlmLib import LlmLib
 
+if c.get('env', 'FORCE_LOG') == 'debug':
+    bt.logging.enable_debug(True)
+elif c.get('env', 'FORCE_LOG') == 'info':
+    bt.logging.enable_default(True)
+
 
 class MinerLib:
     verbose = False
