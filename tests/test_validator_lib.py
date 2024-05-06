@@ -53,7 +53,6 @@ async def test_full():
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        #print("full_conversation", full_conversation)
         llm_type = c.get("env", "LLM_TYPE")
         model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
@@ -69,8 +68,6 @@ async def test_full():
         batch_num = random.randint(100000, 9999999)
 
         validatorHotkey = "VHK-0"
-        #print("FULLCONVO", tags)
-        #return
 
         await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":vectors}, type="validator", batch_num=batch_num, window=999)
 

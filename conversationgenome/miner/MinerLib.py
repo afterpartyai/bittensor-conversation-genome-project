@@ -22,7 +22,7 @@ from conversationgenome.llm.LlmLib import LlmLib
 
 
 class MinerLib:
-    verbose = True
+    verbose = False
 
     async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
         #bt.logging.info("MINERCONVO", convoWindow, minerUid)
@@ -38,7 +38,7 @@ class MinerLib:
             out["tags"] = tags
             out["vectors"] = Utils.get(result, 'vectors', {})
             if self.verbose:
-                bt.logging.info("MINED TAGS", out["tags"])
+                bt.logging.debug(f"MINED TAGS: {out['tags']}")
         else:
             llml = LlmLib()
             exampleSentences = [

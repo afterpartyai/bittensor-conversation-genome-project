@@ -7,6 +7,8 @@ from conversationgenome.ConfigLib import c
 
 
 class ApiLib:
+    verbose = False
+
     async def reserveConversation(self, hotkey):
         # Call Convo server and reserve a conversation
         if c.get('env', 'SYSTEM_MODE') == 'test':
@@ -41,7 +43,7 @@ class ApiLib:
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '80')
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
             response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
-            print("url", url)
+            #print("url", url)
             maxLines = Utils._int(c.get('env', 'MAX_CONVO_LINES', 300))
             if response.status_code == 200:
                 selectedConvo = response.json()
@@ -70,7 +72,8 @@ class ApiLib:
         }
         response = requests.put(url, headers=headers, json=jsonData)
         if response.status_code == 200:
-            print("PUT success", response.json())
+            if self.verbose:
+                print("PUT success", response.json())
         else:
             print("PUT ERROR", response)
         return True

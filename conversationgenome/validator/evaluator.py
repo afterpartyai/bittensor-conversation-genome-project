@@ -90,7 +90,7 @@ class Evaluator:
         scores = torch.zeros(num_responses)
         zero_score_mask = torch.ones(num_responses)
         rank_scores = torch.zeros(num_responses)
-        bt.logging.info("DEVICE for rank_scores", rank_scores.device)
+        bt.logging.info(f"DEVICE for rank_scores: {rank_scores.device}")
 
         avg_ages = torch.zeros(num_responses)
         avg_age_scores = torch.zeros(num_responses)
@@ -166,7 +166,7 @@ class Evaluator:
         # Remove duplicate tags
         tag_set = list(set(tags))
         diff = Utils.compare_arrays(full_convo_tags, tag_set)
-        bt.logging.debug("Calculated scores for tag_set: {tag_set}")
+        bt.logging.debug(f"Calculating scores for tag_set: {tag_set}")
         for tag in tag_set:
             is_unique = False
             if tag in diff['unique_2']:
@@ -187,8 +187,8 @@ class Evaluator:
                 scores_unique.append(score)
             else:
                 scores_both.append(score)
-            bt.logging.debug(f"Score for {tag}: {score} -- Unique: {is_unique}")
-        bt.logging.info(f"Scores len: {len(scores)} Unique: {len(scores_unique)} full convo tags: {len(full_convo_tags)}")
+            bt.logging.debug(f"Score for '{tag}': {score} -- Unique: {is_unique}")
+        bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique)
 
