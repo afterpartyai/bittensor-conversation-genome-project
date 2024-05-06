@@ -1,340 +1,283 @@
-<div align="center">
+# README
 
-# **Bittensor Subnet Template** <!-- omit in toc -->
-[![Discord Chat](https://img.shields.io/discord/308323056592486420.svg)](https://discord.gg/bittensor)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+## **Conversation Genome Project**
 
----
+***
 
-## The Incentivized Internet <!-- omit in toc -->
+* [Conversation Genome Project](./#conversation-genome-project)
+  * [Key Features](./#key-features)
+  * [Benefits](./#benefits)
+  * [System Design](./#system-design)
+  * [Rewards and Incentives](./#rewards-and-incentives)
+* [Getting Started](./#getting-started)
+  * [Installation](./#installation)
+  * [Quickstart Mock Tests](./#quickstart-mock-tests)
+  * [Configuration](./#configuration)
+  * [Registration](./#registration)
+* [Subnet Roles](./#subnet-roles)
+  * [Mining](./#mining)
+  * [Validating](./#validating)
+* [Helpful Guides](./#helpful-guides)
+  * [Using Runpod](./#Using-Runpod)
+  * [Managing Processes](./#Managing-Processes)
+* [License](./#license)
 
-[Discord](https://discord.gg/bittensor) • [Network](https://taostats.io/) • [Research](https://bittensor.com/whitepaper)
-</div>
+***
 
----
-- [Conversation Genome Project](#conversation-genome-project)
-  - [Key Features](#key-features)
-  - [Benefits](#benefits)
-  - [System Design](#system-design)
-  - [Rewards and Incentives](#rewards-and-incentives)
-- [License](#license)
-
----
-
-# Conversation Genome Project
+## Introduction to the Conversation Genome Project
 
 The Conversation Genome Project (CGP) is an open-source initiative aimed at enabling personalized conversational AI by providing a comprehensive dataset of indexed and tagged conversations.
 
-## Key Features
+If you are new to Bittensor, please checkout the [Bittensor Website](https://bittensor.com/) before proceeding to the setup section.
 
-- Indexing and tagging of billions of conversations across various sources (YouTube, podcasts, etc.)
-- Leveraging fractal data mining and conversation windows for efficient processing
-- Synthetic participant profiles generated from conversation metadata
-- Boring Index algorithm to assess conversation quality (relevance, engagement, novelty, coherence, and fluency)
-- Open-source dataset for training and fine-tuning conversational AI models
-- Incentivized mining and validation system for data contribution and integrity
+```mermaid
+flowchart TD
+    A(CGP API) === Validator1([Validator])
+    A -.- Validator2([Validator])
+    A -.- Validator3([Validator])
+    Validator1 --- C(Miner1)
+    Validator1 --- D(Miner2)
+    Validator1 --- E(Miner3)
+    C --- GPT(OpenAI GPT API)
+    D --- CLAUDE(Anthropic Claude API)
+    E --- LLM(Local LLM API)
+    A --> VECTOR(Vector Database)
+    VECTOR --> PUBLIC(Hugging Face dataset)
+    VECTOR --> FIREBASE(Firebase database)
+    click PUBLIC "https://huggingface.co/" _blank
+```
 
-## Benefits
+### Key Features
 
-- Addresses the lack of personalization in current conversational AI models
-- Enables natural and engaging conversations tailored to individual contexts and preferences
-- Provides a comprehensive and annotated dataset for conversational AI development
-- Encourages open-source community contributions and advancements
-- Maintains data integrity through validation and scoring mechanisms
+* Indexing and tagging of billions of conversations across various sources (YouTube, podcasts, etc.)
+* Leveraging fractal data mining and conversation windows for efficient processing
+* Synthetic participant profiles generated from conversation metadata
+* Boring Index algorithm to assess conversation quality (relevance, engagement, novelty, coherence, and fluency)
+* Open-source dataset for training and fine-tuning conversational AI models
+* Incentivized mining and validation system for data contribution and integrity
 
-## System Design
+***
 
-- Data stores: Primary source of truth, conversation windows, participant profiles, and vector database
-- Validator roles: Pull data, ground conversations, create windows, and score submissions
-- Miner roles: Process conversation windows, provide metadata and tags
-- Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
+## Getting Started
 
-## Rewards and Incentives
+### Installation
 
-- Miners rewarded for accurate and valuable metadata contributions
-- Bell curve distribution of rewards to encourage high-quality submissions
-- Cross-referencing and vector space analysis to ensure data integrity
-- Boring Index algorithm for assessing conversation quality (not yet used for miner rewards)
+This repository requires python3.{} or higher. To install it, simply clone this repository and install the dependencies:
 
----
-## Quickstarter template
+```console
+git clone https://github.com/afterpartyai/bittensor-afterparty-conversation-genome-subnet.git ap-cg-subnet
+cd ap-cg-subnet
+pip install -r requirements.txt
+```
 
-This template contains all the required installation instructions, scripts, and files and functions for:
-- Building Bittensor subnets.
-- Creating custom incentive mechanisms and running these mechanisms on the subnets. 
+***
 
-In order to simplify the building of subnets, this template abstracts away the complexity of the underlying blockchain and other boilerplate code. While the default behavior of the template is sufficient for a simple subnet, you should customize the template in order to meet your specific requirements.
----
+### Quickstart Mock Tests
 
-## Introduction
+The best way to begin to understand the Conversation Genome (CG) is to run the example test script. This script is meant to provide verbose output so you can see how the process works. It also executes against mock data sources and APIs so you don't need to have anything set up in terms of keys, etc. to see how this operates.
 
-**IMPORTANT**: If you are new to Bittensor subnets, read this section before proceeding to [Installation](#installation) section. 
+Run the command below to see the output:
 
-The Bittensor blockchain hosts multiple self-contained incentive mechanisms called **subnets**. Subnets are playing fields in which:
-- Subnet miners who produce value, and
-- Subnet validators who produce consensus
+```console
+bash run_tests.sh
+```
 
-determine together the proper distribution of TAO for the purpose of incentivizing the creation of value, i.e., generating digital commodities, such as intelligence or data. 
+You can follow the output to see the miner executes the following flow:
 
-Each subnet consists of:
-- Subnet miners and subnet validators.
-- A protocol using which the subnet miners and subnet validators interact with one another. This protocol is part of the incentive mechanism.
-- The Bittensor API using which the subnet miners and subnet validators interact with Bittensor's onchain consensus engine [Yuma Consensus](https://bittensor.com/documentation/validating/yuma-consensus). The Yuma Consensus is designed to drive these actors: subnet validators and subnet miners, into agreement on who is creating value and what that value is worth. 
+* Validator reserves a conversation and generates full-conversation ground-truth tags
+* Validator Divides conversation into windows, and sends a window to 3 different UIDs
+* Miners generate tags on the window they are sent, generates embeddings for those tags, and sends back to validator
+* Validator Scores tags and generates final scores for each miner on this step
 
-This starter template is split into three primary files. To write your own incentive mechanism, you should edit these files. These files are:
-1. `template/protocol.py`: Contains the definition of the protocol used by subnet miners and subnet validators.
-2. `neurons/miner.py`: Script that defines the subnet miner's behavior, i.e., how the subnet miner responds to requests from subnet validators.
-3. `neurons/validator.py`: This script defines the subnet validator's behavior, i.e., how the subnet validator requests information from the subnet miners and determines the scores.
+***
 
-### Example
+### Configuration
 
-The Bittensor Subnet 1 for Text Prompting is built using this template. See [Bittensor Text-Prompting](https://github.com/opentensor/text-prompting) for how to configure the files and how to add monitoring and telemetry and support multiple miner types. Also see this Subnet 1 in action on [Taostats](https://taostats.io/subnets/netuid-1/) explorer.
+Now that you've seen the process execute, let's configure your instance and run the tests that verify everything is setup properly.
 
----
+First duplicate the dotenv file:
 
-## Installation
+```console
+cp env_example .env
+```
 
-### Before you proceed
-Before you proceed with the installation of the subnet, note the following: 
+Use your editor to add your settings. You will need a ChatGPT key and a Bittensor hotkey. If you're on a Linux box, the nano editor is usually the easiest:
 
-- Use these instructions to run your subnet locally for your development and testing, or on Bittensor testnet or on Bittensor mainnet. 
-- **IMPORTANT**: We **strongly recommend** that you first run your subnet locally and complete your development and testing before running the subnet on Bittensor testnet. Furthermore, make sure that you next run your subnet on Bittensor testnet before running it on the Bittensor mainnet.
-- You can run your subnet either as a subnet owner, or as a subnet validator or as a subnet miner. 
-- **IMPORTANT:** Make sure you are aware of the minimum compute requirements for your subnet. See the [Minimum compute YAML configuration](./min_compute.yml).
-- Note that installation instructions differ based on your situation: For example, installing for local development and testing will require a few additional steps compared to installing for testnet. Similarly, installation instructions differ for a subnet owner vs a validator or a miner. 
+```console
+nano .env
+```
 
-### Install
+***
 
-- **Running locally**: Follow the step-by-step instructions described in this section: [Running Subnet Locally](./docs/running_on_staging.md).
-- **Running on Bittensor testnet**: Follow the step-by-step instructions described in this section: [Running on the Test Network](./docs/running_on_testnet.md).
-- **Running on Bittensor mainnet**: Follow the step-by-step instructions described in this section: [Running on the Main Network](./docs/running_on_mainnet.md).
+### Registration
 
----
+Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website [here](https://docs.bittensor.com/subnets/register-validate-mine).
 
-## Writing your own incentive mechanism
+To register on testnet, add the flag `--subtensor.network test` to your registration command, and specify `--netuid 138` which is our testnet subnet uid
 
-As described in [Quickstarter template](#quickstarter-template) section above, when you are ready to write your own incentive mechanism, update this template repository by editing the following files. The code in these files contains detailed documentation on how to update the template. Read the documentation in each of the files to understand how to update the template. There are multiple **TODO**s in each of the files identifying sections you should update. These files are:
-- `template/protocol.py`: Contains the definition of the wire-protocol used by miners and validators.
-- `neurons/miner.py`: Script that defines the miner's behavior, i.e., how the miner responds to requests from validators.
-- `neurons/validator.py`: This script defines the validator's behavior, i.e., how the validator requests information from the miners and determines the scores.
-- `template/forward.py`: Contains the definition of the validator's forward pass.
-- `template/reward.py`: Contains the definition of how validators reward miner responses.
+***
 
-In addition to the above files, you should also update the following files:
-- `README.md`: This file contains the documentation for your project. Update this file to reflect your project's documentation.
-- `CONTRIBUTING.md`: This file contains the instructions for contributing to your project. Update this file to reflect your project's contribution guidelines.
-- `template/__init__.py`: This file contains the version of your project.
-- `setup.py`: This file contains the metadata about your project. Update this file to reflect your project's metadata.
-- `docs/`: This directory contains the documentation for your project. Update this directory to reflect your project's documentation.
+## Subnet Roles
 
-__Note__
-The `template` directory should also be renamed to your project name.
----
+### Mining
 
-# Writing your own subnet API
-To leverage the abstract `SubnetsAPI` in Bittensor, you can implement a standardized interface. This interface is used to interact with the Bittensor network and can is used by a client to interact with the subnet through its exposed axons.
+You can launch your miners on testnet using the following command.
 
-What does Bittensor communication entail? Typically two processes, (1) preparing data for transit (creating and filling `synapse`s) and (2), processing the responses received from the `axon`(s).
+To run with pm2 please see instructions [below](./#pm2-installation-and-management)
 
-This protocol uses a handler registry system to associate bespoke interfaces for subnets by implementing two simple abstract functions:
-- `prepare_synapse`
-- `process_responses`
+If you are running on runpod, please read instructions [here](./#using-runpod)
 
-These can be implemented as extensions of the generic `SubnetsAPI` interface.  E.g.:
+```
+python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port id>
+```
 
+### Validating
 
-This is abstract, generic, and takes(`*args`, `**kwargs`) for flexibility. See the extremely simple base class:
-```python
-class SubnetsAPI(ABC):
-    def __init__(self, wallet: "bt.wallet"):
-        self.wallet = wallet
-        self.dendrite = bt.dendrite(wallet=wallet)
+You can launch your validator on testnet using the following command.
 
-    async def __call__(self, *args, **kwargs):
-        return await self.query_api(*args, **kwargs)
+To run with pm2 please see instructions [below](./#pm2-installation-and-management)
 
-    @abstractmethod
-    def prepare_synapse(self, *args, **kwargs) -> Any:
-        """
-        Prepare the synapse-specific payload.
-        """
-        ...
+If you are running on runpod, please read instructions [here](./#using-runpod)
 
-    @abstractmethod
-    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> Any:
-        """
-        Process the responses from the network.
-        """
-        ...
+```
+python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port ID>
+```
 
+***
+
+## Helpful Guides
+
+### Using Runpod
+
+Runpod is a very helpful resource for easily launching and managing cloud GPU and CPU instances, however, there are several configuration settings that must be implemented both on Runpod and in your start command for the subnet.
+
+#### Choosing an Instance (WIP)
+
+To run the subnet code for CGP, you'll need either a GPU or a CPU, depending on your subnet role and configuration.
+
+Miners using an OpenAI API Key, you will need a CPU with at least \_\_GB of Ram and \_\_GB of Disk Space. Runpod provides basic CPU units of different processing powers.
+
+Miners using the out-of-the-box \_\_\_ LLM will need a GPU with at least \_\_GB of VRam and \_\_ of Disk Space. We recommend \_\_\_\_ and \_\_\_\_ models.
+
+#### Configuring Your Instance
+
+Runpod Instances are dockerized. As a result, there are tricky configurations with ports to be able to run processes over the network.
+
+When you are launching your pod, and have selected your instance, click "Edit Template."
+
+<figure><img src=".gitbook/assets/Screenshot 2024-05-02 at 4.15.27 PM.png" alt=""><figcaption></figcaption></figure>
+
+With the editing window open, you adjust your container disk space and/or volume diskspace to match the needs of your neuron, and you can expose additional ports. You will need to expose symmetrical TCP Ports, which requires you to specify non-standard ports >=70000 in the "Expose TCP ports" field. Add however many ports you will need (we recommend at least 2, or more if you want to run additional miners).
+
+<figure><img src=".gitbook/assets/Screenshot 2024-05-02 at 4.17.23 PM.png" alt=""><figcaption></figcaption></figure>
+
+Now, you can deploy your instance. Once it is deployed, navigate to your pods, find the instance you just launched, click "Connect" and navigate to the "TCP Port Mappings" tab. here, you should see your Symmetrical TCP Port IDs.
+
+<figure><img src=".gitbook/assets/Screenshot 2024-05-02 at 4.18.55 PM.png" alt=""><figcaption><p>NOTE: Even though the port does not match the original values of 70000 and 70001, two symmetrical port mappings were created. These can be used for bittensor neurons</p></figcaption></figure>
+
+#### Starting Your Neuron
+
+**Important!!** You will need to add one of these ports to your start command for the neuron you are running, using the flag
+
+`--axon.port <port ID>`
+
+Every process will require a unique port, so if you run a second neuron, you will need a second Port ID. See below for an EXAMPLE Full start command
+
+`enter start command here`
+
+#### Running a Subtensor on Runpod
+
+Unfortunately, there is no straight-forward or reliable way to run a local subtensor on a Runpod Instance. You can, however, leverage another cloud provider of your choice to run a Subtensor, and connect to that local subtensor using the `--subtensor.chain_endpoint <your chain endpoint>` flag in your neuron start command. For further information on running a local subtensor, please see the [Bittensor Docs](https://docs.bittensor.com/subtensor-nodes/).
+
+***
+
+### Managing Processes
+
+While there are many options for managing your processes, we recommend either pm2 or Screen. Please see below for instructions on installing and running pm2
+
+#### pm2 Installation and Management
+
+To install Pm2 on your Ubuntu Device, use
+
+```
+apt install nodejs npm
+npm install -g pm2
+```
+
+To run your process in pm2, use the following command format:
+
+```
+pm2 start "<your neuron start command here>" --name "<your process name here>"
+```
+
+Full example:
+
+```
+pm2 start "python3 -m neurons.miner --netuid 1 --wallet.name default --wallet.hotkey default --logging.debug --axon.port 40049" --name "miner"
+```
+
+The following Commands will be useful for management:
+
+```
+pm2 list # lists all pm2 processes
+pm2 logs <pid> # replace pid with your process ID to view logs
+pm2 restart <pid> # restart this pic
+pm2 stop <pid> # stops your pid
+pm2 del <pid> # deletes your pid
+pm2 describe <pid> # prints out metadata on the process
+```
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+mindmap
+  root((Conversations))
+    Output
+      Participant Profiles
+      Semantic Tags
+      Embeddings
+    Sources
+      YouTube
+      Podcasts
+      Discord
+      Twitter
+      Chat
 ```
 
 
-Here is a toy example:
 
-```python
-from bittensor.subnets import SubnetsAPI
-from MySubnet import MySynapse
+## Conversation Genome Project Overview (continued)
 
-class MySynapseAPI(SubnetsAPI):
-    def __init__(self, wallet: "bt.wallet"):
-        super().__init__(wallet)
-        self.netuid = 99
+### Benefits
 
-    def prepare_synapse(self, prompt: str) -> MySynapse:
-        # Do any preparatory work to fill the synapse
-        data = do_prompt_injection(prompt)
+* Addresses the lack of personalization in current conversational AI models
+* Enables natural and engaging conversations tailored to individual contexts and preferences
+* Provides a comprehensive and annotated dataset for conversational AI development
+* Encourages open-source community contributions and advancements
+* Maintains data integrity through validation and scoring mechanisms
 
-        # Fill the synapse for transit
-        synapse = StoreUser(
-            messages=[data],
-        )
-        # Send it along
-        return synapse
+### System Design
 
-    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> str:
-        # Look through the responses for information required by your application
-        for response in responses:
-            if response.dendrite.status_code != 200:
-                continue
-            # potentially apply post processing
-            result_data = postprocess_data_from_response(response)
-        # return data to the client
-        return result_data
-```
+* Data stores: Primary source of truth, conversation windows, participant profiles, and vector database
+* Validator roles: Pull data, ground conversations, create windows, and score submissions
+* Miner roles: Process conversation windows, provide metadata and tags
+* Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
 
-You can use a subnet API to the registry by doing the following:
-1. Download and install the specific repo you want
-1. Import the appropriate API handler from bespoke subnets
-1. Make the query given the subnet specific API
+### Rewards and Incentives
+
+* Miners rewarded for accurate and valuable metadata contributions
+* Bell curve distribution of rewards to encourage high-quality submissions
+* Cross-referencing and vector space analysis to ensure data integrity
+* Boring Index algorithm for assessing conversation quality (not yet used for miner rewards)
 
 
-See a simplified example for subnet 21 (`FileTao` storage) below. See `examples/subnet21.py` file for a full implementation example to follow:
 
-```python
+### License
 
-# Subnet 21 Interface Example
-
-class StoreUserAPI(SubnetsAPI):
-    def __init__(self, wallet: "bt.wallet"):
-        super().__init__(wallet)
-        self.netuid = 21
-
-    def prepare_synapse(
-        self,
-        data: bytes,
-        encrypt=False,
-        ttl=60 * 60 * 24 * 30,
-        encoding="utf-8",
-    ) -> StoreUser:
-        data = bytes(data, encoding) if isinstance(data, str) else data
-        encrypted_data, encryption_payload = (
-            encrypt_data(data, self.wallet) if encrypt else (data, "{}")
-        )
-        expected_cid = generate_cid_string(encrypted_data)
-        encoded_data = base64.b64encode(encrypted_data)
-
-        synapse = StoreUser(
-            encrypted_data=encoded_data,
-            encryption_payload=encryption_payload,
-            ttl=ttl,
-        )
-
-        return synapse
-
-    def process_responses(
-        self, responses: List[Union["bt.Synapse", Any]]
-    ) -> str:
-        for response in responses:
-            if response.dendrite.status_code != 200:
-                continue
-            stored_cid = (
-                response.data_hash.decode("utf-8")
-                if isinstance(response.data_hash, bytes)
-                else response.data_hash
-            )
-            bt.logging.debug("received data CID: {}".format(stored_cid))
-            break
-
-        return stored_cid
-
-
-class RetrieveUserAPI(SubnetsAPI):
-    def __init__(self, wallet: "bt.wallet"):
-        super().__init__(wallet)
-        self.netuid = 21
-
-    def prepare_synapse(self, cid: str) -> RetrieveUser:
-        synapse = RetrieveUser(data_hash=cid)
-        return synapse
-
-    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> bytes:
-        success = False
-        decrypted_data = b""
-        for response in responses:
-            if response.dendrite.status_code != 200:
-                continue
-            decrypted_data = decrypt_data_with_private_key(
-                encrypted_data,
-                response.encryption_payload,
-                bytes(self.wallet.coldkey.private_key.hex(), "utf-8"),
-            )
-        return data
-
- 
-Example usage of the `FileTao` interface, which can serve as an example for other subnets.
-
-# import the bespoke subnet API
-from storage import StoreUserAPI, RetrieveUserAPI
-
-wallet = bt.wallet(wallet="default", hotkey="default") # the wallet used for querying
-metagraph = bt.metagraph(netuid=21)  # metagraph of the subnet desired
-query_axons = metagraph.axons... # define custom logic to retrieve desired axons (e.g. validator set, specific miners, etc)
-
-# Store the data on subnet 21
-bt.logging.info(f"Initiating store_handler: {store_handler}")
-cid = await StoreUserAPI(
-      axons=query_axons, # the axons you wish to query
-      # Below: Parameters passed to `prepare_synapse` for this API subclass
-      data=b"Hello Bittensor!",
-      encrypt=False,
-      ttl=60 * 60 * 24 * 30, 
-      encoding="utf-8",
-      uid=None,
-)
-# The Content Identifier that corresponds to the stored data
-print(cid)
-> "bafkreifv6hp4o6bllj2nkdtzbq6uh7iia6bgqgd3aallvfhagym2s757v4
-
-# Now retrieve data from SN21 (storage)
-data = await RetrieveUserAPI(
-  axons=query_axons, # axons desired to query
-  cid=cid, # the content identifier to fetch the data
-)
-print(data)
-> b"Hello Bittensor!"
-```
-
-
-# Subnet Links
-In order to see real-world examples of subnets in-action, see the `subnet_links.py` document or access them from inside the `template` package by:
-```python
-import template
-template.SUBNET_LINKS
-[{'name': 'sn0', 'url': ''},
- {'name': 'sn1', 'url': 'https://github.com/opentensor/text-prompting/'},
- {'name': 'sn2', 'url': 'https://github.com/bittranslateio/bittranslate/'},
- {'name': 'sn3', 'url': 'https://github.com/gitphantomman/scraping_subnet/'},
- {'name': 'sn4', 'url': 'https://github.com/manifold-inc/targon/'},
-...
-]
-```
-
-## License
 This repository is licensed under the MIT License.
-```text
+
+```
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
+# Copyright © 2024 Afterparty
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation

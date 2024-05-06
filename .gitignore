@@ -160,3 +160,8 @@ cython_debug/
 #.idea/
 
 testing/
+*#
+*~
+wandb/*
+virtualenv_*
+web/store
