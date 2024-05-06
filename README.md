@@ -118,7 +118,7 @@ You can follow the output to see the process executes the following flow:
 - The validator:
   - Receives the metadata from the miners
   - Scores each tag against the ground truth full conversation
-  - Compares each miner return against other minor returns
+  - Compares each miner return against other miner returns
   - Pushes all the metadata to a local store or the CGP Api
 
 The data generated is explained in detail in the Overview section below. With the Info logging setting, the output should look something like this:
@@ -138,7 +138,9 @@ The data generated is explained in detail in the Overview section below. With th
 ```
 
 
-If you have any reported errors in the .env and run again until all tests are finished. These tests run outside the Bittensor network (so no emissions), but they will get a test conversation, process it using your OpenAI key, and report the results. That will make sure the process itself is running properly on your machine.
+If you have any reported errors, check your **.env** and Python environment and run again until all tests are finished.
+
+These tests run outside the Bittensor network (so no emissions), but they will get a test conversation, process it using your OpenAI key, and report the results. That will make sure the process itself is running properly on your machine.
 
 If everything is working properly, you are ready to run against the testnet. Simply run this file:
 
@@ -176,16 +178,16 @@ Conversation Genome Project (CGP) use the Bittensor infrastructure the refine da
 ## System Design
 
 - Data stores: Primary source of truth, conversation windows, participant profiles, and vector database
-- Validator roles: Pull data, ground conversations, create windows, and score submissions
+- Validator roles: Pull data, generates overview metadata for ground conversations, create windows, and score submissions
 - Miner roles: Process conversation windows, provide metadata and tags
 - Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
 
 ## Rewards and Incentives
 
 - Miners rewarded for accurate and valuable metadata contributions
-- Bell curve distribution of rewards to encourage high-quality submissions
-- Cross-referencing and vector space analysis to ensure data integrity
-- Boring Index algorithm for assessing conversation quality (not yet used for miner rewards)
+- Balanced distribution of rewards to encourage high-quality submissions
+- Cross-referencing and vector embeddings analysis to ensure data integrity
+- Algorithm for assessing conversation quality (not yet used for miner rewards)
 
 
 
@@ -226,7 +228,7 @@ mindmap
 This repository is licensed under the MIT License.
 ```text
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
+# Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
