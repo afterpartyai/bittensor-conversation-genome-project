@@ -30,10 +30,9 @@ class MinerLib:
     verbose = False
 
     async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
-        #bt.logging.info("MINERCONVO", convoWindow, minerUid)
+        #bt.logging.debug("MINERCONVO", convoWindow, minerUid)
         out = {"uid":minerUid, "tags":[], "profiles":[], "convoChecksum":11}
 
-        #bt.logging.info("Mine result: %ds" % (waitSec))
         if not dryrun:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
@@ -62,19 +61,12 @@ class MinerLib:
                 "Friends to this ground.",
                 "And liegemen to the Dane.",
             ]
-            lines = copy.deepcopy(convoWindow)
+            lines = copy.deepcopy(exampleSentences)
             lines.append(random.choice(exampleSentences))
             lines.append(random.choice(exampleSentences))
-            matches_dict = await llml.conversation_to_tags({"lines":conversation_window})
+            matches_dict = await llml.conversation_to_metadata({"lines":lines})
             tags = list(matches_dict.keys())
             out["tags"] = tags
             out["vectors"] = matches_dict
-            #waitSec = random.randint(0, 3)
-            #await asyncio.sleep(waitSec)
         return out
-
-
-    def get_conversation_tags(self, convo):
-        tags = {}
-        return tags
 
