@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2024 Afterparty, Inc.
+# Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -22,14 +22,6 @@ import typing
 
 class CgSynapse(bt.Synapse):
     time_elapsed = 0
-    """
-    A simple OCR synapse protocol representation which uses bt.Synapse as its base.
-    This protocol enables communication betweenthe miner and the validator.
-
-    Attributes:
-    - base64_image: Base64 encoding of pdf image to be processed by the miner.
-    - response: List[dict] containing data extracted from the image.
-    """
 
     # Required request input, filled by sending dendrite caller. It is a base64 encoded string.
     cgp_input: List[dict]

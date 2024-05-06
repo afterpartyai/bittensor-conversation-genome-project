@@ -28,7 +28,7 @@ from typing import List
 from traceback import print_exception
 
 from conversationgenome.base.neuron import BaseNeuron
-from conversationgenome.mock import MockDendrite
+from conversationgenome.mock.mock import MockDendrite
 from conversationgenome.utils.config import add_validator_args
 
 
@@ -337,7 +337,7 @@ class BaseValidatorNeuron(BaseNeuron):
         rewards2 = torch.ones(len(uids_tensor), device=self.device)
         for idx, reward in enumerate(rewards):
             rewards2[idx] = rewards[idx] #random.random() #
-        print(f"BEFORE SCATTER uids_tensor: {uids_tensor} rewards: {rewards} rewards2: {rewards2}")
+        #print(f"BEFORE SCATTER uids_tensor: {uids_tensor} rewards: {rewards} rewards2: {rewards2}")
 
 
         scattered_rewards: torch.FloatTensor = self.scores.scatter(
@@ -352,9 +352,8 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores: torch.FloatTensor = alpha * scattered_rewards + (
             1 - alpha
         ) * self.scores.to(self.device)
-        #for idx, score in enumerate(self.scores):
-        #    self.scores[idx] = random.random() #rewards[idx]
-        print(f"Updated moving avg scores: {self.scores}")
+
+        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""

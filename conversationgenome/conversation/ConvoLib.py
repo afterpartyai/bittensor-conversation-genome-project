@@ -1,9 +1,9 @@
 import requests
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
-from conversationgenome.ApiLib import ApiLib
+from conversationgenome.api.ApiLib import ApiLib
 
 
 class ConvoLib:
@@ -12,14 +12,12 @@ class ConvoLib:
         convo = await api.reserveConversation(hotkey)
         return convo
 
-    async def getConvoPromptTemplate(self):
-        return "Parse this"
-
     async def put_conversation(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):
+        llm_model = c.get('env', c.get('env', 'LLM_TYPE') + "_MODEL")
         output = {
             "type": type,
             "mode": c.get('env', 'SYSTEM_MODE'),
-            "model": c.get('env', 'OPENAI_MODEL'),
+            "model": llm_model,
             "marker_id": c.get('env', 'MARKER_ID'),
             "convo_window_index": window,
             "hotkey": hotkey,

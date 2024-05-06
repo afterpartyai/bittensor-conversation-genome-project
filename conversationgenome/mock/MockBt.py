@@ -1,7 +1,7 @@
 import random
 from datetime import datetime, timezone
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 
 class logging:
     time_format = '%Y-%m-%d %H:%M:%S'

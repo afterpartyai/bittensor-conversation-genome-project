@@ -8,13 +8,13 @@ import os
 import numpy as np
 
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
-from conversationgenome.MinerLib import MinerLib
-from conversationgenome.ConvoLib import ConvoLib
-from conversationgenome.LlmLib import LlmLib
-from conversationgenome.MockBt import MockBt
+from conversationgenome.miner.MinerLib import MinerLib
+from conversationgenome.conversation.ConvoLib import ConvoLib
+from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.mock.MockBt import MockBt
 
 bt = None
 try:
@@ -23,6 +23,11 @@ except:
     if verbose:
         print("bittensor not installed")
     bt = MockBt()
+
+if c.get('env', 'FORCE_LOG') == 'debug':
+    bt.logging.enable_debug(True)
+elif c.get('env', 'FORCE_LOG') == 'info':
+    bt.logging.enable_default(True)
 
 import wandb
 
@@ -44,8 +49,6 @@ class ValidatorLib:
 
     def __init__(self):
         super(ValidatorLib, self).__init__()
-
-        #bt.logging.info("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY"))
 
     # Deprecated: remove
     async def calculate_base_score(self, result_dict):
@@ -150,17 +153,6 @@ class ValidatorLib:
               "epochs": epochs,
         })
 
-    async def do_log_wandb(self, c_guid):
-        print("Do log....")
-        epochs = 10
-        offset = random.random() / 5
-        for epoch in range(2, epochs):
-            acc = 1 - 2 ** -epoch - random.random() / epoch - offset
-            loss = 2 ** -epoch + random.random() / epoch + offset
-
-            wandb.log({"acc": acc, "loss": loss})
-        wandb.log({"miner_uuid":10, "miner_hotkey":"a8348-123123", "score": random.random()})
-
     async def end_log_wandb(self, c_guid):
         # Mark the run as finished
         wandb.finish()
@@ -188,12 +180,6 @@ class ValidatorLib:
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
-            #await self.begin_log_wandb(conversation_guid)
-            #for i in range(5):
-            #    await self.do_log_wandb(conversation_guid)
-            #    time.sleep(2)
-            #await self.end_log_wandb(conversation_guid)
-            #return None
             bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
@@ -251,7 +237,7 @@ class ValidatorLib:
 
 
     async def generate_full_convo_metadata(self, convo):
-        bt.logging.info("generate_full_convo_metadata participants", convo['participants'])
+        bt.logging.info(f"Execute generate_full_convo_metadata for participants {convo['participants']}")
 
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)
@@ -268,7 +254,7 @@ class ValidatorLib:
         return data
 
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
-        bt.logging.info("Send to miners", miner_uids)
+        bt.logging.info(f"Send to conversation {conversation_guid} / {window_idx} to miners: {miner_uids}")
         results = []
         ml = MinerLib()
         tasks = [asyncio.create_task(ml.do_mining(conversation_guid, window_idx, conversation_window, minerUid)) for minerUid in miner_uids]

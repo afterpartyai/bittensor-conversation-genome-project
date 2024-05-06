@@ -4,9 +4,9 @@ import json
 verbose = False
 
 
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
-from conversationgenome.MockBt import MockBt
+from conversationgenome.mock.MockBt import MockBt
 
 bt = None
 try:
@@ -16,7 +16,11 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
-import wandb
+wandb = None
+try:
+    import wandb
+except:
+    print("wandb not installed")
 
 
 class WandbLib:
