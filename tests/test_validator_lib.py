@@ -7,6 +7,16 @@ from conversationgenome.utils.Utils import Utils
 from conversationgenome.validator.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
 from conversationgenome.analytics.WandbLib import WandbLib
+from conversationgenome.mock.MockBt import MockBt
+
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
+
 
 
 class MockAxon:
@@ -33,7 +43,9 @@ async def test_full():
         wl.init_wandb()
     # Config variables
     c.set('system', 'mode', 'test')
-    miner_uids = []
+
+    # Create test set of miner IDs so minimum miner checker doesn't error out
+    miner_uids = [1,2,3,4,5,6,7,8,9]
 
     vl = ValidatorLib()
     el = Evaluator()
@@ -41,7 +53,7 @@ async def test_full():
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        print("full_conversation", full_conversation)
+        #print("full_conversation", full_conversation)
         llm_type = c.get("env", "LLM_TYPE")
         model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
@@ -77,14 +89,14 @@ async def test_full():
                "convo_windows_overlap_lines": overlap_lines,
             })
         if llm_type == "spacy":
-            print("SPACY TEST MODE")
+            bt.logging.debug("SPACY TEST MODE -- remove half of the full convo tags")
             # In test_mode, to expand the miner scores, remove half of the full convo tags.
             # This "generates" more unique tags found for the miners
             half = int(len(full_conversation_metadata['tags'])/2)
             full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
-        #await vl.send_windows_to_miners(conversation_windows, full_conversation=full_conversation, full_conversation_metadata=full_conversation_metadata)
+
         # Loop through conversation windows. Send each window to multiple miners
-        print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
+        bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
         #conversation_windows = []
         for window_idx, conversation_window in enumerate(conversation_windows):
             print(f"conversation_window {window_idx}", conversation_window)
