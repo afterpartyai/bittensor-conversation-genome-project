@@ -8,6 +8,7 @@ from conversationgenome.validator.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
 from conversationgenome.analytics.WandbLib import WandbLib
 
+
 class MockAxon:
     uuid = "a"
     hotkey = ""
@@ -33,9 +34,9 @@ async def test_full():
     # Config variables
     c.set('system', 'mode', 'test')
     miner_uids = [1,2,3,4,5,6,7,8,9]
+
     vl = ValidatorLib()
     el = Evaluator()
-    #await wl.log_example_data("ABC")
     result = await vl.reserve_conversation()
     test_mode = True
     if result:
