@@ -1,8 +1,11 @@
 #export SYSTEM_MODE=test
 export SYSTEM_MODE=production
 
-export WAND_ENABLED=0
+export WAND_ENABLED=1
 export WANDB_API_KEY=some_key
+export WANDB_STAGENET_PROJECT=cgp_stagenet
+export WANDB_TESTNET_PROJECT=cgp_testnet
+export WANDB_MAINNET_PROJECT=cgp_mainnet
 
 export CGP_API_READ_HOST=http://api.conversationgenome.org
 export CGP_API_READ_PORT=80
@@ -19,8 +22,9 @@ export LLM_TYPE=openai
 export OPENAI_API_KEY=some_key
 #export OPENAI_DIRECT_CALL=1
 
-export OPENAI_MODEL=gpt-4
-#export OPENAI_MODEL=gpt-3.5-turbo
+#export OPENAI_MODEL=gpt-4-turbo
+#export OPENAI_MODEL=gpt-4
+export OPENAI_MODEL=gpt-3.5-turbo
 export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
 
 

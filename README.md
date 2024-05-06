@@ -48,77 +48,27 @@ flowchart TD
 - Indexing and tagging of billions of conversations across various sources (YouTube, podcasts, etc.)
 - Leveraging fractal data mining and conversation windows for efficient processing
 - Synthetic participant profiles generated from conversation metadata
-- Boring Index algorithm to assess conversation quality (relevance, engagement, novelty, coherence, and fluency)
+- Algorithm to assess conversation quality (relevance, engagement, novelty, coherence, and fluency)
 - Open-source dataset for training and fine-tuning conversational AI models
 - Incentivized mining and validation system for data contribution and integrity
 
 
 # Quickstart Mock Tests
 
-The best way to begin to understand the Conversation Genome (CG) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works. They also execute against mock data sources and APIs so you don't need to have anything set up in terms of keys, etc. to see how this operatates.
+The best way to begin to understand the Conversation Genome Project (CGP) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works. They also execute against mock data sources and APIs so you don't need to have anything set up in terms of keys, etc. to see how this operatates.
+
+NOTE: We recommend your run the unit tests in Debug logging mode so you can see all of the operations, but please DO NOT run a validator or miner on mainnet with Debug logging mode active. Info mode logging level is fine for mainnet.
+
 
 Clone the repo and install the requirements:
 
 ```console
-git clone https://github.com/afterpartyai/bittensor-afterparty-conversation-genome-subnet.git ap-cg-subnet
+xxx git clone https://github.com/afterpartyai/bittensor-afterparty-conversation-genome-subnet.git cgp-subnet
 pip install -r requirements.txt
-cd ap-cg-subnet
+cd cgp-subnet
 ```
 
-Once this is setup, let's run the Miner, so you can watch the process at work:
-
-```console
-python -m unittest discover tests_ap testminer
-```
-
-You can follow the output to see the miner executes the following flow:
-
-* Receive a conversation from the validator
-* Process the conversation which will generate 3 main sets of data about the conversation:
-** Participant Profiles of each participant in the conversation
-** Semantic tags for different aspects of the conversation
-** Vector embeddings of the semantic tags
-* Return the processed data to the validator
-
-The data generated is explained in detail in the Overview section below. The output should look something like this:
-
-```
-Mined 37 tags
-......
-----------------------------------------------------------------------
-Ran 6 tests in 0.002s
-
-OK
-```
-
-Let's run the validator tests which will make get a conversation, send the conversation to the miner, and validate the response.
-
-```console
-python -m unittest discover tests_ap testvalidator
-```
-
-The output will show the following execution flow:
-
-* Establish a connection to the (mock) Conversation Server (CS)
-* Download a (mock) conversation to process
-* Send the conversation to a group of miners (3 in this test)
-* Receive the processed responses
-* Send each response to the CS and receive scopes for the tags and profile
-* Divide the reward based on those scores
-* Send for emissions
-
-The output should look something like this:
-
-```
-Found 37 tags
-Validating 37 tags
-.............
-----------------------------------------------------------------------
-Ran 13 tests in 0.002s
-OK
-```
-
-# Quickstart Configuration and API Tests
+## Quickstart Configuration
 
 Now that you've seen the process execute, let's configure your instance and run the tests that verify everything is setup properly.
 
@@ -136,18 +86,63 @@ If you're on a Linux box, the nano editor is usually the easiest:
 nano .env
 ```
 
-Once this is configured, run the config tester that will do a baseline test to make sure all of the proper variables are set:
+Now you will need to setup some configuration variables. Start by copying the example_env file to your own .env:
 
 ```console
-python -m unittest discover tests_ap testvalidator
+cp env_example .env
+```
+
+Open the .env file in your editor and change these variables to your API keys:
+
+* WANDB_API_KEY=some_key
+* OPENAI_API_KEY=some_key
+
+The example file specifies the LLM type as "openai" to use the GPT 3.5 turbo model, but you can change it depending on your preferences.
+
+## Quickstart Running the Tests
+
+Once this is setup, let's run the test validator suite, so you can watch the process at work:
+
+```console
+python -m pytest -s --disable-warnings  tests/test_validator_lib.py
+```
+
+You can follow the output to see the process executes the following flow:
+
+* Starts a validator and three miners
+* The validator:
+** Obtains a conversation to process from the CGP Api
+** Generates tags for the entire conversation
+** Breaks the conversation into conversation windows
+** Sends the first conversation window to 3 miners
+* Each miner:
+** Receives the conversation window
+** Processes it through the LLM to generate tags, participant profiles, and vector embeddings for each semantic tag
+** Returns the metadata to the validor
+* The validator:
+** Receives the metadata from the miners
+** Scores each tag against the ground truth full conversation
+** Compares each miner return against other minor returns
+** Pushes all the metadata to a local store or the CGP Api
+
+The data generated is explained in detail in the Overview section below. With the Info logging setting, the output should look something like this:
+
+```
+- Reserved conversation ID: 1421. Sending to openai LLM... -
+- Execute generate_full_convo_metadata for participants ['"SPEAKER_00"', '"SPEAKER_02"'] -
+- Found 13 tags in FullConvo -
+- Found 38 conversation windows. Sequentially sending to batches of miners -
+- Send to conversation 1421 / 0 to miners: [2, 8, 1] -
+- RESULTS from miner idx: 0 uid: 2, tags: 11 vector count: 11 -
+- RESULTS from miner idx: 1 uid: 8, tags: 4 vector count: 4 -
+- RESULTS from miner idx: 2 uid: 1, tags: 10 vector count: 10 -
+- Scores num: 11 num of Unique tags: 10 num of full convo tags: 13 -
+- Scores num: 4 num of Unique tags: 3 num of full convo tags: 13 -
+- Scores num: 10 num of Unique tags: 8 num of full convo tags: 13 -
 ```
 
 
-If you have any reported errors in the .env and run again until all tests are finished. Now run the process tests. These will run outside the Bittensor network (so no emissions), but they will get a test conversation, process it using your OpenAI key, and report the results. That will make sure the process itself is running properly on your machine.
-
-```console
-python -m unittest discover tests_ap processtest
-```
+If you have any reported errors in the .env and run again until all tests are finished. These tests run outside the Bittensor network (so no emissions), but they will get a test conversation, process it using your OpenAI key, and report the results. That will make sure the process itself is running properly on your machine.
 
 If everything is working properly, you are ready to run against the testnet. Simply run this file:
 
@@ -160,6 +155,8 @@ When you're ready to register and run on mainnet, use this file:
 ```console
 bash run_mainnet.sh
 ```
+
+NOTE TO DAN: Remove once domain is active
 
 Add a hosts file entry with Gasmask or to the /etc/hosts file that makes the api domain:
 
