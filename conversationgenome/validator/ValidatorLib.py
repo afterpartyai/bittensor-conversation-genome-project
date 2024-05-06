@@ -235,7 +235,7 @@ class ValidatorLib:
 
 
     async def generate_full_convo_metadata(self, convo):
-        bt.logging.info("generate_full_convo_metadata participants", convo['participants'])
+        bt.logging.info(f"Execute generate_full_convo_metadata for participants {convo['participants']}")
 
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)
@@ -252,7 +252,7 @@ class ValidatorLib:
         return data
 
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
-        bt.logging.info("Send to miners", miner_uids)
+        bt.logging.info(f"Send to conversation {conversation_guid} / {window_idx} to miners: {miner_uids}")
         results = []
         ml = MinerLib()
         tasks = [asyncio.create_task(ml.do_mining(conversation_guid, window_idx, conversation_window, minerUid)) for minerUid in miner_uids]

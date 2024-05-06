@@ -90,13 +90,12 @@ class llm_openai:
                     response = json.loads(response)
                 except:
                     print("Error decoding response")
-            print("response", response)
             #print("___________OPENAI response", response)
             tag_categories = ['interests', 'hobbies', 'personality_traits', 'preferences', 'technology', 'age_generation', 'ethnicity', ]
             participant_names = participants.keys()
             tag_list = {}
             for participant_name in participant_names:
-                print("participant_name", participant_name)
+                #print("participant_name", participant_name)
                 for tag_category in tag_categories:
                     key = f"{participant_name}.{tag_category}"
                     category_tags = Utils.get(response, key)
@@ -121,7 +120,7 @@ class llm_openai:
             if not tags:
                 tags = Utils.get(response, "p1.interests")
         if not Utils.empty(tags):
-            print(f"------- Found tags: {tags}. Getting vectors for tags...")
+            #print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
             out['vectors'] = {}
             tag_logs = []
@@ -310,7 +309,7 @@ class llm_openai:
                   "messages": [{"role": "user", "content": prompt}],
                 }
                 completion = self.do_direct_call(data)
-                print("________completion", completion)
+                #print("________completion", completion)
                 out = completion['json']['choices'][0]['message']['content']
                 #reply_content = completion['json']['choices'][0]['message'] #Utils.get(completion, "json.choices.0.message")
         return out

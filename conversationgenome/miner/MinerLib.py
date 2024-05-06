@@ -34,7 +34,7 @@ class MinerLib:
             lines = copy.deepcopy(conversation_window)
             result = await llml.conversation_to_metadata({"lines":lines})
             tags = Utils.get(result, 'tags')
-            print("TAGS", tags, conversation_window)
+            #print("TAGS", tags, conversation_window)
             out["tags"] = tags
             out["vectors"] = Utils.get(result, 'vectors', {})
             if self.verbose:

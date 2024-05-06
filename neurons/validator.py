@@ -25,22 +25,17 @@ import random
 import bittensor as bt
 #bt.logging.enable_debug(True)
 
-# Bittensor Validator Template:
-#import template
-#from template.validator import forward
-
-# import base validator class which takes care of most of the boilerplate
 from conversationgenome.base.validator import BaseValidatorNeuron
 
 import conversationgenome.utils
 import conversationgenome.validator
 
 from conversationgenome.ConfigLib import c
-from conversationgenome.Utils import Utils
+from conversationgenome.utils.Utils import Utils
 
-from conversationgenome.WandbLib import WandbLib
+from conversationgenome.analytics.WandbLib import WandbLib
 
-from conversationgenome.ValidatorLib import ValidatorLib
+from conversationgenome.validator.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
 
 from conversationgenome.protocol import CgSynapse
