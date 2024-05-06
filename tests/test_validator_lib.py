@@ -33,7 +33,7 @@ async def test_full():
         wl.init_wandb()
     # Config variables
     c.set('system', 'mode', 'test')
-    miner_uids = [1,2,3,4,5,6,7,8,9]
+    miner_uids = []
 
     vl = ValidatorLib()
     el = Evaluator()
