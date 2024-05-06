@@ -57,7 +57,7 @@ flowchart TD
 
 The best way to begin to understand the Conversation Genome Project (CGP) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works.
 
-> NOTE: We recommend your run the unit tests in Debug logging mode so you can see all of the operations, but please **DO NOT run a validator or miner on mainnet with Debug logging mode active**. Info mode logging level is fine for mainnet.
+> NOTE: We recommend your run the unit tests in Debug logging mode so you can see all of the operations, but please **DO NOT run a validator or miner on mainnet with Debug logging mode** active. Info mode logging level is fine for mainnet.
 
 
 Clone the repo and install the requirements:
@@ -86,12 +86,6 @@ If you're on a Linux box, the nano editor is usually the easiest:
 nano .env
 ```
 
-Now you will need to setup some configuration variables. Start by copying the example_env file to your own .env:
-
-```console
-cp env_example .env
-```
-
 Open the .env file in your editor and change these variables to your API keys:
 
 ```console
@@ -111,21 +105,21 @@ python -m pytest -s --disable-warnings  tests/test_validator_lib.py
 
 You can follow the output to see the process executes the following flow:
 
-* Starts a validator and three miners
-* The validator:
-** Obtains a conversation to process from the CGP Api
-** Generates tags for the entire conversation
-** Breaks the conversation into conversation windows
-** Sends the first conversation window to 3 miners
-* Each miner:
-** Receives the conversation window
-** Processes it through the LLM to generate tags, participant profiles, and vector embeddings for each semantic tag
-** Returns the metadata to the validor
-* The validator:
-** Receives the metadata from the miners
-** Scores each tag against the ground truth full conversation
-** Compares each miner return against other minor returns
-** Pushes all the metadata to a local store or the CGP Api
+- Starts a validator and three miners
+- The validator:
+  - Obtains a conversation to process from the CGP Api
+  - Generates tags for the entire conversation
+  - Breaks the conversation into conversation windows
+  - Sends the first conversation window to 3 miners
+- Each miner:
+  - Receives the conversation window
+  - Processes it through the LLM to generate tags, participant profiles, and vector embeddings for each semantic tag
+  - Returns the metadata to the validor
+- The validator:
+  - Receives the metadata from the miners
+  - Scores each tag against the ground truth full conversation
+  - Compares each miner return against other minor returns
+  - Pushes all the metadata to a local store or the CGP Api
 
 The data generated is explained in detail in the Overview section below. With the Info logging setting, the output should look something like this:
 
