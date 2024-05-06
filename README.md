@@ -6,13 +6,12 @@
 - [Conversation Genome Project](#conversation-genome-project-overview)
   - [Key Features](#key-features)
 - [Quickstart](#quickstart)
-  - [Quickstart - Configuration](#quickstart----configuration)
-  - [Quickstart - Running the tests](#quickstart----running-the-tests)
+  - [Quickstart - Configuration](#configuration)
+  - [Quickstart - Running the tests](#running-the-tests)
 - [Conversation Genome Project Overview](#conversation-genome-project-overview)
   - [Benefits](#benefits)
   - [System Design](#system-design)
   - [Rewards and Incentives](#rewards-and-incentives)
-- [Setup](#setup)
 - [Mining](#mining)
 - [Validating](#validating)
 - [License](#license)
@@ -27,12 +26,14 @@ If you are new to Bittensor, please checkout the [Bittensor Website](https://bit
 
 ```mermaid
 flowchart TD
-    A(CGP API) === Validator1([Validator])
-    A -.- Validator2([Validator])
-    A -.- Validator3([Validator])
+    A(CGP API) === Validator1([Validator1])
+    A -.- Validator2([Validator2])
+    A -.- Validator3([Validator3])
     Validator1 --- C(Miner1)
     Validator1 --- D(Miner2)
     Validator1 --- E(Miner3)
+    VECTOR2(Customer Database) --> Validator4([Validator4])
+    Validator4 ---> F(Miner4)
     C --- GPT(OpenAI GPT API)
     D --- CLAUDE(Anthropic Claude API)
     E --- LLM(Local LLM API)
@@ -67,7 +68,7 @@ pip install -r requirements.txt
 cd cgp-subnet
 ```
 
-## Quickstart - Configuration
+## Configuration
 
 Let's configure your instance and run the tests that verify everything is setup properly.
 
@@ -77,7 +78,7 @@ You'll need to duplicate the dotenv file to setup your own configuration:
 cp example.env .env
 ```
 
-Use your editor to add your Api keys for Weights and Biases and OpenAI.
+Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**.
 
 If you're on a Linux box, the nano editor is usually the easiest:
 
@@ -100,7 +101,7 @@ OPENAI_API_KEY=some_key
 
 The example file specifies the LLM type as **openai** and the model to use as **gpt-3.5-turbo**, but you can change it depending on your preferences.
 
-## Quickstart - Running the Tests
+## Running the Tests
 
 Once this is setup, let's run the test validator suite, so you can watch the process at work:
 
