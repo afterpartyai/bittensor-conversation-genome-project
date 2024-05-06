@@ -41,7 +41,7 @@ from conversationgenome.validator.evaluator import Evaluator
 from conversationgenome.protocol import CgSynapse
 
 class Validator(BaseValidatorNeuron):
-    verbose = True
+    verbose = False
     """
     Keeping a moving average of the scores of the miners and using them to set weights at the end of each epoch. Additionally, the scores are reset for new hotkeys at the end of each epoch.
     """
@@ -60,7 +60,7 @@ class Validator(BaseValidatorNeuron):
         # Get random miner sample size
         miners_per_window = c.get("validator", "miners_per_window", 3)
         miner_sample_size = min(self.config.neuron.sample_size, self.metagraph.n.item())
-        print("miner_sample_size", miner_sample_size, self.config.neuron.sample_size, self.metagraph.n.item())
+        bt.logging.debug(f"miner_sample_size: {miner_sample_size}, {self.config.neuron.sample_size}, {self.metagraph.n.item()}")
 
         # Get hotkeys to watch for debugging
         hot_keys = c.get("env", "HIGHLIGHT_HOTKEYS", "")
@@ -94,7 +94,7 @@ class Validator(BaseValidatorNeuron):
             full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
             full_conversation_tag_count = len(full_convo_tags)
             lines = Utils.get(full_conversation, "lines", [])
-            participants = Utils.get(full_conversation, "participants", [])
+            participants = Utils.get(full_conversation, "participants")
             miners_per_window = c.get("validator", "miners_per_window", 3)
             min_lines = c.get("convo_window", "min_lines", 5)
             max_lines = c.get("convo_window", "max_lines", 10)
@@ -102,23 +102,25 @@ class Validator(BaseValidatorNeuron):
             batch_num = random.randint(100000, 9999999)
             validatorHotkey = "FINDHOTKEY"
             await vl.put_convo(validatorHotkey, conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
-
-            wl.log({
-               "llm_type": llm_type,
-               "model": model,
-               "conversation_guid": conversation_guid,
-               "full_convo_tag_count": full_conversation_tag_count,
-               "num_lines": len(lines),
-               "num_participants": len(participants),
-               "num_convo_windows": len(conversation_windows),
-               "convo_windows_min_lines": min_lines,
-               "convo_windows_max_lines": max_lines,
-               "convo_windows_overlap_lines": overlap_lines,
-            })
+            try:
+                wl.log({
+                   "llm_type": llm_type,
+                   "model": model,
+                   "conversation_guid": conversation_guid,
+                   "full_convo_tag_count": full_conversation_tag_count,
+                   "num_lines": len(lines),
+                   "num_participants": len(participants),
+                   "num_convo_windows": len(conversation_windows),
+                   "convo_windows_min_lines": min_lines,
+                   "convo_windows_max_lines": max_lines,
+                   "convo_windows_overlap_lines": overlap_lines,
+                })
+            except:
+                pass
 
 
             # Loop through conversation windows. Send each window to multiple miners
-            print(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
+            bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
             for window_idx, conversation_window in enumerate(conversation_windows):
                 miner_uids = conversationgenome.utils.uids.get_random_uids(
                     self,
@@ -127,14 +129,13 @@ class Validator(BaseValidatorNeuron):
                 if self.verbose:
                     print("miner_uid pool", miner_uids)
                 if len(miner_uids) == 0:
-                    print("No miners")
+                    bt.logging.error("No miners found.")
                     time.sleep(30)
                     return
 
                 # Create a synapse to distribute to miners
-                print(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miner.")
+                bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
                 window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
-                #print(window_packet)
 
                 synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
 
@@ -149,14 +150,14 @@ class Validator(BaseValidatorNeuron):
                 #valid_responses = []
                 for window_idx, response in enumerate(responses):
                     if not response.cgp_output:
-                        print("BAD RESPONSE", response.axon.uuid, response.axon.hotkey, response.cgp_output)
+                        bt.logging.error(f"BAD RESPONSE: uuid: {response.axon.uuid} hotkey: {response.axon.hotkey} output: {response.cgp_output}")
                         if response.axon.hotkey in hot_key_watchlist:
                             print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                         continue
-                    print("GOOD RESPONSE", response.axon.uuid, response.axon.hotkey, response.axon,  )
+                    bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
-                    print(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
+                    bt.logging.debug(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
                     await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner",  batch_num=batch_num, window=window_idx)
                 #    valid_responses.append(response.cgp_output[0])
 
@@ -165,7 +166,7 @@ class Validator(BaseValidatorNeuron):
                 #    bt.logging.info(f"MINER RESULT uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
                 for idx, score in enumerate(final_scores):
-                    print("score", score)
+                    bt.logging.info(f"score {score}")
                     uid = str(Utils.get(score, "uuid"))
                     wl.log({
                         "conversation_guid."+uid: conversation_guid,

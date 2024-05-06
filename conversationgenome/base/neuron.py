@@ -26,7 +26,7 @@ from abc import ABC, abstractmethod
 from conversationgenome.utils.config import check_config, add_args, config
 from conversationgenome.utils.misc import ttl_get_block
 #from conversationgenome import __spec_version__ as spec_version
-from conversationgenome.mock import MockSubtensor, MockMetagraph
+from conversationgenome.mock.mock import MockSubtensor, MockMetagraph
 
 __version__ = "0.1.1"
 version_split = __version__.split(".")

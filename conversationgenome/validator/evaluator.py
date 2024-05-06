@@ -90,7 +90,7 @@ class Evaluator:
         scores = torch.zeros(num_responses)
         zero_score_mask = torch.ones(num_responses)
         rank_scores = torch.zeros(num_responses)
-        bt.logging.info(f"DEVICE for rank_scores: {rank_scores.device}")
+        #bt.logging.info(f"DEVICE for rank_scores: {rank_scores.device}")
 
         avg_ages = torch.zeros(num_responses)
         avg_age_scores = torch.zeros(num_responses)
@@ -105,7 +105,7 @@ class Evaluator:
         final_scores = []
         for idx, response in enumerate(miner_responses):
             if not response.cgp_output:
-                bt.logging.info(f"BAD RESPONSE: {idx} HOTKEY: {response.axon.hotkey}")
+                bt.logging.error(f"BAD RESPONSE EVAL: miner index: {idx} HOTKEY: {response.axon.hotkey}")
                 final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
             else:
                 #bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
@@ -146,7 +146,7 @@ class Evaluator:
                 bt.logging.debug(f"_______ {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
 
 
-        bt.logging.debug("Complete evalulation. Final scores: {final_scores}")
+        bt.logging.debug(f"Complete evalulation. Final scores: {final_scores}")
         # Force to use cuda if available -- otherwise, causes device mismatch
         rank_scores = rank_scores.to('cuda')
         # Convert to tensors
