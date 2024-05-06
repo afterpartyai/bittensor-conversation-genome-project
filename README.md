@@ -53,11 +53,11 @@ flowchart TD
 - Incentivized mining and validation system for data contribution and integrity
 
 
-# Quickstart Mock Tests
+# Quickstart
 
-The best way to begin to understand the Conversation Genome Project (CGP) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works. They also execute against mock data sources and APIs so you don't need to have anything set up in terms of keys, etc. to see how this operatates.
+The best way to begin to understand the Conversation Genome Project (CGP) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works.
 
-NOTE: We recommend your run the unit tests in Debug logging mode so you can see all of the operations, but please DO NOT run a validator or miner on mainnet with Debug logging mode active. Info mode logging level is fine for mainnet.
+> NOTE: We recommend your run the unit tests in Debug logging mode so you can see all of the operations, but please DO NOT run a validator or miner on mainnet with Debug logging mode active. Info mode logging level is fine for mainnet.
 
 
 Clone the repo and install the requirements:
@@ -68,17 +68,17 @@ pip install -r requirements.txt
 cd cgp-subnet
 ```
 
-## Quickstart Configuration
+## Quickstart -- Configuration
 
-Now that you've seen the process execute, let's configure your instance and run the tests that verify everything is setup properly.
+Let's configure your instance and run the tests that verify everything is setup properly.
 
-First duplicate the dotenv file:
+You'll need to duplicate the dotenv file to setup your own configuration:
 
 ```console
 cp example.env .env
 ```
 
-Use your editor to add your settings. You will need a Weights and Biases key, ChatGPT key and a Bittensor hotkey.
+Use your editor to add your Api keys for Weights and Biases and OpenAI.
 
 If you're on a Linux box, the nano editor is usually the easiest:
 
@@ -94,12 +94,14 @@ cp env_example .env
 
 Open the .env file in your editor and change these variables to your API keys:
 
-* WANDB_API_KEY=some_key
-* OPENAI_API_KEY=some_key
+```console
+WANDB_API_KEY=some_key
+OPENAI_API_KEY=some_key
+```
 
-The example file specifies the LLM type as "openai" to use the GPT 3.5 turbo model, but you can change it depending on your preferences.
+The example file specifies the LLM type as **openai** and the model to use as **gpt-3.5-turbo**, but you can change it depending on your preferences.
 
-## Quickstart Running the Tests
+## Quickstart -- Running the Tests
 
 Once this is setup, let's run the test validator suite, so you can watch the process at work:
 
@@ -165,7 +167,7 @@ Add a hosts file entry with Gasmask or to the /etc/hosts file that makes the api
 ```
 
 
-# Conversation Genome Project Overview
+# Conversation Genome Project Overview {#conversation-genome-project}
 
 Conversation Genome Project (CGP) use the Bittensor infrastructure the refine data related to conversations.
 
