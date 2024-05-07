@@ -185,7 +185,7 @@ To run with pm2 please see instructions below
 If you are running on runpod, please read instructions below.
 
 ```
-python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port> 
+python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
 
 
@@ -212,9 +212,7 @@ Runpod is a very helpful resource for easily launching and managing cloud GPU an
 
 To run the subnet code for CGP, you'll need either a GPU or a CPU, depending on your subnet role and configuration.
 
-Miners using an OpenAI API Key, you will need a CPU with at least __GB of Ram and __GB of Disk Space. Runpod provides basic CPU units of different processing powers.
-
-Miners using the out-of-the-box ___ LLM will need a GPU with at least __GB of VRam and __ of Disk Space. We recommend ____ and ____ models.
+Miners using an OpenAI API Key, you will need a CPU with at least 8GB of Ram and 20GB of Disk Space. Runpod provides basic CPU units of different processing powers.
 
 ### Configuring Your Instance
 
