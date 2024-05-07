@@ -5,15 +5,20 @@
 ---
 - [Conversation Genome Project](#conversation-genome-project-overview)
   - [Key Features](#key-features)
-- [Quickstart](#quickstart)
-  - [Quickstart - Configuration](#configuration)
-  - [Quickstart - Running the tests](#running-the-tests)
-- [Conversation Genome Project Overview](#conversation-genome-project-overview)
-  - [Benefits](#benefits)
-  - [System Design](#system-design)
+  - [Benefits](#Benefits)
+  - [System Design](#System-Design)
   - [Rewards and Incentives](#rewards-and-incentives)
-- [Mining](#mining)
-- [Validating](#validating)
+- [Getting Started](#Getting-Started)
+  - [Installation](#Installation)
+  - [Configuration](#configuration)
+  - [Quickstart - Running the tests](#running-the-tests)
+  - [Registration](#Registration)
+- [Subnet Roles](#subnet-roles)
+  - [Mining](#mining)
+  - [Validating](#validating)
+- [Helpful Guides](#helpful-guides)
+  - [Runpod](#Runpod)
+  - [Managing Processes](#managing-processes)
 - [License](#license)
 
 ---
@@ -53,22 +58,23 @@ flowchart TD
 - Incentivized mining and validation system for data contribution and integrity
 
 
-# Quickstart
+# Getting Started
+
+## Installation
+
+This repository requires python3.8 or higher. To install the subnet code, simply clone this repository and install the dependencies:
+
+```console
+git clone https://github.com/afterpartyai/bittensor-afterparty-conversation-genome-subnet.git cgp-subnet
+cd cgp-subnet
+pip install -r requirements.txt
+```
+
+## Quickstart Mock Tests
 
 The best way to begin to understand the Conversation Genome Project (CGP) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works.
 
-> NOTE: We recommend your run the unit tests in Debug logging mode so you can see all of the operations, but please **DO NOT run a validator or miner on mainnet with Debug logging mode** active. Info mode logging level is fine for mainnet.
-
-
-Clone the repo and install the requirements:
-
-```console
-xxx git clone https://github.com/afterpartyai/bittensor-afterparty-conversation-genome-subnet.git cgp-subnet
-pip install -r requirements.txt
-cd cgp-subnet
-```
-
-## Configuration
+### Configuration
 
 Let's configure your instance and run the tests that verify everything is setup properly.
 
@@ -95,7 +101,7 @@ OPENAI_API_KEY=some_key
 
 The example file specifies the LLM type as **openai** and the model to use as **gpt-3.5-turbo**, but you can change it depending on your preferences.
 
-## Running the Tests
+### Running the Tests
 
 Once this is setup, let's run the test validator suite, so you can watch the process at work:
 
@@ -162,6 +168,110 @@ Add a hosts file entry with Gasmask or to the /etc/hosts file that makes the api
 54.193.70.198 api.conversationgenome.org
 ```
 
+## Registration
+Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website here.
+
+To register on testnet, add the flag `--subtensor.network test` to your registration command, and specify `--netuid 138` which is our testnet subnet uid.
+
+
+# Subnet Roles
+
+## Mining
+
+You can launch your miners on testnet using the following command.
+
+To run with pm2 please see instructions below
+
+If you are running on runpod, please read instructions below.
+
+```
+python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port> 
+```
+
+
+## Validating
+
+You can launch your validator on testnet using the following command.
+
+To run with pm2 please see instructions below
+
+If you are running on runpod, please read instructions here
+
+```
+python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
+```
+
+
+# Helpful Guides
+
+## Using Runpod
+
+Runpod is a very helpful resource for easily launching and managing cloud GPU and CPU instances, however, there are several configuration settings that must be implemented both on Runpod and in your start command for the subnet.
+
+### Choosing an Instance
+
+To run the subnet code for CGP, you'll need either a GPU or a CPU, depending on your subnet role and configuration.
+
+Miners using an OpenAI API Key, you will need a CPU with at least __GB of Ram and __GB of Disk Space. Runpod provides basic CPU units of different processing powers.
+
+Miners using the out-of-the-box ___ LLM will need a GPU with at least __GB of VRam and __ of Disk Space. We recommend ____ and ____ models.
+
+### Configuring Your Instance
+
+Runpod Instances are dockerized. As a result, there are specific ports configurations needed to be able to run processes over the network.
+
+When you are launching your pod, and have selected your instance, click "Edit Template."
+
+With the editing window open, you adjust your container disk space and/or volume diskspace to match the needs of your neuron, and you can expose additional ports. You will need to expose symmetrical TCP Ports, which requires you to specify non-standard ports >=70000 in the "Expose TCP ports" field. Add however many ports you will need (we recommend at least 2, or more if you want to run additional miners).
+
+Now, you can deploy your instance. Once it is deployed, navigate to your pods, find the instance you just launched, click "Connect" and navigate to the "TCP Port Mappings" tab. here, you should see your Symmetrical TCP Port IDs.
+
+NOTE: Even though the port does not match the original values of 70000 and 70001, two symmetrical port mappings were created. These can be used for bittensor neurons
+
+### Starting Your Neuron
+
+*Important!!* You will need to add one of these ports to your start command for the neuron you are running, using the flag
+
+`--axon.port <port ID>`
+
+Every process will require a unique port, so if you run a second neuron, you will need a second Port ID.
+
+### Running a Subtensor on Runpod
+
+Unfortunately, there is no stable and reliable way to run a local subtensor on a Runpod Instance. You can, however, leverage another cloud provider of your choice to run a Subtensor, and connect to that local subtensor using the `--subtensor.chain_endpoint <your chain endpoint>` flag in your neuron start command. For further information on running a local subtensor, please see the [Bittensor Docs](https://docs.bittensor.com/subtensor-nodes/).
+
+## Managing Processes
+
+While there are many options for managing your processes, we recommend either pm2 or Screen. Please see below for instructions on installing and running pm2
+
+### pm2 Installation and Management
+
+To install Pm2 on your Ubuntu Device, use
+
+```
+apt install nodejs npm
+npm install -g pm2
+```
+
+To run your process in pm2, use the following command format:
+
+```pm2 start "<your neuron start command here>" --name "<your process name here>"```
+
+Full example:
+
+```pm2 start "python3 -m neurons.miner --netuid 1 --wallet.name default --wallet.hotkey default --logging.debug --axon.port 40049" --name "miner"```
+
+The following Commands will be useful for management:
+
+```
+pm2 list # lists all pm2 processes
+pm2 logs <pid> # replace pid with your process ID to view logs
+pm2 restart <pid> # restart this pic
+pm2 stop <pid> # stops your pid
+pm2 del <pid> # deletes your pid
+pm2 describe <pid> # prints out metadata on the process
+```
+
 
 # Conversation Genome Project Overview
 
@@ -188,21 +298,6 @@ Conversation Genome Project (CGP) use the Bittensor infrastructure the refine da
 - Balanced distribution of rewards to encourage high-quality submissions
 - Cross-referencing and vector embeddings analysis to ensure data integrity
 - Algorithm for assessing conversation quality (not yet used for miner rewards)
-
-
-
-## Mining
-
-You can launch your miners via pm2 using the following command.
-
-`pm2 start ./miner/miner.py --interpreter python3 -- --netuid 18 --subtensor.network <LOCAL/FINNEY/TEST> --wallet.name <WALLET NAME> --wallet.hotkey <HOTKEY NAME> --axon.port <PORT>`
-
-
-## Validating
-
-You can launch your validator via pm2 using the following command.
-
-`pm2 start ./validators/validator.py --interpreter python3 -- --netuid 18 --subtensor.network <LOCAL/FINNEY/TEST> --wallet.name <WALLET NAME> --wallet.hotkey <HOTKEY NAME>`
 
 
 
