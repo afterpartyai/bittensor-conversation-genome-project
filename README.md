@@ -51,7 +51,7 @@ flowchart TD
 ## Key Features
 
 - Indexing and tagging of billions of conversations across various sources (YouTube, podcasts, etc.)
-- Leveraging fractal data mining and conversation windows for efficient processing
+- Leveraging fractal data mining and conversation windows for efficient and privacy-preserving processing
 - Synthetic participant profiles generated from conversation metadata
 - Algorithm to assess conversation quality (relevance, engagement, novelty, coherence, and fluency)
 - Open-source dataset for training and fine-tuning conversational AI models
@@ -273,7 +273,7 @@ pm2 describe <pid> # prints out metadata on the process
 
 # Conversation Genome Project Overview
 
-Conversation Genome Project (CGP) use the Bittensor infrastructure the refine data related to conversations.
+Conversation Genome Project (CGP) uses the Bittensor infrastructure to annotate data related to conversations.
 
 ## Benefits
 
