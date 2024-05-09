@@ -1,6 +1,16 @@
 import torch
 import random
-import bittensor as bt
+from conversationgenome.mock.MockBt import MockBt
+
+verbose = False
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
+
 from typing import List
 
 

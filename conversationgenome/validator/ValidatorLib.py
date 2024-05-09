@@ -170,7 +170,7 @@ class ValidatorLib:
         wandb.finish()
 
 
-    async def reserve_conversation(self, minConvWindows = 1):
+    async def reserve_conversation(self, minConvWindows = 1, batch_num=None):
         import time
         out = None
         # Validator requests a full conversation from the API
@@ -186,9 +186,13 @@ class ValidatorLib:
             full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
             if not full_conversation_metadata:
                 bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
+                validatorHotkey = "HK-FAIL"
+                await self.put_convo("NO-TAGS", conversation_guid, {"tags":[], "vectors":[]}, type="validator", batch_num=batch_num)
+
                 return None
             full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
             bt.logging.info(f"Found {len(full_conversation_tags)} tags in FullConvo")
+            bt.logging.debug(f"Found full convo tags {full_conversation_tags} in FullConvo")
 
             # Make sure there are enough tags to make processing worthwhile
             minValidTags = self.validateMinimumTags(full_conversation_tags)

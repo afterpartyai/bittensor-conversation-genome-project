@@ -39,8 +39,8 @@ class ApiLib:
             postData = None
             cert = None
             selectedConvo = {}
-            read_host_url = c.get('env', 'CGP_API_READ_HOST', 'http://api.conversationgenome.org')
-            read_host_port = c.get('env', 'CGP_API_READ_PORT', '80')
+            read_host_url = c.get('env', 'CGP_API_READ_HOST', 'http://api.conversations.xyz')
+            read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
             response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
             #print("url", url)
@@ -66,6 +66,8 @@ class ApiLib:
         write_host_url = c.get('env', 'CGP_API_WRITE_HOST', 'http://api.conversationgenome.org')
         write_host_port = c.get('env', 'CGP_API_WRITE_PORT', '80')
         url = f"{write_host_url}:{write_host_port}/api/v1/conversation/record/{c_guid}"
+        if self.verbose:
+            print(f"PUTTING TO {url}")
         headers = {
             "Accept": "application/json",
             "Accept-Language": "en_US",

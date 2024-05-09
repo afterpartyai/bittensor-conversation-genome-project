@@ -13,7 +13,7 @@ class ConvoLib:
         return convo
 
     async def put_conversation(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):
-        llm_model = c.get('env', c.get('env', 'LLM_TYPE') + "_MODEL")
+        llm_model = c.get('env', c.get('env', 'LLM_TYPE').upper() + "_MODEL")
         output = {
             "type": type,
             "mode": c.get('env', 'SYSTEM_MODE'),
