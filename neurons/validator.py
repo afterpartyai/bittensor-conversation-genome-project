@@ -56,6 +56,7 @@ class Validator(BaseValidatorNeuron):
         miners_per_window = c.get("validator", "miners_per_window", 3)
         miner_sample_size = min(self.config.neuron.sample_size, self.metagraph.n.item())
         bt.logging.debug(f"miner_sample_size: {miner_sample_size}, {self.config.neuron.sample_size}, {self.metagraph.n.item()}")
+        batch_num = random.randint(100000, 9999999)
 
         # Get hotkeys to watch for debugging
         hot_keys = c.get("env", "HIGHLIGHT_HOTKEYS", "")
@@ -66,7 +67,7 @@ class Validator(BaseValidatorNeuron):
         el = Evaluator()
 
         # Reserve a conversation from the conversation API
-        result = await vl.reserve_conversation()
+        result = await vl.reserve_conversation(batch_num=batch_num)
 
         if result:
             (full_conversation, full_conversation_metadata, conversation_windows) = result
@@ -91,8 +92,12 @@ class Validator(BaseValidatorNeuron):
             min_lines = c.get("convo_window", "min_lines", 5)
             max_lines = c.get("convo_window", "max_lines", 10)
             overlap_lines = c.get("convo_window", "overlap_lines", 2)
-            batch_num = random.randint(100000, 9999999)
-            validatorHotkey = "FINDHOTKEY"
+            validatorHotkey = "FINDHOTKEY-"
+            try:
+                validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
+            except:
+                pass
+
             await vl.put_convo(validatorHotkey, conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
             try:
                 wl.log({

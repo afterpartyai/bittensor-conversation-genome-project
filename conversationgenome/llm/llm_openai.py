@@ -122,6 +122,7 @@ class llm_openai:
             tags = self.process_json_tag_return(response)
         else:
             tags = response.split(",")
+            tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
             if self.verbose:
@@ -293,19 +294,16 @@ class llm_openai:
                 model=self.model,
                 messages=[{"role": "user", "content": prompt} ],
             )
-            reply_content = completion.choices[0].message
-            try:
-                out = json.loads(reply_content.content)
-            except:
-                print("Error parsing LLM reply. RESPONSE:", completion)
+            out = completion.choices[0].message
         else:
             data = {
               "model": self.model,
               "messages": [{"role": "user", "content": prompt}],
             }
             completion = self.do_direct_call(data)
-            #print("________CSV LLM completion", completion)
-            out = completion['json']['choices'][0]['message']['content']
+            #out = completion['json']['choices'][0]['message']['content']
+            out = Utils.get(completion, "json.choices.0.message.content")
+            #print(f"________CSV LLM completion completion:{completion} out:{out}")
         return out
 
     async def openai_prompt_call_function(self, convoXmlStr=None, participants=None):

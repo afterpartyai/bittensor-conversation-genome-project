@@ -185,3 +185,11 @@ class Utils:
         except:
             pass
         return out
+
+    @staticmethod
+    def clean_tags(tags):
+        out = []
+        for tag in tags:
+            out.append(tag.strip().lower())
+        return out
+

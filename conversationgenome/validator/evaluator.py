@@ -59,7 +59,7 @@ class Evaluator:
         else:
             return None
 
-    def score_vector_similarity(self, neighborhood_vectors, individual_vectors):
+    def score_vector_similarity(self, neighborhood_vectors, individual_vectors, tag=None):
         similarity_score = 0
         # Calculate the similarity score between the neighborhood_vectors and the individual_vectors
         # If all vectors are 0.0, the vector wasn't found for scoring in the embedding score
@@ -71,17 +71,54 @@ class Evaluator:
             similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
         except:
             bt.logging.error("Error generating similarity_score. Setting to zero.")
-        bt.logging.debug(f"Similarity score between the content and the tag: {similarity_score}")
+        bt.logging.debug(f"Tag '{tag}' similarity score: {similarity_score}")
         return similarity_score
 
+    async def calculate_penalty(self, uid, score, num_tags, num_unique_tags, min_score, max_score):
+        final_score = score
+        num_both_tags = num_tags - num_unique_tags
+
+        # No both tags. Penalize.
+        if num_both_tags == 0:
+            bt.logging.debug("!!PENALTY: No BOTH tags")
+            final_score *= 0.85
+
+        # All junk tags. Penalize
+        if max_score < .2:
+            bt.logging.debug("!!PENALTY: max_score < .2 -- all junk tags")
+            final_score *= 0.5
+
+        # Very few tags. Penalize.
+        if num_tags < 2:
+            bt.logging.debug("!!PENALTY: < 2 TOTAL tags")
+            final_score *= 0.2
+
+        # no unique tags. Penalize
+        if num_unique_tags < 1:
+            bt.logging.debug("!!PENALTY: less than 1 unique tag")
+            final_score *= 0.75
+        elif num_unique_tags < 2:
+            bt.logging.debug("!!PENALTY: less than 2 unique tags")
+            final_score *= 0.8
+        elif num_unique_tags < 3:
+            bt.logging.debug("!!PENALTY: less than 3 unique tags")
+            final_score *= 0.85
+        elif num_unique_tags < 4:
+            bt.logging.debug("!!PENALTY: less than 4 unique tags")
+            final_score *= 0.9
+        elif num_unique_tags < 5:
+            bt.logging.debug("!!PENALTY: less than 5 unique tags")
+            final_score *= 0.95
+
+        return final_score
 
 
-    async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None, verbose=None):
+    async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
         if verbose == None:
             verbose = self.verbose
-        #bt.logging.info("FULL convo tags", full_convo_metadata['tags'])
         final_scores = []
         now = datetime.now(timezone.utc)
+
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
         if verbose:
             bt.logging.info("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
@@ -104,12 +141,24 @@ class Evaluator:
 
         final_scores = []
         for idx, response in enumerate(miner_responses):
-            if not response.cgp_output:
+            # TODO: Testing framework returns just response. Make it return cgp_output
+            try:
+                miner_response = response.cgp_output
+            except:
+                miner_response = response
+            uuid = "uuid-"+str(idx)
+            hotkey = "hk-uuid"
+            try:
+                uuid = response.axon.uuid
+                hotkey = response.axon.hotkey
+            except:
+                pass
+            if not miner_response:
                 bt.logging.error(f"BAD RESPONSE EVAL: miner index: {idx} HOTKEY: {response.axon.hotkey}")
-                final_scores.append({"uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
+                final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
             else:
                 #bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
-                miner_result = response.cgp_output[0]
+                miner_result = miner_response[0]
                 try:
                     # Make sure there are enough tags to make processing worthwhile
                     if miner_result is None or not miner_result or len(miner_result['tags']) < self.min_tags:
@@ -124,16 +173,27 @@ class Evaluator:
                 # Loop through tags that match the full convo and get the scores for those
                 results = await self.calc_scores(full_convo_metadata, full_conversation_neighborhood, miner_result)
 
-                (scores, scores_both, scores_unique) = results
+                (scores, scores_both, scores_unique, diff) = results
                 mean_score = np.mean(scores)
                 median_score = np.median(scores)
                 min_score = np.min(scores)
                 max_score = np.max(scores)
                 std = np.std(scores)
+                sorted_unique_scores = np.sort(scores_unique)
                 sorted_scores = np.sort(scores)
-                top_3_mean = np.mean(sorted_scores[-3:])
+                top_3_sorted_unique_scores = sorted_unique_scores[-3:]
+                if len(top_3_sorted_unique_scores) == 1:
+                    num1 = np.float64(0.0)
+                    num2 = np.float64(0.0)
+                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, num1)
+                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, num2)
+                elif len(top_3_sorted_unique_scores) == 2:
+                    num1 = np.float64(0.0)
+                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, num1)
+                top_3_mean = np.mean(top_3_sorted_unique_scores)
 
-                scoring_factors = self.scoring_factors
+                if not scoring_factors:
+                    scoring_factors = self.scoring_factors
                 adjusted_score = (
                     (scoring_factors['top_3_mean'] * top_3_mean)+
                     (scoring_factors['median_score'] * median_score) +
@@ -142,13 +202,21 @@ class Evaluator:
                 )
 
                 final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
-                final_scores.append({"uid": idx+1, "uuid": response.axon.uuid, "hotkey": response.axon.hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
-                bt.logging.debug(f"_______ {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
+                both_tags = diff['both']
+                unique_tags = diff['unique_2']
+                total_tag_count = len(both_tags) + len(unique_tags)
+                uid = Utils.get(miner_result, 'uid')
+                final_miner_score = await self.calculate_penalty(uid, adjusted_score, total_tag_count, len(unique_tags), min_score, max_score)
+                final_scores.append({"uid": idx+1, "uuid": uuid, "hotkey": hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
+                bt.logging.debug(f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
 
 
         bt.logging.debug(f"Complete evalulation. Final scores: {final_scores}")
         # Force to use cuda if available -- otherwise, causes device mismatch
-        rank_scores = rank_scores.to('cuda')
+        try:
+            rank_scores = rank_scores.to('cuda')
+        except:
+            pass
         # Convert to tensors
         for idx, final_score in enumerate(final_scores):
             rank_scores[idx] = final_scores[idx]['adjustedScore']
@@ -167,6 +235,8 @@ class Evaluator:
         tag_set = list(set(tags))
         diff = Utils.compare_arrays(full_convo_tags, tag_set)
         bt.logging.debug(f"Calculating scores for tag_set: {tag_set}")
+        bt.logging.debug(f"Diff -- both: {diff['both']} unique window: {diff['unique_2']}")
+
         for tag in tag_set:
             is_unique = False
             if tag in diff['unique_2']:
@@ -181,7 +251,7 @@ class Evaluator:
                     scores_both.append(0)
                 continue
             tag_vectors = tag_vector_dict[tag]['vectors']
-            score = self.score_vector_similarity(full_conversation_neighborhood, tag_vectors)
+            score = self.score_vector_similarity(full_conversation_neighborhood, tag_vectors, tag)
             scores.append(score)
             if is_unique:
                 scores_unique.append(score)
@@ -190,7 +260,7 @@ class Evaluator:
             bt.logging.debug(f"Score for '{tag}': {score} -- Unique: {is_unique}")
         bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
-        return (scores, scores_both, scores_unique)
+        return (scores, scores_both, scores_unique, diff)
 
 if __name__ == "__main__":
     bt.logging.info("Setting up test data...")
@@ -222,99 +292,6 @@ if __name__ == "__main__":
     ]
     miner_tag_lists = tagLists
 
-    async def calculate_penalty(uid, score, num_tags, num_unique_tags, min_score, max_score):
-        final_score = score
-
-        # All junk tags. Penalize
-        if max_score < .2:
-            bt.logging.debug("calculate_penalty: all junk tag")
-            final_score *= 0.5
-
-        # Very few tags. Penalize.
-        if num_tags < 2:
-            bt.logging.debug("calculate_penalty: very few tags")
-            final_score *= 0.2
-
-        # no unique tags. Penalize
-        if num_unique_tags < 1:
-            bt.logging.debug("calculate_penalty: less than 1 unique tag")
-            final_score *= 0.75
-        elif num_unique_tags < 2:
-            bt.logging.debug("calculate_penalty: less than 2 unique tags")
-            final_score *= 0.8
-        elif num_unique_tags < 3:
-            bt.logging.debug("calculate_penalty: less than 3 unique tags")
-            final_score *= 0.85
-        elif num_unique_tags < 4:
-            bt.logging.debug("calculate_penalty: less than 4 unique tags")
-            final_score *= 0.9
-        elif num_unique_tags < 5:
-            bt.logging.debug("calculate_penalty: less than 5 unique tags")
-            final_score *= 0.95
-
-        return final_score
-
-    async def calculate_final_scores(ground_tags, miner_tag_lists):
-        e = Evaluator()
-        # Find the max tags returned for the y-axis of the plot
-        max_len = len(max(miner_tag_lists, key=len))
-        bt.logging.info("max_len", max_len)
-        scoreData = []
-        for idx, tags in enumerate(miner_tag_lists):
-            bt.logging.info(f"\n\n__________________ User {idx} __________________")
-            skewness = 0
-            results = await e.calc_scores(ground_tags, neighborhood_vector, tags)
-            (scores, scores_both, scores_unique) = results
-
-            mean_score = np.mean(scores)
-            median_score = np.median(scores)
-            freq, bins = np.histogram(scores, bins=10, range=(0,1))
-            #skewness = skew(freq)
-            skewness = skew(scores)
-            min_score = np.min(scores)
-            max_score = np.max(scores)
-
-
-            #y1 =  sorted(scores)
-            #bt.logging.info(scores)
-            freq, bins = np.histogram(scores, bins=10, range=(0,1))
-            mean = np.mean(scores)
-            std = np.std(scores)
-            plt.plot(bins[:-1], freq)
-            plt.axvline(mean, color='r', linestyle='--', label='Mean')
-            plt.axvline(mean + std, color='g', linestyle='--', label='1 Standard Deviation')
-            plt.axvline(mean - std, color='g', linestyle='--')
-
-            # Adjust the skewness so 0 is in the center of the graph
-            skewness_x = 0.5 + (0.3 * skewness)
-            plt.axvline(skewness_x, color='b', linestyle='--', label='Skewness')
-
-            plt.xlabel('Values')
-            plt.ylabel('Frequency')
-            plt.legend()
-            plt.ylim(0,max_len)
-
-            #y1 =  scores
-            #plt.plot(x, y1, label="line L")
-            #plt.plot()
-
-            plt.title(f"Scores for {idx} user")
-            plt.show()
-
-            # SCORING FUNCTION
-            adjusted_score = (
-                (0.7 * median_score) +
-                (0.3 * mean_score)
-            ) / 2
-            final_score = await calculate_penalty(adjusted_score, len(scores), len(scores_unique), min_score, max_score)
-
-            scoreData.append({"uid": idx, "adjustedScore":adjusted_score, "final_score":final_score, "tags":tags})
-
-            bt.logging.info(f"__________Tags: {len(tags)} Unique Tags: {len(scores_unique)} Median score: {median_score} Mean score: {mean_score} Skewness: {skewness} Min: {min_score} Max: {max_score}" )
-        bt.logging.info("Complete. Score sets:")
-        scoreData = sort_dict_list(scoreData, "adjustedScore", ascending=False)
-        Code(json.dumps(scoreData, indent=4))
-        #render_json()
 
     bt.logging.info("Running basic spacy keyword test...")
     llm = llm_spacy()
@@ -324,4 +301,4 @@ if __name__ == "__main__":
     #neighborhood_vector = await llm.get_neighborhood(response)
     #bt.logging.info("neighborhood_vector", neighborhood_vector)
     bt.logging.info("Processing tag sets...")
-    #await calculate_final_scores(ground_tags, miner_tag_lists)
+    #await el.calculate_final_scores(ground_tags, miner_tag_lists)

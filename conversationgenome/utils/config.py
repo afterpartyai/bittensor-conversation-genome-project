@@ -19,8 +19,25 @@
 import os
 import torch
 import argparse
-import bittensor as bt
-from loguru import logger
+
+verbose = False
+
+from conversationgenome.mock.MockBt import MockBt
+
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
+
+logger = None
+try:
+    from loguru import logger
+except:
+    print("No loguru")
+
 
 
 def check_config(cls, config: "bt.Config"):

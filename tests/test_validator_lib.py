@@ -46,10 +46,11 @@ async def test_full():
 
     # Create test set of miner IDs so minimum miner checker doesn't error out
     miner_uids = [1,2,3,4,5,6,7,8,9]
+    batch_num = random.randint(100000, 9999999)
 
     vl = ValidatorLib()
     el = Evaluator()
-    result = await vl.reserve_conversation()
+    result = await vl.reserve_conversation(batch_num=batch_num)
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
@@ -65,7 +66,6 @@ async def test_full():
         min_lines = c.get("convo_window", "min_lines", 5)
         max_lines = c.get("convo_window", "max_lines", 50)
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
-        batch_num = random.randint(100000, 9999999)
 
         validatorHotkey = "VHK-0"
 
