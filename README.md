@@ -151,13 +151,14 @@ These tests run outside the Bittensor network (so no emissions), but they will g
 If everything is working properly, you are ready to run against the testnet. Simply run this file:
 
 ```console
-bash run_testnet.sh
+bash testnet_start_miner.sh
 ```
 
+*Coming Soon* 
 When you're ready to register and run on mainnet, use this file:
 
 ```console
-bash run_mainnet.sh
+bash start_miner.sh
 ```
 
 ## Registration
