@@ -160,14 +160,6 @@ When you're ready to register and run on mainnet, use this file:
 bash run_mainnet.sh
 ```
 
-> NOTE TO DAN: Remove once domain is active
-
-Add a hosts file entry with Gasmask or to the /etc/hosts file that makes the api domain:
-
-```console
-54.193.70.198 api.conversationgenome.org
-```
-
 ## Registration
 Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website here.
 
