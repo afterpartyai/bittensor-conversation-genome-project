@@ -148,7 +148,9 @@ If you have any reported errors, check your **.env** and Python environment and 
 
 These tests run outside the Bittensor network (so no emissions), but they will get a test conversation, process it using your OpenAI key, and report the results. That will make sure the process itself is running properly on your machine.
 
-If everything is working properly, you are ready to run against the testnet. Simply run this file:
+If everything is working properly, you are ready to run against the testnet. Please see instructions in the [Register](#Register) section to register your hotkey and cold key on our testnet subnet.
+
+Once you are registered, edit the `nano testnet_start_miner.sh` to edit the start command to the correct wallet information and any additional flags you wish to include, and run this file:
 
 ```console
 bash testnet_start_miner.sh
