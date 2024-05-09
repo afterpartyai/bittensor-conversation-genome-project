@@ -31,9 +31,9 @@ class Evaluator:
     min_tags = 3
     verbose = False
     scoring_factors = {
-        "top_3_mean": 0.5,
-        "median_score": 0.2,
-        "mean_score": 0.2,
+        "top_3_mean": 0.55,
+        "median_score": 0.1,
+        "mean_score": 0.25,
         "max_score": 0.1,
     }
 
@@ -81,7 +81,7 @@ class Evaluator:
         # No both tags. Penalize.
         if num_both_tags == 0:
             bt.logging.debug("!!PENALTY: No BOTH tags")
-            final_score *= 0.85
+            final_score *= 0.75
 
         # All junk tags. Penalize
         if max_score < .2:
@@ -96,18 +96,12 @@ class Evaluator:
         # no unique tags. Penalize
         if num_unique_tags < 1:
             bt.logging.debug("!!PENALTY: less than 1 unique tag")
-            final_score *= 0.75
+            final_score *= 0.85
         elif num_unique_tags < 2:
             bt.logging.debug("!!PENALTY: less than 2 unique tags")
-            final_score *= 0.8
+            final_score *= 0.9
         elif num_unique_tags < 3:
             bt.logging.debug("!!PENALTY: less than 3 unique tags")
-            final_score *= 0.85
-        elif num_unique_tags < 4:
-            bt.logging.debug("!!PENALTY: less than 4 unique tags")
-            final_score *= 0.9
-        elif num_unique_tags < 5:
-            bt.logging.debug("!!PENALTY: less than 5 unique tags")
             final_score *= 0.95
 
         return final_score
