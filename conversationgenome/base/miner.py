@@ -124,7 +124,13 @@ class BaseMinerNeuron(BaseNeuron):
                         break
 
                 # Sync metagraph and potentially set weights.
-                self.sync()
+                try:
+                    self.sync()
+                except Exception as e:
+                    print("Miner sync error. Pausing for 10 seconds to reconnect.", e)
+                    import time
+                    time.sleep(10)
+
                 self.step += 1
 
         # If someone intentionally stops the miner, it'll safely terminate operations.
