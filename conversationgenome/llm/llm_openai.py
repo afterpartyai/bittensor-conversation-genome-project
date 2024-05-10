@@ -57,7 +57,12 @@ class llm_openai:
             "Content-Type": "application/json",
             "Authorization": "Bearer %s" % (self.api_key),
         }
-        response = Utils.post_url(url, jsonData=data, headers=headers)
+        response = None
+        try:
+            response = Utils.post_url(url, jsonData=data, headers=headers)
+        except Exception as e:
+            print("OPEN AI API Error", e)
+
         #print("response", response)
         return response
 

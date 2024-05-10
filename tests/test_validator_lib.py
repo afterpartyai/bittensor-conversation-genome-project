@@ -9,6 +9,8 @@ from conversationgenome.validator.evaluator import Evaluator
 from conversationgenome.analytics.WandbLib import WandbLib
 from conversationgenome.mock.MockBt import MockBt
 
+verbose = True
+
 bt = None
 try:
     import bittensor as bt
