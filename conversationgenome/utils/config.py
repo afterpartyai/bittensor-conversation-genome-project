@@ -158,7 +158,7 @@ def add_miner_args(cls, parser):
         "--blacklist.allow_non_registered",
         action="store_true",
         help="If set, miners will accept queries from non registered entities. (Dangerous!)",
-        default=True,
+        default=False,
     )
 
     parser.add_argument(
