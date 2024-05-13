@@ -138,7 +138,7 @@ class ValidatorLib:
         if not wandb_api_key:
             raise ValueError("Please log in to wandb using `wandb login` or set the WANDB_API_KEY environment variable.")
         run = 5
-        bt.logging.info("INIT", wandb_api_key)
+        #bt.logging.info("INIT", wandb_api_key)
         epochs = 10
         wandb.init(
               # Set the project where this run will be logged
@@ -180,7 +180,9 @@ class ValidatorLib:
 
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
-            bt.logging.info(f"Reserved conversation ID: {conversation_guid}. Sending to {c.get('env','LLM_TYPE')} LLM...")
+            num_lines = len(Utils.get(full_conversation, 'lines', []))
+
+            bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {c.get('env','LLM_TYPE')} LLM...")
 
             # Do overview tagging and generate base participant profiles
             full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
@@ -192,7 +194,8 @@ class ValidatorLib:
                 return None
             full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
             bt.logging.info(f"Found {len(full_conversation_tags)} tags in FullConvo")
-            bt.logging.debug(f"Found full convo tags {full_conversation_tags} in FullConvo")
+            if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
+                bt.logging.debug(f"Found full convo tags {full_conversation_tags} in FullConvo")
 
             # Make sure there are enough tags to make processing worthwhile
             minValidTags = self.validateMinimumTags(full_conversation_tags)

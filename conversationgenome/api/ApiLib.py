@@ -19,11 +19,8 @@ class ApiLib:
             convos = json.loads(body)
             convoKeys = list(convos.keys())
             convoTotal = len(convoKeys)
-            #print("convoTotal", convoTotal)
             selectedConvoKey = random.choice(convoKeys)
             selectedConvo = convos[selectedConvoKey]
-            #print("selectedConvo", selectedConvo)
-
 
             convo = {
                 "guid":Utils.get(selectedConvo, "guid"),
@@ -43,7 +40,6 @@ class ApiLib:
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
             response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
-            #print("url", url)
             maxLines = Utils._int(c.get('env', 'MAX_CONVO_LINES', 300))
             if response.status_code == 200:
                 selectedConvo = response.json()
@@ -63,8 +59,8 @@ class ApiLib:
         return True
 
     async def put_conversation_data(self, c_guid, jsonData):
-        write_host_url = c.get('env', 'CGP_API_WRITE_HOST', 'http://api.conversationgenome.org')
-        write_host_port = c.get('env', 'CGP_API_WRITE_PORT', '80')
+        write_host_url = c.get('env', 'CGP_API_WRITE_HOST', 'https://db.conversations.xyz')
+        write_host_port = c.get('env', 'CGP_API_WRITE_PORT', '443')
         url = f"{write_host_url}:{write_host_port}/api/v1/conversation/record/{c_guid}"
         if self.verbose:
             print(f"PUTTING TO {url}")
