@@ -94,14 +94,14 @@ class Utils:
         return sorted(dict_list, key=lambda x: x[key], reverse=not ascending)
 
     @staticmethod
-    def get_url(url, headers=None, verbose=False):
+    def get_url(url, headers=None, verbose=False, timeout=None):
         out = {"success":False, "code":-1, "errors":[]}
         if not requests:
             print("No requests library")
 
             return out
 
-        response = requests.get(url, params=None, cookies=None, headers=headers)
+        response = requests.get(url, params=None, cookies=None, headers=headers, timeout=timeout)
         out["code"] = response.status_code
         if out["code"] == 200:
             out["body"] = response.text
@@ -115,7 +115,7 @@ class Utils:
         return out
 
     @staticmethod
-    def post_url(url, postData=None, jsonData=None, headers=None, cert=None, key=None, returnContent=False, isPut=False, verbose=False):
+    def post_url(url, postData=None, jsonData=None, headers=None, cert=None, key=None, returnContent=False, isPut=False, verbose=False, timeout=None):
         out = {"success":False, "body":None, "json": None, "code":-1, "errors":[]}
         if not requests:
             msg = "No requests library in Utils"
@@ -130,9 +130,9 @@ class Utils:
         if verbose:
             print("url", url, "headers", headers, "jsonData", jsonData)
         if isPut:
-            response = requests.put(url, headers=headers, json=jsonData, data=postData, cert=cert)
+            response = requests.put(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=timeout)
         else:
-            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
+            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=timeout)
         #print(response.text)
         out["code"] = response.status_code
         if out["code"] == 200:

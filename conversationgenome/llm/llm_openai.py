@@ -59,7 +59,7 @@ class llm_openai:
         }
         response = None
         try:
-            response = Utils.post_url(url, jsonData=data, headers=headers)
+            response = Utils.post_url(url, jsonData=data, headers=headers, timeout=60)
         except Exception as e:
             print("OPEN AI API Error", e)
 
