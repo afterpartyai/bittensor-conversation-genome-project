@@ -24,13 +24,15 @@ class c:
     }
 
     @staticmethod
-    def get(section, key, default=None):
+    def get(section, key, default=None, return_type=None):
         out = default
         if section == "env":
             #print("env", os.environ.get(key))
             val = os.environ.get(key)
             if val:
                 out = val
+            if return_type == 'int':
+                out = Utils._int(out, default=default)
         else:
             out = Utils.get(c.state, "%s.%s" % (section, key), default)
         return out
