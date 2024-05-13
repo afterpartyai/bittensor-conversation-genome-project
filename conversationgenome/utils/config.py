@@ -78,7 +78,7 @@ def add_args(cls, parser):
     Adds relevant arguments to the parser for operation.
     """
 
-    parser.add_argument("--netuid", type=int, help="Subnet netuid", default=1)
+    parser.add_argument("--netuid", type=int, help="Subnet netuid", default=33)
 
     parser.add_argument(
         "--neuron.device",
@@ -151,14 +151,14 @@ def add_miner_args(cls, parser):
         "--blacklist.force_validator_permit",
         action="store_true",
         help="If set, we will force incoming requests to have a permit.",
-        default=False,
+        default=True,
     )
 
     parser.add_argument(
         "--blacklist.allow_non_registered",
         action="store_true",
         help="If set, miners will accept queries from non registered entities. (Dangerous!)",
-        default=False,
+        default=True,
     )
 
     parser.add_argument(
