@@ -20,6 +20,10 @@ class c:
             #"type": os.environ.get("LLM_TYPE"),
             "type": 'openai',
         },
+        "network": {
+            "mainnet": 33,
+            "testnet": 138,
+        }
 
     }
 
