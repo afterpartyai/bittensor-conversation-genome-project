@@ -1,6 +1,8 @@
 import json
 import random
 import os
+import time
+
 
 import hashlib
 import sqlite3
@@ -32,7 +34,11 @@ def json_response():
 
 @app.post("/api/v1/conversation/reserve")
 def post_request():
-    path = '../facebook-chat-data.json'
+    # Used for testing long or bad responses
+    if False:
+        time.sleep(10)
+    path = '../data/facebook-chat-data.json'
+
     f = open(path)
     body = f.read()
     f.close()
@@ -59,6 +65,14 @@ def post_request():
         "lines": lines,
     }
     return convo
+
+# Mock endpoint for testing OpenAI
+@app.post("/v1/chat/completions")
+def post_openai_mock_request():
+    # Used for testing long or bad responses
+    if False:
+        time.sleep(10)
+    return {"errors":{"id":923123, "msg":"Mock error"}}
 
 def write_directory(key, dictionary, base_path='.'):
     # generate md5 from key

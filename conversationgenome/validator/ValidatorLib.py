@@ -251,6 +251,10 @@ class ValidatorLib:
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
             return None
+        if not Utils.get(result, 'success'):
+            bt.logging.error(f"ERROR:2873226354. Conversation metadata failed: {result}. Aborting.")
+            return None
+
         tags = result['tags']
         vectors = Utils.get(result, 'vectors', {})
         data = {

@@ -1,3 +1,5 @@
+verbose = False
+
 import json
 import random
 import requests
@@ -5,6 +7,13 @@ import requests
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
+bt = None
+try:
+    import bittensor as bt
+except:
+    if verbose:
+        print("bittensor not installed")
+    bt = MockBt()
 
 class ApiLib:
     verbose = False
@@ -38,14 +47,20 @@ class ApiLib:
             selectedConvo = {}
             read_host_url = c.get('env', 'CGP_API_READ_HOST', 'http://api.conversations.xyz')
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
+            http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
-            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert)
+            response = None
+            try:
+                response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=http_timeout)
+            except requests.exceptions.Timeout as e:
+                bt.logging.error(f"reserveConversation timeout error: {e}")
             maxLines = Utils._int(c.get('env', 'MAX_CONVO_LINES', 300))
-            if response.status_code == 200:
+            if response and response.status_code == 200:
                 selectedConvo = response.json()
                 #print("selectedConvo", selectedConvo)
             else:
-                print("ERROR", response)
+                bt.logging.error(f"reserveConversation error. Response: {response}")
+                return None
 
 
             convo = {
@@ -68,12 +83,14 @@ class ApiLib:
             "Accept": "application/json",
             "Accept-Language": "en_US",
         }
-        response = requests.put(url, headers=headers, json=jsonData)
+        http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+        response = requests.put(url, headers=headers, json=jsonData, timeout=http_timeout)
         if response.status_code == 200:
             if self.verbose:
                 print("PUT success", response.json())
         else:
-            print("PUT ERROR", response)
+            print("put_conversation_data ERROR", response)
+            return False
         return True
 
 if __name__ == "__main__":

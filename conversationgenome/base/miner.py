@@ -117,6 +117,7 @@ class BaseMinerNeuron(BaseNeuron):
                     < self.config.neuron.epoch_length
                 ):
                     # Wait before checking again.
+                    import time
                     time.sleep(1)
 
                     # Check if we should exit.
