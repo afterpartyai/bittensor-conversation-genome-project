@@ -1,6 +1,8 @@
 import json
 import random
 import os
+import time
+
 
 import hashlib
 import sqlite3
@@ -32,6 +34,9 @@ def json_response():
 
 @app.post("/api/v1/conversation/reserve")
 def post_request():
+    # Used for testing long or bad responses
+    if False:
+        time.sleep(10)
     path = '../data/facebook-chat-data.json'
 
     f = open(path)

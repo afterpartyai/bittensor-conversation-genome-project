@@ -25,7 +25,7 @@ class llm_openai:
     embeddings_model = "text-embedding-ada-002"
     direct_call = 0
     root_url = "https://api.openai.com"
-    #root_url = "http://127.0.0.1:5000"
+    #root_url = "http://127.0.0.1:8000"
 
     def __init__(self):
         self.direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"), 0)
@@ -58,12 +58,13 @@ class llm_openai:
             "Authorization": "Bearer %s" % (self.api_key),
         }
         response = None
+        http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
         try:
-            response = Utils.post_url(url, jsonData=data, headers=headers, timeout=60)
+            response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
             print("OPEN AI API Error", e)
+            print("response", response)
 
-        #print("response", response)
         return response
 
     def generate_convo_xml(self, convo):
@@ -116,17 +117,21 @@ class llm_openai:
 
     async def conversation_to_metadata(self,  convo):
         (xml, participants) = self.generate_convo_xml(convo)
+        tags = None
         out = {"tags":{}}
 
         response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
         if not response:
             print("No tagging response. Aborting")
             return None
+        elif not response['success']:
+            print(f"Tagging failed: {response}. Aborting")
+            return response
 
         if self.return_json:
             tags = self.process_json_tag_return(response)
         else:
-            tags = response.split(",")
+            tags = Utils.get(response, 'content', '').split(",")
             tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
@@ -145,6 +150,7 @@ class llm_openai:
             if self.verbose:
                 print("        Embeddings received: " + ", ".join(tag_logs))
                 print("VECTORS", tag, vectors)
+            out['success'] = 1
         else:
             print("No tags returned by OpenAI", response)
         return out
@@ -263,7 +269,7 @@ class llm_openai:
             prompt += self.getExampleFunctionConv()
 
         if not direct_call:
-            client = AsyncOpenAI(timeout=60.0)
+            client = AsyncOpenAI()
             completion = await client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt} ],
@@ -294,7 +300,7 @@ class llm_openai:
             prompt += self.getExampleFunctionConv()
 
         if not direct_call:
-            client = AsyncOpenAI(timeout=60.0)
+            client = AsyncOpenAI()
             completion = await client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt} ],
@@ -306,9 +312,15 @@ class llm_openai:
               "messages": [{"role": "user", "content": prompt}],
             }
             completion = self.do_direct_call(data)
-            #out = completion['json']['choices'][0]['message']['content']
-            out = Utils.get(completion, "json.choices.0.message.content")
-            #print(f"________CSV LLM completion completion:{completion} out:{out}")
+            errors = Utils.get(completion, "errors", [])
+            if Utils.get(completion, "success"):
+                out = completion
+                out['content'] = Utils.get(completion, "json.choices.0.message.content")
+            else:
+                out = completion
+                out['content'] = None
+            if self.verbose:
+                print(f"________CSV LLM completion completion:{completion} out:{out}")
         return out
 
     async def openai_prompt_call_function(self, convoXmlStr=None, participants=None):

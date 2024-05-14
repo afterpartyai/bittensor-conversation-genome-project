@@ -129,12 +129,17 @@ class Utils:
             }
         if verbose:
             print("url", url, "headers", headers, "jsonData", jsonData)
-        if isPut:
-            response = requests.put(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=timeout)
-        else:
-            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=timeout)
-        #print(response.text)
-        out["code"] = response.status_code
+        try:
+            if isPut:
+                response = requests.put(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=timeout)
+            else:
+                response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=timeout)
+            out["code"] = response.status_code
+        except requests.exceptions.Timeout as e:
+            msg = "TIMEOUT error"
+            out['errors'].append({"id":8329471, "msg":msg})
+            out['code'] = 500
+
         if out["code"] == 200:
             out["success"] = True
             if not returnContent:
@@ -147,7 +152,7 @@ class Utils:
                 print("CONTENT", response.content)
                 out["body"] = response.content
         else:
-            out['errors'].append({"id":19839009, "msg":response.text})
+            out['errors'].append({"id":19839009, "msg":f"HTTP FAIL: {url} Response:{response}"})
 
 
         return out
@@ -182,6 +187,15 @@ class Utils:
         out = default
         try:
             out = int(val)
+        except:
+            pass
+        return out
+
+    @staticmethod
+    def _float(val, default=None):
+        out = default
+        try:
+            out = float(val)
         except:
             pass
         return out
