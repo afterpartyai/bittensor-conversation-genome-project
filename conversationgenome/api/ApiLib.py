@@ -83,7 +83,8 @@ class ApiLib:
             "Accept": "application/json",
             "Accept-Language": "en_US",
         }
-        response = requests.put(url, headers=headers, json=jsonData)
+        http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+        response = requests.put(url, headers=headers, json=jsonData, timeout=http_timeout)
         if response.status_code == 200:
             if self.verbose:
                 print("PUT success", response.json())
