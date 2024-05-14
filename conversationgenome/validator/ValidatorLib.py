@@ -244,7 +244,10 @@ class ValidatorLib:
 
 
     async def generate_full_convo_metadata(self, convo):
-        bt.logging.info(f"Execute generate_full_convo_metadata for participants {convo['participants']}")
+        if self.verbose:
+            bt.logging.info(f"Execute generate_full_convo_metadata for participants {convo['participants']}")
+        else:
+            bt.logging.info(f"Execute generate_full_convo_metadata")
 
         llml = LlmLib()
         result = await llml.conversation_to_metadata(convo)
