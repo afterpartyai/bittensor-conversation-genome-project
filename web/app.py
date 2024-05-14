@@ -32,7 +32,8 @@ def json_response():
 
 @app.post("/api/v1/conversation/reserve")
 def post_request():
-    path = '../facebook-chat-data.json'
+    path = '../data/facebook-chat-data.json'
+
     f = open(path)
     body = f.read()
     f.close()
