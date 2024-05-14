@@ -156,17 +156,13 @@ Once you are registered, run `nano testnet_start_miner.sh` to edit the start com
 bash testnet_start_miner.sh
 ```
 
-*Coming Soon* 
-When you're ready to register and run on mainnet, use this file:
-
-```console
-bash start_miner.sh
-```
 
 ## Registration
 Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website here.
 
 To register on testnet, add the flag `--subtensor.network test` to your registration command, and specify `--netuid 138` which is our testnet subnet uid.
+
+To register on mainnet, you can speciy `--netuid 33` which is our mainnet subnet uid. 
 
 
 # Subnet Roles
@@ -175,12 +171,18 @@ To register on testnet, add the flag `--subtensor.network test` to your registra
 
 You can launch your miners on testnet using the following command.
 
-To run with pm2 please see instructions below
+To run with pm2 please see instructions [here](#Managing-Processes)
 
-If you are running on runpod, please read instructions below.
+If you are running on runpod, please read instructions [here](#Using-Runpod).
 
 ```
 python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
+```
+
+Once you've registered on on mainnet SN33, you can start your miner with this command: 
+
+```
+python3 -m neurons.miner --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>
 ```
 
 
@@ -188,12 +190,18 @@ python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <co
 
 You can launch your validator on testnet using the following command.
 
-To run with pm2 please see instructions below
+To run with pm2 please see instructions [here](#Managing-Processes)
 
-If you are running on runpod, please read instructions here
+If you are running on runpod, please read instructions [here](#Using-Runpod)
 
 ```
-python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
+python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
+```
+
+Once you've registered on on mainnet SN33, you can start your miner with this command: 
+
+```
+python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>
 ```
 
 
