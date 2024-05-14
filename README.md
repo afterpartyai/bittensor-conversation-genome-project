@@ -9,7 +9,7 @@
   - [System Design](#System-Design)
   - [Rewards and Incentives](#rewards-and-incentives)
 - [Getting Started](#Getting-Started)
-  - [Installation](#Installation-&-Compute-Requirements)
+  - [Installation & Compute Requirements](#installation--compute-requirements)
   - [Configuration](#configuration)
   - [Quickstart - Running the tests](#running-the-tests)
   - [Registration](#Registration)
