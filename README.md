@@ -81,7 +81,7 @@ Let's configure your instance and run the tests that verify everything is setup 
 You'll need to duplicate the dotenv file to setup your own configuration:
 
 ```console
-cp env_example .env
+cp env.example .env
 ```
 
 Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**.
