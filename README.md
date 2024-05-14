@@ -9,7 +9,7 @@
   - [System Design](#System-Design)
   - [Rewards and Incentives](#rewards-and-incentives)
 - [Getting Started](#Getting-Started)
-  - [Installation](#Installation)
+  - [Installation](#Installation-&-Compute-Requirements)
   - [Configuration](#configuration)
   - [Quickstart - Running the tests](#running-the-tests)
   - [Registration](#Registration)
@@ -60,7 +60,7 @@ flowchart TD
 
 # Getting Started
 
-## Installation
+## Installation & Compute Requirements
 
 This repository requires python3.8 or higher. To install the subnet code, simply clone this repository and install the dependencies:
 
@@ -69,6 +69,9 @@ git clone https://github.com/afterpartyai/bittensor-conversation-genome-project.
 cd cgp-subnet
 pip install -r requirements.txt
 ```
+
+Miners & Validators using an OpenAI API Key will need a CPU with at least 8GB of Ram and 20GB of Disk Space.
+
 
 ## Quickstart Mock Tests
 
@@ -171,7 +174,7 @@ To register on mainnet, you can speciy `--netuid 33` which is our mainnet subnet
 
 You can launch your miners on testnet using the following command.
 
-To run with pm2 please see instructions [here](#Managing-Processes)
+To run with pm2 please see instructions [here](#Running-a-Miner-with-PM2)
 
 If you are running on runpod, please read instructions [here](#Using-Runpod).
 
@@ -190,7 +193,7 @@ python3 -m neurons.miner --netuid 33 --wallet.name <wallet name> --wallet.hotkey
 
 You can launch your validator on testnet using the following command.
 
-To run with pm2 please see instructions [here](#Managing-Processes)
+To run with pm2 please see instructions [here](#Running-a-Validator-with-PM2)
 
 If you are running on runpod, please read instructions [here](#Using-Runpod)
 
@@ -215,7 +218,7 @@ Runpod is a very helpful resource for easily launching and managing cloud GPU an
 
 To run the subnet code for CGP, you'll need either a GPU or a CPU, depending on your subnet role and configuration.
 
-Miners using an OpenAI API Key, you will need a CPU with at least 8GB of Ram and 20GB of Disk Space. Runpod provides basic CPU units of different processing powers.
+Miners & Validators using an OpenAI API Key, you will need a CPU with at least 8GB of Ram and 20GB of Disk Space. Runpod provides basic CPU units of different processing powers.
 
 ### Configuring Your Instance
 
@@ -245,7 +248,7 @@ Unfortunately, there is no stable and reliable way to run a local subtensor on a
 
 While there are many options for managing your processes, we recommend either pm2 or Screen. Please see below for instructions on installing and running pm2
 
-### pm2 Installation and Management
+### pm2 Installation
 
 To install Pm2 on your Ubuntu Device, use
 
@@ -254,13 +257,29 @@ apt install nodejs npm
 npm install -g pm2
 ```
 
-To run your process in pm2, use the following command format:
+The basic command structure to run a process in pm2 is below:
 
-```pm2 start "<your neuron start command here>" --name "<your process name here>"```
+```
+pm2 start "<your neuron start command here>" --name "<your process name here>"
+```
 
-Full example:
+### Running a Miner with PM2
 
-```pm2 start "python3 -m neurons.miner --netuid 1 --wallet.name default --wallet.hotkey default --logging.debug --axon.port 40049" --name "miner"```
+To run a miner with PM2, you can use the following template:
+
+```
+pm2 start "python3 -m neurons.miner --netuid 33 --wallet.name default --wallet.hotkey default --logging.debug --axon.port <port>" --name "miner"
+```
+
+### Running a Validator with PM2
+
+To run a validator with PM2, you can use the following template:
+
+```
+pm2 start "python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>" --name "validator"
+```
+
+### Useful PM2 Commands
 
 The following Commands will be useful for management:
 
