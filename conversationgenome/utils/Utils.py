@@ -117,6 +117,7 @@ class Utils:
     @staticmethod
     def post_url(url, postData=None, jsonData=None, headers=None, cert=None, key=None, returnContent=False, isPut=False, verbose=False, timeout=None):
         out = {"success":False, "body":None, "json": None, "code":-1, "errors":[]}
+        response = out
         if not requests:
             msg = "No requests library in Utils"
             print(msg)

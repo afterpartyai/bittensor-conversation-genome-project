@@ -66,6 +66,14 @@ def post_request():
     }
     return convo
 
+# Mock endpoint for testing OpenAI
+@app.post("/v1/chat/completions")
+def post_openai_mock_request():
+    # Used for testing long or bad responses
+    if False:
+        time.sleep(10)
+    return {"errors":{"id":923123, "msg":"Mock error"}}
+
 def write_directory(key, dictionary, base_path='.'):
     # generate md5 from key
     md5 = hashlib.md5(key.encode()).hexdigest()

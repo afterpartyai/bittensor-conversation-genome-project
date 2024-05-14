@@ -25,6 +25,7 @@ class llm_openai:
     embeddings_model = "text-embedding-ada-002"
     direct_call = 0
     root_url = "https://api.openai.com"
+    # Test endpoint
     #root_url = "http://127.0.0.1:8000"
 
     def __init__(self):
@@ -57,7 +58,7 @@ class llm_openai:
             "Content-Type": "application/json",
             "Authorization": "Bearer %s" % (self.api_key),
         }
-        response = None
+        response = {"success":0}
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
@@ -131,7 +132,11 @@ class llm_openai:
         if self.return_json:
             tags = self.process_json_tag_return(response)
         else:
-            tags = Utils.get(response, 'content', '').split(",")
+            content = Utils.get(response, 'content')
+            if content:
+                tags = content.split(",")
+            else:
+                tags = ""
             tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
