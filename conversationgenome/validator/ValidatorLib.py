@@ -197,7 +197,7 @@ class ValidatorLib:
 
             log_path = c.get('env', 'SCORING_DEBUG_LOG')
             if not Utils.empty(log_path):
-                Utils.append_log(log_path, f"Found full convo tags {full_conversation_tags} in FullConvo")
+                Utils.append_log(log_path, f"Validator found full convo tags {full_conversation_tags} in FullConvo")
 
             # Make sure there are enough tags to make processing worthwhile
             minValidTags = self.validateMinimumTags(full_conversation_tags)

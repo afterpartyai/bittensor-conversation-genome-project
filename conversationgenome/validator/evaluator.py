@@ -76,7 +76,7 @@ class Evaluator:
 
         log_path = c.get('env', 'SCORING_DEBUG_LOG')
         if not Utils.empty(log_path):
-            Utils.append_log(log_path, f"Tag '{tag}' similarity score: {similarity_score}")
+            Utils.append_log(log_path, f"Evaluator Tag '{tag}' similarity score: {similarity_score}")
         return similarity_score
 
     async def calculate_penalty(self, uid, score, num_tags, num_unique_tags, min_score, max_score):
@@ -235,8 +235,8 @@ class Evaluator:
         diff = Utils.compare_arrays(full_convo_tags, tag_set)
         log_path = c.get('env', 'SCORING_DEBUG_LOG')
         if not Utils.empty(log_path):
-            Utils.append_log(log_path, f"Calculating scores for tag_set: {tag_set}")
-            Utils.append_log(log_path, f"Diff between ground truth and window -- both: {diff['both']} unique window: {diff['unique_2']}")
+            Utils.append_log(log_path, f"Evaluator calculating scores for tag_set: {tag_set}")
+            Utils.append_log(log_path, f"Evaluator diff between ground truth and window -- both: {diff['both']} unique window: {diff['unique_2']}")
 
         for tag in tag_set:
             is_unique = False
@@ -259,7 +259,7 @@ class Evaluator:
             else:
                 scores_both.append(score)
             if not Utils.empty(log_path):
-                Utils.append_log(log_path, f"Score for '{tag}': {score} -- Unique: {is_unique}")
+                Utils.append_log(log_path, f"Evaluator Score for '{tag}': {score} -- Unique: {is_unique}")
         bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique, diff)
