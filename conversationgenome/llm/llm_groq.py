@@ -24,24 +24,35 @@ class llm_groq:
         if Utils.empty(api_key):
             print("ERROR: Groq api_key not set. Set in .env file.")
             return
+        model = c.get("env", "GROQ_MODEL")
+        if model:
+            self.model = model
+
+        embeddings_model = c.get("env", "GROQ_OPENAI_EMBEDDINGS_MODEL")
+        if embeddings_model:
+            self.embeddings_model = embeddings_model
 
         client = Groq(api_key=api_key)
         self.client = client
 
-    def call(self):
-        chat_completion = self.client.chat.completions.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Explain the importance of fast language models",
-                }
-            ],
-            model=self.model,
-        )
+    def call(self, prompt):
+        response = {"success":0}
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model=self.model,
+            )
+        except Exception as e:
+            print("GROQ API Error", e)
 
         print(chat_completion.choices[0].message.content)
 
 if __name__ == "__main__":
     print("Test Groq LLM class")
     llm = llm_groq()
-    llm.call()
+    llm.call("Explain the importance of fast language models")
