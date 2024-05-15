@@ -46,6 +46,7 @@ class Validator(BaseValidatorNeuron):
 
     def __init__(self, config=None):
         super(Validator, self).__init__(config=config)
+        c.set("system", "netuid", self.config.netuid)
 
         bt.logging.info("load_state()")
         self.load_state()

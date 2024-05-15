@@ -25,6 +25,7 @@ class ConvoLib:
             "scoring_version" : c.get('system', 'scoring_version'),
             "batch_num" : batch_num,
             "cgp_version": "0.1.0",
+            "netuid": c.get("system", "netuid"),
             "data": data,
         }
         api = ApiLib()
