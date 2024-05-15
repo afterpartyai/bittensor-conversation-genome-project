@@ -56,8 +56,9 @@ class Miner(BaseMinerNeuron):
 
         """
 
-        if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
-            bt.logging.info("______Received Packet from validator. synapse.cgp_input", synapse.cgp_input)
+        log_path = c.get('env', 'SCORING_DEBUG_LOG')
+        if not Utils.empty(log_path):
+            Utils.append_log(log_path, f"______Received Packet from validator. synapse.cgp_input: {synapse.cgp_input}")
         window = synapse.cgp_input[0]
         conversation_guid = Utils.get(window, "guid")
         window_idx = Utils.get(window, "window_idx")
@@ -67,8 +68,9 @@ class Miner(BaseMinerNeuron):
 
         ml = MinerLib()
         result = await ml.do_mining(conversation_guid, window_idx, lines, 17)
-        if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
-            bt.logging.info("Mined vectors and tags: %s" % (", ".join(result['tags'])))
+
+        if not Utils.empty(log_path):
+            Utils.append_log(log_path, f"Mined vectors and tags: {result['tags']}")
 
         synapse.cgp_output = [result]
         return synapse

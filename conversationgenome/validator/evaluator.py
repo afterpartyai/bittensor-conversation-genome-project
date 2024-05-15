@@ -233,9 +233,10 @@ class Evaluator:
         # Remove duplicate tags
         tag_set = list(set(tags))
         diff = Utils.compare_arrays(full_convo_tags, tag_set)
-        if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
-            bt.logging.debug(f"Calculating scores for tag_set: {tag_set}")
-            bt.logging.debug(f"Diff -- both: {diff['both']} unique window: {diff['unique_2']}")
+        log_path = c.get('env', 'SCORING_DEBUG_LOG')
+        if not Utils.empty(log_path):
+            Utils.append_log(log_path, f"Calculating scores for tag_set: {tag_set}")
+            Utils.append_log(log_path, f"Diff between ground truth and window -- both: {diff['both']} unique window: {diff['unique_2']}")
 
         for tag in tag_set:
             is_unique = False
@@ -257,8 +258,8 @@ class Evaluator:
                 scores_unique.append(score)
             else:
                 scores_both.append(score)
-            if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
-                bt.logging.debug(f"Score for '{tag}': {score} -- Unique: {is_unique}")
+            if not Utils.empty(log_path):
+                Utils.append_log(log_path, f"Score for '{tag}': {score} -- Unique: {is_unique}")
         bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique, diff)
