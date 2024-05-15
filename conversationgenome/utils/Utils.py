@@ -1,4 +1,5 @@
 import requests
+import os
 
 class Utils:
     @staticmethod
@@ -208,3 +209,23 @@ class Utils:
             out.append(tag.strip().lower())
         return out
 
+    @staticmethod
+    def datetime_str(date_obj=None, formatStr="%Y-%m-%d %H:%M:%S"):
+        out = None
+        import time
+        if not date_obj:
+            out = time.strftime(formatStr)
+        else:
+            out = time.strftime(formatStr, date_obj)
+        return out
+
+
+    @staticmethod
+    def append_log(file_path, text_string):
+        try:
+            if not os.path.exists(file_path):
+                open(file_path, 'w').close()
+            with open(file_path, 'a') as f:
+                f.write(Utils.datetime_str() + " | " + text_string + "\n")
+        except Exception as e:
+            print(f"ERROR append_log :{e}")

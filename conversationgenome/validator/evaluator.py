@@ -73,8 +73,10 @@ class Evaluator:
             similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
         except:
             bt.logging.error("Error generating similarity_score. Setting to zero.")
-        if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
-            bt.logging.debug(f"Tag '{tag}' similarity score: {similarity_score}")
+
+        log_path = c.get('env', 'SCORING_DEBUG_LOG')
+        if not Utils.empty(log_path):
+            Utils.append_log(log_path, f"Tag '{tag}' similarity score: {similarity_score}")
         return similarity_score
 
     async def calculate_penalty(self, uid, score, num_tags, num_unique_tags, min_score, max_score):
