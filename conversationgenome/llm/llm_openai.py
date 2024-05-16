@@ -27,10 +27,10 @@ class llm_openai:
     root_url = "https://api.openai.com"
     # Test endpoint
     #root_url = "http://127.0.0.1:8000"
+    api_key = None
 
     def __init__(self):
         self.direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"), 0)
-        #print("direct_call", self.direct_call)
         self.api_key = c.get('env', "OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("Please set the OPENAI_API_KEY environment variable in the .env file.")

@@ -16,15 +16,22 @@ except:
 class llm_groq:
     verbose = False
     model = "llama3-8b-8192"
+    direct_call = 0
     embeddings_model = "text-embedding-ada-002"
+    client = None
+    root_url = "https://api.groq.com/openai"
+    # Test endpoint
+    #root_url = "http://127.0.0.1:8000"
+    api_key = None
 
     def __init__(self):
-        if not Groq:
-            print("ERROR: Groq module not found")
-            return
+        self.direct_call = Utils._int(c.get('env', "GROQ_DIRECT_CALL"), 0)
         api_key = c.get('env', "GROQ_API_KEY")
         if Utils.empty(api_key):
             print("ERROR: Groq api_key not set. Set in .env file.")
+            return
+        if not self.direct_call and not Groq:
+            print("ERROR: Groq module not found")
             return
         model = c.get("env", "GROQ_MODEL")
         if model:
@@ -34,8 +41,30 @@ class llm_groq:
         if embeddings_model:
             self.embeddings_model = embeddings_model
 
-        client = Groq(api_key=api_key)
-        self.client = client
+        if not self.direct_call:
+            client = Groq(api_key=api_key)
+            self.client = client
+        else:
+            self.api_key = api_key
+
+    # Groq Python library dependencies can conflict with other packages. Allow
+    # direct call to API to bypass issues.
+    def do_direct_call(self, data, url_path = "/v1/chat/completions"):
+        url = self.root_url + url_path
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % (self.api_key),
+        }
+        response = {"success":0}
+        http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+        try:
+            response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
+        except Exception as e:
+            print("Groq API Error", e)
+            print("response", response)
+
+        return response
+
 
     def call(self, prompt):
         response = {"success":0}
@@ -63,21 +92,32 @@ class llm_groq:
 
 
         try:
-            completion = self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                model=self.model,
-            )
+            if not self.direct_call:
+                completion = self.client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    model=self.model,
+                )
+                raw_content = completion.choices[0].message.content
+                out['content'] = raw_content
+            else:
+                data = {
+                  "model": self.model,
+                  "messages": [{"role": "user", "content": prompt}],
+                }
+                http_response = self.do_direct_call(data)
+                #print("________CSV LLM completion", completion)
+                #print("\n\n", completion['json'])
+                out['content'] = http_response['json']['choices'][0]['message']['content']
+
         except Exception as e:
             print("GROQ API Error", e)
 
         #raw_content = Utils.get(completion, "choices.0.message.content")
-        raw_content = completion.choices[0].message.content
-        out['content'] = raw_content
         out['success'] = 1
         return out
 
