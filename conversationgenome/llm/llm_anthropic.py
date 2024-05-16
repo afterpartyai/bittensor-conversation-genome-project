@@ -34,7 +34,7 @@ class llm_anthropic:
 
         self.api_key = api_key
 
-    def do_direct_call(self, data, url_path = "/v1/complete"):
+    def do_direct_call(self, data, url_path = "/v1/messages"):
         url = self.root_url + url_path
         headers = {
             "content-type": "application/json",
@@ -43,6 +43,7 @@ class llm_anthropic:
         }
         response = {"success":0}
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+        #print("URL", url, headers, data)
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
@@ -56,16 +57,19 @@ class llm_anthropic:
         out = {"success":0}
         prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
         prompt = f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"
+        self.model = "claude-3-opus-20240229"
         try:
             data = {
-                "model": self.model,
-                "max_tokens_to_sample": 1024,
-                "prompt": prompt,
+                "model": "claude-3-opus-20240229",
+                "max_tokens": 1024,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ]
             }
 
             http_response = self.do_direct_call(data)
             #print("________CSV LLM completion", http_response)
-            out['content'] = Utils.get(http_response, 'json.completion')
+            out['content'] = Utils.get(http_response, 'json.content.0.text')
 
         except Exception as e:
             print("ANTHROPIC API Error", e)
