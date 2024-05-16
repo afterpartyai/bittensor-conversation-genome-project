@@ -97,7 +97,7 @@ class llm_groq:
                 http_response = self.do_direct_call(data)
                 #print("________CSV LLM completion", completion)
                 #print("\n\n", completion['json'])
-                out['content'] = http_response['json']['choices'][0]['message']['content']
+                out['content'] = Utils.get(http_response, 'json.choices.0')['message']['content']
 
         except Exception as e:
             print("GROQ API Error", e)
