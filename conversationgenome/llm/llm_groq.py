@@ -68,23 +68,6 @@ class llm_groq:
         return response
 
 
-    def call(self, prompt):
-        response = {"success":0}
-        try:
-            chat_completion = self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                model=self.model,
-            )
-        except Exception as e:
-            print("GROQ API Error", e)
-
-        print(chat_completion.choices[0].message.content)
-
     async def prompt_call_csv(self, convoXmlStr=None, participants=None):
         out = {"success":0}
         prompt1 = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
@@ -186,7 +169,6 @@ class llm_groq:
 if __name__ == "__main__":
     print("Test Groq LLM class")
     llm = llm_groq()
-    #llm.call("Explain the importance of fast language models")
 
     example_convo = {
         "lines": ["hello", "world"],
