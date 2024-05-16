@@ -3,6 +3,7 @@ import os
 import random
 from datetime import datetime, timezone
 from traceback import print_exception
+import pprint
 
 verbose = False
 torch = None
@@ -153,7 +154,8 @@ class Evaluator:
             except:
                 pass
             if not miner_response:
-                bt.logging.error(f"BAD RESPONSE EVAL: miner index: {idx} HOTKEY: {response.axon.hotkey}")
+                if verbose:
+                    bt.logging.error(f"BAD RESPONSE EVAL: miner index: {idx} HOTKEY: {response.axon.hotkey}")
                 final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
             else:
                 #bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
@@ -210,7 +212,7 @@ class Evaluator:
                 bt.logging.debug(f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
 
 
-        bt.logging.debug(f"Complete evalulation. Final scores: {final_scores}")
+        bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
         # Force to use cuda if available -- otherwise, causes device mismatch
         try:
             rank_scores = rank_scores.to('cuda')

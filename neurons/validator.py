@@ -130,7 +130,7 @@ class Validator(BaseValidatorNeuron):
                     bt.logging.error("No miners found.")
                     time.sleep(30)
                     return
-
+                bt.logging.info("miner_uid pool", miner_uids)     
                 # Create a synapse to distribute to miners
                 bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
                 window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
@@ -149,11 +149,13 @@ class Validator(BaseValidatorNeuron):
 
                 for window_idx, response in enumerate(responses):
                     if not response.cgp_output:
-                        bt.logging.error(f"BAD RESPONSE: uuid: {response.axon.uuid} hotkey: {response.axon.hotkey} output: {response.cgp_output}")
+                        #bt.logging.error(f"BAD RESPONSE: hotkey: {response.axon.hotkey} output: {response.cgp_output}")
+                        bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey}")
                         if response.axon.hotkey in hot_key_watchlist:
                             print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                         continue
-                    bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
+                    #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
+                    bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey}" )
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                     log_path = c.get('env', 'SCORING_DEBUG_LOG')
@@ -164,7 +166,8 @@ class Validator(BaseValidatorNeuron):
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
 
                 for idx, score in enumerate(final_scores):
-                    bt.logging.info(f"score {score}")
+                    if self.verbose:
+                        bt.logging.info(f"score {score}")
                     uid = str(Utils.get(score, "uuid"))
                     wl.log({
                         "conversation_guid."+uid: conversation_guid,
