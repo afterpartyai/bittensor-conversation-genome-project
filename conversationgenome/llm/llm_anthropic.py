@@ -44,12 +44,14 @@ class llm_anthropic:
             "anthropic-version": "2023-06-01",
             "x-api-key": self.api_key,
         }
-        data = {"model": "claude-2.1", "max_tokens_to_sample": 1024, "prompt": "\\n\\nHuman: Hello, Claude\\n\\nAssistant:"}
-        data = """{
+        data3 = {"model": "claude-2.1", "max_tokens_to_sample": 1024, "prompt": "\n\nHuman: Hello, Claude\n\nAssistant:"}
+        data2 = """{
     "model": "claude-2.1",
     "max_tokens_to_sample": 1024,
     "prompt": "\\n\\nHuman: Hello, Claude\\n\\nAssistant:"
 }"""
+        data = json.dumps(data3)
+        print("WORKS", data2)
         print("DATA", data)
         response = {"success":0}
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
