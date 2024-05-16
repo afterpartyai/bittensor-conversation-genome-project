@@ -19,7 +19,6 @@ class llm_anthropic:
     api_key = None
 
     def __init__(self):
-        self.direct_call = Utils._int(c.get('env', "ANTHROPIC_DIRECT_CALL"), 0)
         api_key = c.get('env', "ANTHROPIC_API_KEY")
         if Utils.empty(api_key):
             print("ERROR: Anthropic api_key not set. Set in .env file.")
@@ -33,8 +32,6 @@ class llm_anthropic:
         if embeddings_model:
             self.embeddings_model = embeddings_model
 
-        if self.verbose:
-            print("ANTHROPIC DIRECT CALL")
         self.api_key = api_key
 
     def do_direct_call(self, data, url_path = "/v1/complete"):
@@ -67,8 +64,8 @@ class llm_anthropic:
             }
 
             http_response = self.do_direct_call(data)
-            print("________CSV LLM completion", http_response)
-            out['content'] = Utils.get(http_response, 'json.choices.0.message.content')
+            #print("________CSV LLM completion", http_response)
+            out['content'] = Utils.get(http_response, 'json.completion')
 
         except Exception as e:
             print("ANTHROPIC API Error", e)
@@ -100,20 +97,24 @@ class llm_anthropic:
 
         content = Utils.get(response, 'content')
         if content:
-            lines = content.split("\n")
+            lines = content.replace("\n",",")
             tag_dict = {}
-            for line in lines:
-                parts = line.split(",")
-                if len(parts) > 3:
-                    for part in parts:
-                        tag = part.strip().lower()
-                        tag_dict[tag] = True
-            tags = list(tag_dict.keys())
+            parts = lines.split(",")
+            if len(parts) > 1:
+                for part in parts:
+                    tag = part.strip().lower()
+                    if tag[0:1] == "<":
+                        continue
+                    tag_dict[tag] = True
+                tags = list(tag_dict.keys())
+            else:
+                print("Less that 2 tags returned. Aborting.")
+                tags = []
         else:
-            tags = ""
+            tags = []
         tags = Utils.clean_tags(tags)
 
-        if not Utils.empty(tags):
+        if len(tags) > 0:
             if self.verbose:
                 print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
@@ -131,7 +132,7 @@ class llm_anthropic:
                 print("VECTORS", tag, vectors)
             out['success'] = 1
         else:
-            print("No tags returned by OpenAI", response)
+            print("No tags returned by OpenAI for Anthropic", response)
         return out
 
 

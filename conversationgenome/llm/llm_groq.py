@@ -129,20 +129,24 @@ class llm_groq:
 
         content = Utils.get(response, 'content')
         if content:
-            lines = content.split("\n")
+            lines = content.replace("\n",",")
             tag_dict = {}
-            for line in lines:
-                parts = line.split(",")
-                if len(parts) > 3:
-                    for part in parts:
-                        tag = part.strip().lower()
-                        tag_dict[tag] = True
+            parts = lines.split(",")
+            if len(parts) > 1:
+                for part in parts:
+                    tag = part.strip().lower()
+                    if tag[0:1] == "<":
+                        continue
+                    tag_dict[tag] = True
+            else:
+                print("Less that 2 tags returned. Aborting.")
+                tags = []
             tags = list(tag_dict.keys())
         else:
-            tags = ""
+            tags = []
         tags = Utils.clean_tags(tags)
 
-        if not Utils.empty(tags):
+        if len(tags) > 0:
             if self.verbose:
                 print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
@@ -160,7 +164,7 @@ class llm_groq:
                 print("VECTORS", tag, vectors)
             out['success'] = 1
         else:
-            print("No tags returned by OpenAI", response)
+            print("No tags returned by OpenAI for Groq", response)
         return out
 
 
