@@ -44,7 +44,6 @@ class llm_anthropic:
             "anthropic-version": "2023-06-01",
             "x-api-key": self.api_key,
         }
-        data = {"model": "claude-2.1", "max_tokens_to_sample": 1024, "prompt": "\n\nHuman: Hello, Claude\n\nAssistant:"}
         response = {"success":0}
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
         try:
@@ -66,6 +65,8 @@ class llm_anthropic:
               "model": self.model,
               "messages": [{"role": "user", "content": prompt}],
             }
+            data = {"model": "claude-2.1", "max_tokens_to_sample": 1024, "prompt": f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"}
+
             http_response = self.do_direct_call(data)
             print("________CSV LLM completion", http_response)
             out['content'] = Utils.get(http_response, 'json.choices.0.message.content')
