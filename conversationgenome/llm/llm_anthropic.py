@@ -57,9 +57,9 @@ class llm_anthropic:
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
         print("URL", url, headers)
         try:
-            #response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
+            response = Utils.post_url(url, jsonData=data3, headers=headers, timeout=http_timeout)
             #response = Utils.post_url(url, postData=json.dumps(data), headers=headers, timeout=http_timeout)
-            response = Utils.post_url(url, postData=data, headers=headers, timeout=http_timeout)
+            #response = Utils.post_url(url, postData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
             print("Anthropic API Error", e)
             print("response", response)
