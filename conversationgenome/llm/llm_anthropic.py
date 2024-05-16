@@ -44,22 +44,11 @@ class llm_anthropic:
             "anthropic-version": "2023-06-01",
             "x-api-key": self.api_key,
         }
-        data3 = {"model": "claude-2.1", "max_tokens_to_sample": 1024, "prompt": "\n\nHuman: Hello, Claude\n\nAssistant:"}
-        data2 = """{
-    "model": "claude-2.1",
-    "max_tokens_to_sample": 1024,
-    "prompt": "\\n\\nHuman: Hello, Claude\\n\\nAssistant:"
-}"""
-        data = json.dumps(data3)
-        print("WORKS", data2)
-        print("DATA", data)
+        data = {"model": "claude-2.1", "max_tokens_to_sample": 1024, "prompt": "\n\nHuman: Hello, Claude\n\nAssistant:"}
         response = {"success":0}
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
-        print("URL", url, headers)
         try:
-            response = Utils.post_url(url, jsonData=data3, headers=headers, timeout=http_timeout)
-            #response = Utils.post_url(url, postData=json.dumps(data), headers=headers, timeout=http_timeout)
-            #response = Utils.post_url(url, postData=data, headers=headers, timeout=http_timeout)
+            response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
             print("Anthropic API Error", e)
             print("response", response)
