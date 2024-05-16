@@ -45,6 +45,8 @@ class llm_groq:
             client = Groq(api_key=api_key)
             self.client = client
         else:
+            if self.verbose:
+                print("GROQ DIRECT CALL")
             self.api_key = api_key
 
     # Groq Python library dependencies can conflict with other packages. Allow
@@ -159,7 +161,7 @@ class llm_groq:
         tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
-            if True or self.verbose:
+            if self.verbose:
                 print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
             out['vectors'] = {}

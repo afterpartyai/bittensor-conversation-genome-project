@@ -206,7 +206,7 @@ class Utils:
     def clean_tags(tags):
         out = []
         for tag in tags:
-            out.append(tag.strip().lower())
+            out.append(tag.strip().lower().replace('"', ''))
         return out
 
     @staticmethod
