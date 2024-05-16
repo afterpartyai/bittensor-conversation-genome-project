@@ -9,7 +9,7 @@ from conversationgenome.llm.llm_openai import llm_openai
 
 class llm_anthropic:
     verbose = False
-    model = "claude-2.1"
+    model = "claude-3-sonnet-20240229"
     direct_call = 0
     embeddings_model = "text-embedding-ada-002"
     client = None
@@ -24,7 +24,7 @@ class llm_anthropic:
             print("ERROR: Anthropic api_key not set. Set in .env file.")
             return
 
-        model = c.get("env", "ANTHROPIC_MODEL", "claude-2.1")
+        model = c.get("env", "ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
         if model:
             self.model = model
 
@@ -57,10 +57,9 @@ class llm_anthropic:
         out = {"success":0}
         prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
         prompt = f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"
-        self.model = "claude-3-opus-20240229"
         try:
             data = {
-                "model": "claude-3-opus-20240229",
+                "model": self.model,
                 "max_tokens": 1024,
                 "messages": [
                     {"role": "user", "content": prompt}
