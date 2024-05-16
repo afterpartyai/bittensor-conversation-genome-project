@@ -110,7 +110,7 @@ async def test_full():
                 response.axon.hotkey = "HK-"+str(idx)
                 response.axon.uuid = str(miner_result['uid'])
                 response.cgp_output = [miner_result]
-                #bt.logging.debug(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTting output to Api...")
+                #bt.logging.debug(f"PUTting output to Api... CGP Received tags: {response.cgp_output[0]['tags']}")
                 await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner", batch_num=batch_num, window=idx)
 
                 mock_miner_responses.append(response)
