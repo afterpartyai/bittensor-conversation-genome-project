@@ -11,7 +11,8 @@ Groq = None
 try:
     from groq import Groq
 except:
-    print("No groq package installed. pip install groq")
+    if not Utils._int(c.get('env', "GROQ_DIRECT_CALL"), 0):
+        print("No groq package installed. pip install groq")
 
 class llm_groq:
     verbose = False
