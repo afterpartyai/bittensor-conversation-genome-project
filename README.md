@@ -87,7 +87,7 @@ You'll need to duplicate the dotenv file to setup your own configuration:
 cp env.example .env
 ```
 
-Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**.
+Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**. An OpenAI API key is required by both miners and validators to access the embeddings model for the tags you mine. As a miner or validator, you can select which LLM you'd like to use for tagging conversations and/or windows. Please see LLM Selection Below for more information.
 
 If you're on a Linux box, the nano editor is usually the easiest:
 
@@ -104,9 +104,79 @@ OPENAI_API_KEY=some_key
 
 The example file specifies the LLM type as **openai** and the model to use as **gpt-3.5-turbo**, but you can change it depending on your preferences.
 
+### LLM Selection
+
+LLMs utilizaiton is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. You select your model by commenting/uncommenting the line 
+
+```
+export LLM_TYPE=<openai/groq/anthropic>
+```
+
+Please ensure you only have one `LLM_TYPE` config parameter uncommented before running any code. Once you have selected the `LLM_TYPE`, select the model you'd like to use by uncommenting one corresponding model for the LLM Type you've chosen. 
+
+To do this for OpenAI, uncomment one `OPENAI_MODEL=` line, for groq, uncomment one `GROQ_MODEL` line, or for Anthropic, uncomment one `ANTHROPIC_MODEL` line. Below is an example config that is set up to run OpenAI's GPT-4o model. 
+
+```
+# ____________ OPENAI ________________
+
+export LLM_TYPE=openai
+export OPENAI_API_KEY=sk-12345678912023
+export OPENAI_DIRECT_CALL=1
+
+
+#export OPENAI_MODEL=gpt-4-turbo
+export OPENAI_MODEL=gpt-4o
+#export OPENAI_MODEL=gpt-3.5-turbo
+
+export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
+
+# ____________ GROQ ________________
+#export LLM_TYPE=groq
+export GROQ_API_KEY=
+export GROQ_MODEL=llama3-8b-8192
+export GROQ_EMBEDDINGS_MODEL=text-embedding-ada-002
+export GROQ_DIRECT_CALL=1
+
+# ____________ ANTHROPIC ________________
+#export LLM_TYPE=anthropic
+export ANTHROPIC_API_KEY=
+export ANTHROPIC_MODEL=claude-3-sonnet-20240229
+#export ANTHROPIC_MODEL=claude-3-opus-20240229
+```
+
+Below is an example config that is set up to run Anthropic's Claude 3 Opus Model:
+
+```
+# ____________ OPENAI ________________
+
+#export LLM_TYPE=openai
+export OPENAI_API_KEY=
+export OPENAI_DIRECT_CALL=1
+
+
+#export OPENAI_MODEL=gpt-4-turbo
+export OPENAI_MODEL=gpt-4o
+#export OPENAI_MODEL=gpt-3.5-turbo
+
+export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
+
+# ____________ GROQ ________________
+#export LLM_TYPE=groq
+export GROQ_API_KEY=
+export GROQ_MODEL=llama3-8b-8192
+export GROQ_EMBEDDINGS_MODEL=text-embedding-ada-002
+export GROQ_DIRECT_CALL=1
+
+# ____________ ANTHROPIC ________________
+export LLM_TYPE=anthropic
+export ANTHROPIC_API_KEY=sk-12345678912023
+export ANTHROPIC_MODEL=claude-3-sonnet-20240229
+#export ANTHROPIC_MODEL=claude-3-opus-20240229
+```
+
 ### Running the Tests
 
-Once this is setup, let's run the test validator suite, so you can watch the process at work:
+Once you have finalized your configuration, let's run the test validator suite, so you can watch the process at work:
 
 ```console
 python -m pytest -s --disable-warnings  tests/test_validator_lib.py
