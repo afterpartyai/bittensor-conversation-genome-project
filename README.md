@@ -11,6 +11,7 @@
 - [Getting Started](#Getting-Started)
   - [Installation & Compute Requirements](#installation--compute-requirements)
   - [Configuration](#configuration)
+  - [LLM Selection](#LLM-Selection)
   - [Quickstart - Running the tests](#running-the-tests)
   - [Registration](#Registration)
 - [Subnet Roles](#subnet-roles)
@@ -87,7 +88,7 @@ You'll need to duplicate the dotenv file to setup your own configuration:
 cp env.example .env
 ```
 
-Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**. An OpenAI API key is required by both miners and validators to access the embeddings model for the tags you mine. As a miner or validator, you can select which LLM you'd like to use for tagging conversations and/or windows. Please see LLM Selection Below for more information.
+Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**. An OpenAI API key is required by both miners and validators to access the embeddings model for the tags you mine. As a miner or validator, you can select which LLM you'd like to use for tagging conversations and/or windows. Please see [LLM Selection](#LLM-Selection) Below for more information.
 
 If you're on a Linux box, the nano editor is usually the easiest:
 
