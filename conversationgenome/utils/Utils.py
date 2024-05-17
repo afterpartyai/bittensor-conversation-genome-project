@@ -206,7 +206,7 @@ class Utils:
     def clean_tags(tags):
         out = []
         for tag in tags:
-            out.append(tag.strip().lower())
+            out.append(tag.strip().lower().replace('"', ''))
         return out
 
     @staticmethod
@@ -229,3 +229,4 @@ class Utils:
                 f.write(Utils.datetime_str() + " | " + text_string + "\n")
         except Exception as e:
             print(f"ERROR append_log :{e}")
+
