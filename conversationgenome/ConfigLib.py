@@ -14,6 +14,7 @@ class c:
         "system" : {
             "mode": 'test',
             "scoring_version": 0.1,
+            "netuid": -1,
         },
         "llm" : {
             #"type": 'spacy',
@@ -23,7 +24,8 @@ class c:
         "network": {
             "mainnet": 33,
             "testnet": 138,
-        }
+        },
+
 
     }
 

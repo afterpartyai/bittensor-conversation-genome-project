@@ -46,6 +46,7 @@ class Validator(BaseValidatorNeuron):
 
     def __init__(self, config=None):
         super(Validator, self).__init__(config=config)
+        c.set("system", "netuid", self.config.netuid)
 
         bt.logging.info("load_state()")
         self.load_state()
@@ -157,8 +158,9 @@ class Validator(BaseValidatorNeuron):
                     bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey}" )
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
-                    if c.get('env', 'DEBUG_SHOW_TAGS', default=0, return_type='int'):
-                        bt.logging.debug(f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
+                    log_path = c.get('env', 'SCORING_DEBUG_LOG')
+                    if not Utils.empty(log_path):
+                        Utils.append_log(log_path, f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
                     await vl.put_convo(response.axon.hotkey, conversation_guid, response.cgp_output[0], type="miner",  batch_num=batch_num, window=window_idx)
 
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
