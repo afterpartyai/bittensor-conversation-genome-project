@@ -1,6 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# Copyright © 2023 CGP
+# Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -68,7 +67,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/afterpartyai/bittensor-conversation-genome-project",
-    author="https://afterparty.com/",
+    author="https://conversations.xyz/",
     packages=find_packages(),
     include_package_data=True,
     author_email="",
@@ -76,7 +75,7 @@ setup(
     python_requires=">=3.8",
     install_requires=requirements,
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 1 - Release",
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Build Tools",
         # Pick your license as you wish
