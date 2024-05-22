@@ -134,9 +134,6 @@ class Miner(BaseMinerNeuron):
 
     async def priority(self, synapse: CgSynapse) -> float:
         """
-        The priority function determines the order in which requests are handled. More valuable or higher-priority
-        requests are processed before others. You should design your own priority mechanism with care.
-
         This implementation assigns priority to incoming requests based on the calling entity's stake in the metagraph.
 
         Args:
@@ -149,10 +146,7 @@ class Miner(BaseMinerNeuron):
         processed first. Higher values indicate that the request should be processed first. Lower values indicate
         that the request should be processed later.
 
-        Example priority logic:
-        - A higher stake results in a higher priority value.
-        """
-        # TODO(developer): Define how miners should prioritize requests.
+         """
         caller_uid = self.metagraph.hotkeys.index(
             synapse.dendrite.hotkey
         )  # Get the caller index.
