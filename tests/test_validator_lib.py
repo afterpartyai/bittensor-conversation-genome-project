@@ -86,6 +86,7 @@ async def test_full():
                "convo_windows_min_lines": min_lines,
                "convo_windows_max_lines": max_lines,
                "convo_windows_overlap_lines": overlap_lines,
+               "netuid": -1
             })
         if llm_type == "spacy":
             bt.logging.debug("SPACY TEST MODE -- remove half of the full convo tags")
