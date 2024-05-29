@@ -31,7 +31,7 @@ class Utils:
 
 class ConversationDbProcessor:
     db_name = 'conversations.sqlite'
-    table_name = 'conversationsF'
+    table_name = 'conversations'
     # This 2000 row subset is from the 140K row Kaggle Facebook conversation data:
     #     https://www.kaggle.com/datasets/atharvjairath/personachat/data
     raw_data_path = 'facebook-chat-data_2000rows.csv'
@@ -41,7 +41,7 @@ class ConversationDbProcessor:
     def __init__(self):
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
-        sql_create = "CREATE TABLE IF NOT EXISTS conversationsF (id INTEGER PRIMARY KEY AUTOINCREMENT, source_id INTEGER, guid TEXT, idx INTEGER, topic TEXT, json JSON, created_at TEXT, updated_at TEXT )"
+        sql_create = f"CREATE TABLE IF NOT EXISTS {self.table_name} (id INTEGER PRIMARY KEY AUTOINCREMENT, source_id INTEGER, guid TEXT, idx INTEGER, topic TEXT, json JSON, created_at TEXT, updated_at TEXT )"
         self.cursor.execute(sql_create)
 
     def process_conversation_csv(self):
@@ -55,17 +55,18 @@ class ConversationDbProcessor:
             # skip the header row
             next(csv_reader)
             for row in csv_reader:
-                # extract the id, persona, and chat from the row
+                # Create a global-unique-identifier for each conversation
                 guid = Utils.guid()
 
                 id = row[0]
-                persona = row[1].strip()
+                topic = row[1].strip()
                 chat = row[2]
 
                 # split the chat into individual lines
                 chat_lines = chat.split('\n')
                 lines = []
                 fake = Faker()
+                # Data doesn't have participant names, so generate fake ones
                 participantGuids = {
                     "0": {"idx": 0, "guid":Utils.guid(), "title":fake.name()},
                     "1": {"idx": 1, "guid":Utils.guid(), "title":fake.name()},
@@ -77,7 +78,7 @@ class ConversationDbProcessor:
                     cycle = (cycle + 1) % numParticipant
 
                 # Create an row of the data. If you have a DAL, you could simply insert
-                row_dict = {"id": id, "guid": guid, "topic": persona, "lines": lines, "participant": participantGuids, }
+                row_dict = {"id": id, "guid": guid, "topic": topic, "lines": lines, "participant": participantGuids, }
                 now = datetime.datetime.now()
                 created_at = now.strftime("%Y-%m-%d %H:%M:%S")
                 jsonData = json.dumps(row_dict)
