@@ -32,6 +32,7 @@ except:
 
 class Evaluator:
     min_tags = 3
+    max_tags=20
     verbose = False
     scoring_factors = {
         "top_3_mean": 0.55,
@@ -166,6 +167,16 @@ class Evaluator:
                         bt.logging.info(f"Only {len(miner_result['tags'])} tag(s) found for miner {miner_result['uid']}. Skipping.")
                         zero_score_mask[idx] = 0
                         continue
+                    elif len(miner_result['tags']) > self.max_tags:
+                        bt.logging.info(f"Miner {miner_result['uid']} has {len(miner_result['tags'])} tags, exceeding the maximum limit of {self.max_tags}. Truncating.")
+                        miner_result['tags'] = miner_result['tags'][:self.max_tags]
+                        
+                        truncated_vectors = {}
+                        for i, (key, value) in enumerate(miner_result['vectors'].items()):
+                            if i >= self.max_tags:
+                                break
+                            truncated_vectors[key] = value
+                        miner_result['vectors'] = truncated_vectors
                 except Exception as e:
                     bt.logging.error(f"Error while intitial checking {idx}-th response: {e}, 0 score")
                     bt.logging.debug(print_exception(type(e), e, e.__traceback__))
