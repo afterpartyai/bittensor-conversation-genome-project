@@ -173,7 +173,11 @@ class Validator(BaseValidatorNeuron):
                         if self.verbose:
                             bt.logging.info(f"score {score}")
 
-                        uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
+                        uid=-1
+                        try:
+                            uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
+                        except Exception as e:
+                            print(f"ERROR 1162494 -- WandB logging error: {e}") 
                         wl.log({
                             "conversation_guid."+uid: conversation_guid,
                             "window_id."+uid: window_idx,

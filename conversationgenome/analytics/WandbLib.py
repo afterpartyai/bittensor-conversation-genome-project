@@ -27,17 +27,26 @@ class WandbLib:
     verbose = False
 
     def init_wandb(self, config=None, data=None):
+        my_hotkey=12345
+        my_uid = -1
+        try:
+            wallet= bt.wallet()
+            subtensor = bt.subtensor()
+            metagraph = subtensor.metagraph()
+        except Exception as e:
+            print(f"ERROR 7592656 -- WandB init error: {e}")
+
         if config:
             #initialize data:
-            wallet = bt.wallet(config=config)
-            subtensor = bt.subtensor(config=config)
-            metagraph = subtensor.metagraph(config.netuid)
-            my_hotkey=wallet.hotkey.ss58_address
-            my_uid = metagraph.hotkeys.index(my_hotkey)
-        else: 
-            #initialize test data:
-            my_hotkey=12345
-            my_uid = -1
+            try:
+                wallet = bt.wallet(config=config)
+                subtensor = bt.subtensor(config=config)
+                metagraph = subtensor.metagraph(config.netuid)
+                my_hotkey=wallet.hotkey.ss58_address
+                my_uid = metagraph.hotkeys.index(my_hotkey)
+            except Exception as e:
+                print(f"ERROR 8618322 -- WandB init error: {e}")
+                
 
         if c.get("env", "WANDB_DISABLE"):
             return
