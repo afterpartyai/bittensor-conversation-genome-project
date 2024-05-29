@@ -17,27 +17,6 @@ class Utils:
         return out
 
     @staticmethod
-    def compare_arrays(arr1, arr2):
-        result_dict = {}
-
-        set1 = set(arr1)
-        set2 = set(arr2)
-
-        result_dict["both"] = list(set1.intersection(set2))
-        result_dict["unique_1"] = list(set1.difference(set2))
-        result_dict["unique_2"] = list(set2.difference(set1))
-
-        return result_dict
-
-    @staticmethod
-    def pluck(dicts, key):
-        values = []
-        for dictionary in dicts:
-            if key in dictionary:
-                values.append(dictionary[key])
-        return values
-
-    @staticmethod
     def guid():
         current_time = int(round(time.time() * 1000))
         guid = uuid.uuid1(node=current_time)
@@ -45,40 +24,19 @@ class Utils:
         return guid_int
 
     @staticmethod
-    def split_overlap_array(array, size=10, overlap=2):
-        result = []
-        lenArray = len(array)
-        num_splits = lenArray//(size-overlap) + 1
-
-        for i in range(num_splits):
-            start = i*(size-overlap)
-            end = start + size
-            window = array[start:end]
-            #print("Start/end/elements", start, end, window)
-            result.append(array[start:end])
-            if end >= lenArray:
-                break
-        return result
-
-    @staticmethod
     def get_time(format_str="%H:%M:%S"):
         import time
         return time.strftime(format_str)
 
 
-
-# create an empty dictionary to store the output
-output_dict = {}
-outputCount = 0
-useDb = True
-
 class ConversationDbProcessor:
     db_name = 'conversations.sqlite'
+    table_name = 'conversationsF'
     # This 2000 row subset is from the 140K row Kaggle Facebook conversation data:
     #     https://www.kaggle.com/datasets/atharvjairath/personachat/data
     raw_data_path = 'facebook-chat-data_2000rows.csv'
     source_id = 1
-    max_rows = 1000
+    max_rows = 1200
 
     def __init__(self):
         self.conn = sqlite3.connect(self.db_name)
@@ -89,11 +47,8 @@ class ConversationDbProcessor:
     def process_conversation_csv(self):
         max_rows = self.max_rows
         row_count = 1
-        # open the CSV file and iterate through each row
-        with open(self.raw_data_path, 'r') as csv_file:
-            total_rows = sum(1 for line in csv_file)
 
-        print(Utils.get_time() + " Starting data insert of max_rows %d rows from %d dataset total..." % (max_rows, total_rows))
+        print(Utils.get_time() + " Starting data insert of max_rows=%d..." % (max_rows))
         with open(self.raw_data_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
 
@@ -120,32 +75,36 @@ class ConversationDbProcessor:
                 for line in chat_lines:
                     lines.append([ cycle, line.strip() ])
                     cycle = (cycle + 1) % numParticipant
+
+                # Create an row of the data. If you have a DAL, you could simply insert
                 row_dict = {"id": id, "guid": guid, "topic": persona, "lines": lines, "participant": participantGuids, }
                 now = datetime.datetime.now()
                 created_at = now.strftime("%Y-%m-%d %H:%M:%S")
                 jsonData = json.dumps(row_dict)
-                sql_insert = "INSERT INTO conversationsF (source_id, json, idx, topic, guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+
+                # Generate SQLite insert statement
+                sql_insert = f"INSERT INTO {self.table_name} (source_id, json, idx, topic, guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
                 insert_data = (self.source_id, jsonData, row_dict['id'], row_dict['topic'], str(row_dict['guid']), created_at, created_at)
                 self.cursor.execute(sql_insert, insert_data)
 
-                #print(row_dict)
-
                 row_count += 1
+                # Commit every 100 rows and report progress
                 if row_count % 100 == 0:
                     print(Utils.get_time() + " Committing 100 rows. Total count: "+str(row_count))
+                    self.conn.commit()
                     try:
                         self.conn.commit()
                     except:
                         pass
 
-                if row_count > max_rows:
-                    print(Utils.get_time() + " Reached max rows. Total count: "+str(row_count))
+                # Convenience max_rows so small amount of data can be tested
+                if max_rows and row_count > max_rows:
+                    print(Utils.get_time() + " Reached max rows. Total count: "+str(row_count-1))
                     break
-                    #break
 
         self.conn.commit()
         self.conn.close()
-        print(Utils.get_time() + " Insert complete.")
+        print(Utils.get_time() + " Insert complete. Total count: "+str(row_count-1))
 
 cdp = ConversationDbProcessor()
 cdp.process_conversation_csv()
