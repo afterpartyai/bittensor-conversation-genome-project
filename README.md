@@ -17,6 +17,7 @@
 - [Subnet Roles](#subnet-roles)
   - [Mining](#mining)
   - [Validating](#validating)
+  - [Validating with a Custom Conversation Server](#Validating-with-a-Custom-Conversation-Server)
 - [Helpful Guides](#helpful-guides)
   - [Runpod](#Runpod)
   - [Managing Processes](#managing-processes)
