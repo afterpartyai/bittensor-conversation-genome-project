@@ -23,9 +23,6 @@ app = FastAPI()
 class Db:
     db_name = None
     table_name = None
-    sql_create_results2 = """CREATE TABLE "cgp_results" (
-);"""
-
     sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (
 	"id"	INTEGER UNIQUE,
 	"status"	INTEGER DEFAULT 1,
@@ -63,16 +60,37 @@ class Db:
         return cursor
 
 
-    def insert_into_table(self, hotkey, key, dictionary):
+    def insert_into_table(self, c_guid, content):
         today = Utils.get_time()
         db_name = f"{self.db_name}_{today}.sqlite"
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
-        sql_c = self.sql_create_results.replace('\n','')
-        sql_create = f"CREATE TABLE IF NOT EXISTS {sql_c}"
-        print(self.sql_create_results)
         cursor.execute(self.sql_create_results)
-        cursor.execute('INSERT INTO cgp_results (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
+        updateRow = {
+            "c_guid": c_guid,
+            "mode": Utils.get(content, "mode"),
+            "model": Utils.get(content, "model"),
+            "llm_type": Utils.get(content, "llm_type"),
+            "convo_window_index": Utils.get(content, "convo_window_index"),
+            "marker_id": Utils.get(content, "marker_id"),
+            #"source_type": sourceType,
+            "hotkey": Utils.get(content, "hotkey"),
+            "coldkey": Utils.get(content, "coldkey"),
+            "batch_num": Utils.get(content, "batch_num"),
+            "tags": Utils.get(content, "tags"),
+            "cgp_version": Utils.get(content, "cgp_version"),
+            "json": json.dumps(content)
+        }
+        fields = []
+        questions = []
+        values = []
+        for field, val in updateRow.items():
+            fields.append(field)
+            questions.append("?")
+            values.append(val)
+        fields_str = ",".join(fields)
+        questions_str = ",".join(questions)
+        cursor.execute(f"INSERT INTO cgp_results ({fields_str}) VALUES ({questions_str})", (values))
         conn.commit()
         conn.close()
 
@@ -146,12 +164,9 @@ def post_openai_mock_request():
 @app.put("/api/v1/conversation/record/{c_guid}")
 def put_record_request(c_guid, data: dict):
     out = {"success": 0, "errors":[], "data":{}}
-    if "hotkey" in data:
-        print("data", c_guid, data)
-        hotkey = data['hotkey']
-        #fname = write_directory(data['hotkey'], c_guid, data)
+    if data:
         db = Db("cgp_tags", "tags")
-        db.insert_into_table(hotkey, c_guid, data)
+        db.insert_into_table(c_guid, data)
         out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
         out['success'] = 1
     else:
