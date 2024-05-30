@@ -3,67 +3,110 @@ import random
 import os
 import time
 
-
 import hashlib
 import sqlite3
+
+
+# Test convo endpoint:
+# curl -XPOST https://api.conversations.xyz/api/v1/conversation/reserve
+# curl -XPOST http://localhost:8000/api/v1/conversation/reserve
+
 
 from fastapi import FastAPI, Request
 
 app = FastAPI()
 
-# GET request
+class Db:
+    db_name = None
+    table_name = None
+
+    def __init__(self, db_name, table_name):
+        self.db_name = db_name
+        self.table_name = table_name
+
+    def get_cursor(self):
+        db_name = "conversations.sqlite"
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+        return cursor
+
+
+    def insert_into_table(self, hotkey, key, dictionary):
+        db_name = "cgp_tags.sqlite"
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+        cursor.execute('CREATE TABLE IF NOT EXISTS tags (key TEXT, value TEXT)')
+        cursor.execute('INSERT INTO tags (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
+        conn.commit()
+        conn.close()
+
+    def get_random_conversation(self):
+        cursor = self.get_cursor()
+        sql = 'SELECT * FROM conversations ORDER BY RANDOM() LIMIT 1'
+        cursor.execute(sql)
+        return cursor.fetchall()
+
+    @staticmethod
+    def dict_factory(cursor, row):
+        d = {}
+        for idx, col in enumerate(cursor.description):
+            if col[0] == "json":
+                try:
+                    d["data"] = json.loads(row[idx])
+                except:
+                   d["data"] = json.loads("{}")
+            else:
+                d[col[0]] = row[idx]
+        return d
+
+
 @app.get("/")
 def get_request():
-    return {"message": "This is a GET request2"}
-
-# PUT request
-@app.put("/put_request")
-def put_request():
-    return {"message": "This is a PUT request"}
-
-# POST request
-@app.post("/post_request")
-def post_request():
-    return {"message": "This is a POST request"}
-
-# Example of a JSON response
-@app.get("/json_response")
-def json_response():
-    data = {"name": "John", "age": 30, "city": "New York"}
-    return json.dumps(data)
+    return {"message": "Forbidden"}
 
 @app.post("/api/v1/conversation/reserve")
 def post_request():
     # Used for testing long or bad responses
     if False:
-        time.sleep(10)
+        time.sleep(30)
     path = '../data/facebook-chat-data.json'
 
-    f = open(path)
-    body = f.read()
-    f.close()
-    convos = json.loads(body)
-    convoKeys = list(convos.keys())
-    convoTotal = len(convoKeys)
-    #print("convoTotal", convoTotal)
-    selectedConvoKey = random.choice(convoKeys)
-    selectedConvo = convos[selectedConvoKey]
-    selectedConvoKey2 = random.choice(convoKeys)
-    selectedConvo2 = convos[selectedConvoKey]
-    selectedConvoKey3 = random.choice(convoKeys)
-    selectedConvo3 = convos[selectedConvoKey]
-    #print("selectedConvo", selectedConvo)
+    if False:
+        f = open(path)
+        body = f.read()
+        f.close()
+        convos = json.loads(body)
+        convoKeys = list(convos.keys())
+        convoTotal = len(convoKeys)
+        #print("convoTotal", convoTotal)
+        selectedConvoKey = random.choice(convoKeys)
+        selectedConvo = convos[selectedConvoKey]
+        selectedConvoKey2 = random.choice(convoKeys)
+        selectedConvo2 = convos[selectedConvoKey]
+        selectedConvoKey3 = random.choice(convoKeys)
+        selectedConvo3 = convos[selectedConvoKey]
+        #print("selectedConvo", selectedConvo)
 
-    # Concatenate several for length
-    lines = selectedConvo["lines"] + selectedConvo2["lines"] + selectedConvo3["lines"]
-
+        # Concatenate several for length
+        lines = selectedConvo["lines"] + selectedConvo2["lines"] + selectedConvo3["lines"]
+    else:
+        convoKeys = []
+        selectedConvo = {
+            "guid":1,
+            "participants": ["SPEAKER_01", "SPEAKER_02", "SPEAKER_03", "SPEAKER_00", ]
+        }
+        lines = []
 
     convo = {
         "total":len(convoKeys),
         "guid":selectedConvo["guid"],
-        #"participants": selectedConvo["participants"],
+        "participants": selectedConvo["participants"],
         "lines": lines,
     }
+
+    db = Db("conversations", "conversations")
+    convo['convo'] = db.get_random_conversation()
+
     return convo
 
 # Mock endpoint for testing OpenAI
@@ -74,39 +117,7 @@ def post_openai_mock_request():
         time.sleep(10)
     return {"errors":{"id":923123, "msg":"Mock error"}}
 
-def write_directory(key, dictionary, base_path='.'):
-    # generate md5 from key
-    md5 = hashlib.md5(key.encode()).hexdigest()
 
-    # create directory with first letter of md5
-    first_dir = os.path.join(base_path, md5[0])
-    os.makedirs(first_dir, exist_ok=True)
-
-    # create directory within first directory with last letter of md5
-    last_dir = md5[-1]
-    final_path = os.path.join(first_dir, last_dir)
-    os.makedirs(final_path, exist_ok=True)
-    print(f"DIR PATH: {final_path}")
-
-    # create filename with md5 and key
-    filename = f"{md5}-{key}.json"
-
-    # create file with filename and write dictionary as JSON string
-    full_path = os.path.join(first_dir, last_dir, filename)
-    print(f"Full path: {full_path}")
-    with open(full_path, "w") as file:
-        json.dump(dictionary, file)
-
-    return filename
-
-def insert_into_table(hotkey, key, dictionary):
-    db_name = "cgp_tags.sqlite"
-    conn = sqlite3.connect(db_name)
-    cursor = conn.cursor()
-    #cursor.execute('CREATE TABLE IF NOT EXISTS tags (key TEXT, value TEXT)')
-    cursor.execute('INSERT INTO tags (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
-    conn.commit()
-    conn.close()
 
 @app.put("/api/v1/conversation/record/{c_guid}")
 def put_record_request(c_guid, data: dict):
@@ -115,7 +126,8 @@ def put_record_request(c_guid, data: dict):
         print("data", c_guid, data)
         hotkey = data['hotkey']
         #fname = write_directory(data['hotkey'], c_guid, data)
-        insert_into_table(hotkey, c_guid, data)
+        db = Db()
+        db.insert_into_table(hotkey, c_guid, data)
         out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
         out['success'] = 1
     else:
