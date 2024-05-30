@@ -1,3 +1,9 @@
+import uuid
+import csv
+import json
+import time
+
+
 class Utils:
     @staticmethod
     def get(inDict, path, default=None, type=None):
@@ -22,6 +28,7 @@ class Utils:
 
     @staticmethod
     def guid():
+        import time
         current_time = int(round(time.time() * 1000))
         guid = uuid.uuid1(node=current_time)
         guid_int = int(guid.int)

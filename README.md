@@ -284,15 +284,72 @@ Validators, by default, access the CGP API to retrieve conversations and store r
 
 > Make sure the conversation data source is reasonably large to prevent miners from gaming the system. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
 
-In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs. This implementation provides the following important files:
+### The Code
 
-- conversation_data_importer.py -- A processor that uses a subset of the Facebook conversation data which comes as a CSV file
-- facebook-chat-data_2000rows.csv --
-- conversations.sqlite
-- cgp_tags_YYYY.MM.DD.sqlite
-- app.py -- A FastAPI-based web server
-- start_conversation_store.sh
+In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs.
 
+
+The relevant code files in the web/ folder include:
+
+- conversation_data_importer.py -- An example processor that reads the subset of the Facebook conversation data and processes it into the conversations.sqlite data store
+- app.py -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
+
+Data files include:
+
+- facebook-chat-data_2000rows.csv -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
+- conversations.sqlite -- Database of the processed Facebook data subset
+- cgp_tags_YYYY.MM.DD.sqlite -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
+
+Additional files include:
+
+- start_conversation_store.sh -- Convenient bash file to start the server
+
+### Converting the Example Data
+
+Run the converter script:
+
+```console
+python conversation_data_importer.py
+```
+
+This will process the `facebook-chat-data_2000rows.csv` and insert the conversations into the `conversations.sqlite` database. If you delete the `conversations.sqlite` then it will create a new one and insert the data. You should see progress like this:
+
+```console
+22:58:44 Starting data insert of max_rows=1200...
+22:58:45 Committing 100 rows. Total count: 100
+22:58:45 Insert complete. Total count: 128
+```
+
+
+### Running the Conversation Server locally
+
+To get the server up and running, you can use the bash file:
+
+```console
+bash start_conversation_store.sh
+```
+
+PM2 instructions
+
+
+Finally, modify the .env of your Validator to point at the web server. Comment out the section that points to the main CGP conversation server and uncomment the local data points. That section of the configuration file should look like this:
+
+```console
+# ____________ LOCAL ________________
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=8000
+export CGP_API_WRITE_HOST=http://localhost
+export CGP_API_WRITE_PORT=8000
+
+
+# ____________ MAIN ________________
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+#export CGP_API_WRITE_HOST=https://db.conversations.xyz
+#export CGP_API_WRITE_PORT=443
+```
+
+Now you can run the test script and see the data written properly.
 
 # Helpful Guides
 

@@ -6,28 +6,7 @@ from faker import Faker
 import sqlite3
 import datetime
 
-class Utils:
-    @staticmethod
-    def get(obj, path, default=None):
-        out = default
-        try:
-            out = obj[path]
-        except:
-            pass
-        return out
-
-    @staticmethod
-    def guid():
-        current_time = int(round(time.time() * 1000))
-        guid = uuid.uuid1(node=current_time)
-        guid_int = int(guid.int)
-        return guid_int
-
-    @staticmethod
-    def get_time(format_str="%H:%M:%S"):
-        import time
-        return time.strftime(format_str)
-
+from Utils import Utils
 
 class ConversationDbProcessor:
     db_name = 'conversations.sqlite'
