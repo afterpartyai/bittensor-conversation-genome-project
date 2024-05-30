@@ -23,7 +23,7 @@ app = FastAPI()
 class Db:
     db_name = None
     table_name = None
-    sql_create_results = """CREATE TABLE "cgp_results" (
+    sql_create_results2 = """CREATE TABLE "cgp_results" (
 	"id"	INTEGER UNIQUE,
 	"status"	INTEGER DEFAULT 1,
 	"batch_num"	INTEGER,
@@ -47,6 +47,8 @@ class Db:
 	PRIMARY KEY("id" AUTOINCREMENT)
 );"""
 
+    sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (hotkey TEXT, c_guid TEXT, json JSON)"""
+
     def __init__(self, db_name, table_name):
         self.db_name = db_name
         self.table_name = table_name
@@ -67,9 +69,9 @@ class Db:
         cursor = conn.cursor()
         sql_c = self.sql_create_results.replace('\n','')
         sql_create = f"CREATE TABLE IF NOT EXISTS {sql_c}"
-        print(sql_create)
-        cursor.execute(sql_create)
-        cursor.execute('INSERT INTO tags (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
+        print(self.sql_create_results)
+        cursor.execute(self.sql_create_results)
+        cursor.execute('INSERT INTO cgp_results (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
         conn.commit()
         conn.close()
 
