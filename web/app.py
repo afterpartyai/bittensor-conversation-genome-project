@@ -81,34 +81,29 @@ def post_request():
         time.sleep(30)
     path = '../data/facebook-chat-data.json'
 
-    convoKeys = []
-    selectedConvo = {
-        "guid":1,
-        "participants": ["SPEAKER_01", "SPEAKER_02", "SPEAKER_03", "SPEAKER_00", ]
-    }
-    lines = []
-
-    convo = {
-        "guid":selectedConvo["guid"],
-    }
-
     db = Db("conversations", "conversations")
     conversation = db.get_random_conversation()
-    convo['lines'] = Utils.get(conversation, "data.lines")
+
+    convo = {
+        "guid": Utils.get(conversation, "data.guid"),
+        "lines": Utils.get(conversation, "data.lines"),
+    }
+
     convo['total'] = len(convo['lines'])
+
+
+    # Anonymize the participants
     participants = Utils.get(conversation, "data.participant")
-    # Anonimize the participants
     out_participants = []
     p_count = 0
     for key, participant in participants.items():
         out_participants.append(f"SPEAKER_{participant['idx']}")
         p_count += 1
     convo['participants'] = out_participants
-    #convo['conversation'] = conversation
 
     return convo
 
-# Mock endpoint for testing OpenAI
+# Mock endpoint for testing OpenAI call failures
 @app.post("/v1/chat/completions")
 def post_openai_mock_request():
     # Used for testing long or bad responses
