@@ -6,10 +6,11 @@ import time
 import hashlib
 import sqlite3
 
+from Utils import Utils
 
 # Test convo endpoint:
-# curl -XPOST https://api.conversations.xyz/api/v1/conversation/reserve
-# curl -XPOST http://localhost:8000/api/v1/conversation/reserve
+# curl -XPOST https://api.conversations.xyz/api/v1/conversation/reserve | python -m json.tool
+# curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
 
 from fastapi import FastAPI, Request
@@ -27,7 +28,9 @@ class Db:
     def get_cursor(self):
         db_name = "conversations.sqlite"
         conn = sqlite3.connect(db_name)
+        conn.row_factory = Db.dict_factory
         cursor = conn.cursor()
+
         return cursor
 
 
@@ -44,7 +47,11 @@ class Db:
         cursor = self.get_cursor()
         sql = 'SELECT * FROM conversations ORDER BY RANDOM() LIMIT 1'
         cursor.execute(sql)
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+        if rows and len(rows) == 1:
+            return rows[0]
+        else:
+            return None
 
     @staticmethod
     def dict_factory(cursor, row):
@@ -105,7 +112,17 @@ def post_request():
     }
 
     db = Db("conversations", "conversations")
-    convo['convo'] = db.get_random_conversation()
+    conversation = db.get_random_conversation()
+    convo['lines'] = Utils.get(conversation, "data.lines")
+    participants = Utils.get(conversation, "data.participant")
+    # Anonimize the participants
+    out_participants = []
+    p_count = 0
+    for key, participant in participants.items():
+        out_participants.append(f"SPEAKER_{participant['idx']}")
+        p_count += 1
+    convo['participants'] = out_participants
+    #convo['conversation'] = conversation
 
     return convo
 
