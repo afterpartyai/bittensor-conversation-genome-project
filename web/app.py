@@ -24,6 +24,9 @@ class Db:
     db_name = None
     table_name = None
     sql_create_results2 = """CREATE TABLE "cgp_results" (
+);"""
+
+    sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (
 	"id"	INTEGER UNIQUE,
 	"status"	INTEGER DEFAULT 1,
 	"batch_num"	INTEGER,
@@ -39,15 +42,13 @@ class Db:
 	"tags"	JSON,
 	"marker_id"	INTEGER,
 	"json"	JSON,
-	"cgp_version"	TEXT,
 	"created_at"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	"cgp_version"	TEXT
 	"updated_at"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	"updated_by"	INTEGER,
 	"created_by"	INTEGER,
 	PRIMARY KEY("id" AUTOINCREMENT)
-);"""
-
-    sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (hotkey TEXT, c_guid TEXT, json JSON)"""
+)"""
 
     def __init__(self, db_name, table_name):
         self.db_name = db_name
