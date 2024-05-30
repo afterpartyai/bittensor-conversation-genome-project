@@ -23,6 +23,29 @@ app = FastAPI()
 class Db:
     db_name = None
     table_name = None
+    sql_create_results = """CREATE TABLE "cgp_results" (
+	"id"	INTEGER UNIQUE,
+	"status"	INTEGER DEFAULT 1,
+	"batch_num"	INTEGER,
+	"c_guid"	TEXT,
+	"convo_window_index"	INTEGER DEFAULT 1,
+	"source_type"	INTEGER DEFAULT 2,
+	"mode"	TEXT,
+	"hotkey"	TEXT,
+	"coldkey"	TEXT,
+	"uid"	INTEGER,
+	"llm_type"	TEXT,
+	"model"	TEXT,
+	"tags"	JSON,
+	"marker_id"	INTEGER,
+	"json"	JSON,
+	"cgp_version"	TEXT,
+	"created_at"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	"updated_at"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	"updated_by"	INTEGER,
+	"created_by"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);"""
 
     def __init__(self, db_name, table_name):
         self.db_name = db_name
@@ -38,10 +61,14 @@ class Db:
 
 
     def insert_into_table(self, hotkey, key, dictionary):
-        db_name = "cgp_tags.sqlite"
+        today = Utils.get_time()
+        db_name = f"{self.db_name}_{today}.sqlite"
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS tags (key TEXT, value TEXT)')
+        sql_c = self.sql_create_results.replace('\n','')
+        sql_create = f"CREATE TABLE IF NOT EXISTS {sql_c}"
+        print(sql_create)
+        cursor.execute(sql_create)
         cursor.execute('INSERT INTO tags (hotkey, c_guid, json) VALUES (?, ?, ?)', (hotkey, key, str(dictionary)))
         conn.commit()
         conn.close()
@@ -120,7 +147,7 @@ def put_record_request(c_guid, data: dict):
         print("data", c_guid, data)
         hotkey = data['hotkey']
         #fname = write_directory(data['hotkey'], c_guid, data)
-        db = Db()
+        db = Db("cgp_tags", "tags")
         db.insert_into_table(hotkey, c_guid, data)
         out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
         out['success'] = 1
