@@ -280,31 +280,33 @@ python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.ho
 
 ## Validating with a Custom Conversation Server
 
-Validators, by default, access the CGP API to retrieve conversations and store results. However, each validator can run against its own data source and process custom or even proprietary conversation data.
+Validators, by default, access the CGP API (`conversations.xyz`) to retrieve conversations and store results. However, each validator can run against its own data source and process custom or even proprietary conversation data.
 
 > Make sure the conversation data source is reasonably large to prevent miners from gaming the system. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
 
 ### The Code
 
-In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs.
+In the `web/` folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs.
 
 
-The relevant code files in the web/ folder include:
+The relevant code files in the `web/` folder include:
 
-- conversation_data_importer.py -- An example processor that reads the subset of the Facebook conversation data and processes it into the conversations.sqlite data store
-- app.py -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
+- `conversation_data_importer.py` -- An example processor that reads the subset of the Facebook conversation data and processes it into the conversations.sqlite data store
+- `app.py` -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
 
 Data files include:
 
-- facebook-chat-data_2000rows.csv -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
-- conversations.sqlite -- Database of the processed Facebook data subset
-- cgp_tags_YYYY.MM.DD.sqlite -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
+- `facebook-chat-data_2000rows.csv` -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
+- `conversations.sqlite` -- Database of the processed Facebook data subset
+- `cgp_tags_YYYY.MM.DD.sqlite` -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
 
 Additional files include:
 
-- start_conversation_store.sh -- Convenient bash file to start the server
+- `start_conversation_store.sh` -- Convenient bash file to start the server
 
 ### Converting the Example Data
+
+To process the `facebook-chat-data_2000rows.csv` and insert the conversations into the `conversations.sqlite` database. If you delete the `conversations.sqlite` then it will create a new one and insert the data.
 
 Run the converter script:
 
@@ -312,13 +314,32 @@ Run the converter script:
 python conversation_data_importer.py
 ```
 
-This will process the `facebook-chat-data_2000rows.csv` and insert the conversations into the `conversations.sqlite` database. If you delete the `conversations.sqlite` then it will create a new one and insert the data. You should see progress like this:
+You should see progress like this:
 
 ```console
 22:58:44 Starting data insert of max_rows=1200...
 22:58:45 Committing 100 rows. Total count: 100
 22:58:45 Insert complete. Total count: 128
 ```
+
+If you have `sqlite3` installed, you can open the database file and see the inserted data like like:
+
+```console
+sqlite3 conversations.sqlite
+.tables
+SELECT * FROM conversations LIMIT 1;
+```
+
+That will show you the tables in the database (only 1 -- `conversations`) and then you will see one of the conversations like this:
+
+```console
+1|1|81087215704299650220210175538345752183|0|i like to remodel homes.... !"], [0, ""]], "participant": {"0": {"idx": 0, "guid": 81099766792120672433284180456245507719, "title": "Leslie Brown"}, "1": {"idx": 1, "guid": 81099927942203226444412726509314455175, "title": "Jason Mckenzie MD"}}}|2024-05-29 23:50:33|2024-05-29 23:50:33
+```
+
+With the data populated, you're ready to start running the server.
+
+> Note: The Facebook data is not production data. You're encourage to modify this script to process and load the data from a more robust data store that you've selected.
+
 
 
 ### Running the Conversation Server locally
@@ -332,7 +353,7 @@ bash start_conversation_store.sh
 PM2 instructions
 
 
-Finally, modify the .env of your Validator to point at the web server. Comment out the section that points to the main CGP conversation server and uncomment the local data points. That section of the configuration file should look like this:
+Finally, modify the `.env` of your Validator to point at the web server. Comment out the section that points to the main CGP conversation server and uncomment the local data points. That section of the configuration file should look like this:
 
 ```console
 # ____________ LOCAL ________________
@@ -349,7 +370,16 @@ export CGP_API_WRITE_PORT=8000
 #export CGP_API_WRITE_PORT=443
 ```
 
-Now you can run the test script and see the data written properly.
+Now you can run the test script and see the data written properly (replace the filename with your database file).
+
+```console
+sqlite3 cgp_tags_YYYY.MM.DD.sqlite
+.tables
+SELECT id,c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
+```
+
+That will provide some of the data inserted into the results table.
+
 
 # Helpful Guides
 
