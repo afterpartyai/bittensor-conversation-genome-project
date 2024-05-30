@@ -8,8 +8,11 @@ import sqlite3
 
 from Utils import Utils
 
-# Test convo endpoint:
+# Test convo read endpoint:
 # curl -XPOST https://api.conversations.xyz/api/v1/conversation/reserve | python -m json.tool
+# curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
+
+# Test convo write endpoint:
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
 
@@ -78,42 +81,21 @@ def post_request():
         time.sleep(30)
     path = '../data/facebook-chat-data.json'
 
-    if False:
-        f = open(path)
-        body = f.read()
-        f.close()
-        convos = json.loads(body)
-        convoKeys = list(convos.keys())
-        convoTotal = len(convoKeys)
-        #print("convoTotal", convoTotal)
-        selectedConvoKey = random.choice(convoKeys)
-        selectedConvo = convos[selectedConvoKey]
-        selectedConvoKey2 = random.choice(convoKeys)
-        selectedConvo2 = convos[selectedConvoKey]
-        selectedConvoKey3 = random.choice(convoKeys)
-        selectedConvo3 = convos[selectedConvoKey]
-        #print("selectedConvo", selectedConvo)
-
-        # Concatenate several for length
-        lines = selectedConvo["lines"] + selectedConvo2["lines"] + selectedConvo3["lines"]
-    else:
-        convoKeys = []
-        selectedConvo = {
-            "guid":1,
-            "participants": ["SPEAKER_01", "SPEAKER_02", "SPEAKER_03", "SPEAKER_00", ]
-        }
-        lines = []
+    convoKeys = []
+    selectedConvo = {
+        "guid":1,
+        "participants": ["SPEAKER_01", "SPEAKER_02", "SPEAKER_03", "SPEAKER_00", ]
+    }
+    lines = []
 
     convo = {
-        "total":len(convoKeys),
         "guid":selectedConvo["guid"],
-        "participants": selectedConvo["participants"],
-        "lines": lines,
     }
 
     db = Db("conversations", "conversations")
     conversation = db.get_random_conversation()
     convo['lines'] = Utils.get(conversation, "data.lines")
+    convo['total'] = len(convo['lines'])
     participants = Utils.get(conversation, "data.participant")
     # Anonimize the participants
     out_participants = []
