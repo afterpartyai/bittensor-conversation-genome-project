@@ -280,14 +280,13 @@ python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.ho
 
 ## Validating with a Custom Conversation Server
 
-Validators, by default, access the CGP API to retrieve conversations and store results. However, each validator can run against its own data source and process custom or even proprietary conversation data.
+Validators, by default, access the CGP API to retrieve conversations and store results. However, the subnet is designed to be a decentralized “Scale AI” where each validator can sell access to their bandwidth for structuring conversational/text data. The validator can run against any of its own data sources and process custom or even proprietary conversation data.
 
-> Make sure the conversation data source is reasonably large to prevent miners from gaming the system. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
+> Make sure the conversation data source is reasonably large. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
 
 ### The Code
 
 In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs.
-
 
 The relevant code files in the web/ folder include:
 
@@ -320,6 +319,7 @@ This will process the `facebook-chat-data_2000rows.csv` and insert the conversat
 22:58:45 Insert complete. Total count: 128
 ```
 
+> *Important:* Do not run your validator against this example dataset on mainnet. Please use a custom dataset of at least 50,000 conversations at a minimum to prevent miners from re-using previous results.
 
 ### Running the Conversation Server locally
 
@@ -329,8 +329,11 @@ To get the server up and running, you can use the bash file:
 bash start_conversation_store.sh
 ```
 
-PM2 instructions
+To run this in pm2, please following installation instructions [here](#pm2-Installation) and then use the command 
 
+```console
+pm2 start "bash start_conversation_store.sh" --name <process name>
+```
 
 Finally, modify the .env of your Validator to point at the web server. Comment out the section that points to the main CGP conversation server and uncomment the local data points. That section of the configuration file should look like this:
 
