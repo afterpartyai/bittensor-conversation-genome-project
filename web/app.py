@@ -21,6 +21,7 @@ from fastapi import FastAPI, Request
 app = FastAPI()
 
 class Db:
+    source_type = 2 # Non-CGP
     db_name = None
     table_name = None
     sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (
@@ -73,7 +74,7 @@ class Db:
             "llm_type": Utils.get(content, "llm_type"),
             "convo_window_index": Utils.get(content, "convo_window_index"),
             "marker_id": Utils.get(content, "marker_id"),
-            #"source_type": sourceType,
+            "source_type": self.source_type,
             "hotkey": Utils.get(content, "hotkey"),
             "coldkey": Utils.get(content, "coldkey"),
             "batch_num": Utils.get(content, "batch_num"),

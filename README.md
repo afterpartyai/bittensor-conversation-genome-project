@@ -107,15 +107,15 @@ The example file specifies the LLM type as **openai** and the model to use as **
 
 ### LLM Selection
 
-LLMs utilizaiton is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. You select your model by commenting/uncommenting the line 
+LLMs utilizaiton is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. You select your model by commenting/uncommenting the line
 
 ```
 export LLM_TYPE=<openai/groq/anthropic>
 ```
 
-Please ensure you only have one `LLM_TYPE` config parameter uncommented before running any code. Once you have selected the `LLM_TYPE`, select the model you'd like to use by uncommenting one corresponding model for the LLM Type you've chosen. 
+Please ensure you only have one `LLM_TYPE` config parameter uncommented before running any code. Once you have selected the `LLM_TYPE`, select the model you'd like to use by uncommenting one corresponding model for the LLM Type you've chosen.
 
-To do this for OpenAI, uncomment one `OPENAI_MODEL=` line, for groq, uncomment one `GROQ_MODEL` line, or for Anthropic, uncomment one `ANTHROPIC_MODEL` line. Below is an example config that is set up to run OpenAI's GPT-4o model. 
+To do this for OpenAI, uncomment one `OPENAI_MODEL=` line, for groq, uncomment one `GROQ_MODEL` line, or for Anthropic, uncomment one `ANTHROPIC_MODEL` line. Below is an example config that is set up to run OpenAI's GPT-4o model.
 
 ```
 # ____________ OPENAI ________________
@@ -236,7 +236,7 @@ Before mining or validating, you will need a UID, which you can acquire by follo
 
 To register on testnet, add the flag `--subtensor.network test` to your registration command, and specify `--netuid 138` which is our testnet subnet uid.
 
-To register on mainnet, you can speciy `--netuid 33` which is our mainnet subnet uid. 
+To register on mainnet, you can speciy `--netuid 33` which is our mainnet subnet uid.
 
 
 # Subnet Roles
@@ -253,7 +253,7 @@ If you are running on runpod, please read instructions [here](#Using-Runpod).
 python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
 
-Once you've registered on on mainnet SN33, you can start your miner with this command: 
+Once you've registered on on mainnet SN33, you can start your miner with this command:
 
 ```
 python3 -m neurons.miner --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>
@@ -272,11 +272,26 @@ If you are running on runpod, please read instructions [here](#Using-Runpod)
 python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
 
-Once you've registered on on mainnet SN33, you can start your miner with this command: 
+Once you've registered on on mainnet SN33, you can start your miner with this command:
 
 ```
 python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>
 ```
+
+## Validating with a Custom Conversation Server
+
+Validators, by default, access the CGP API to retrieve conversations and store results. However, each validator can run against its own data source and process custom or even proprietary conversation data.
+
+> Make sure the conversation data source is reasonably large to prevent miners from gaming the system. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
+
+In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs. This implementation provides the following important files:
+
+- conversation_data_importer.py -- A processor that uses a subset of the Facebook conversation data which comes as a CSV file
+- facebook-chat-data_2000rows.csv --
+- conversations.sqlite
+- cgp_tags_YYYY.MM.DD.sqlite
+- app.py -- A FastAPI-based web server
+- start_conversation_store.sh
 
 
 # Helpful Guides
