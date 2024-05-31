@@ -107,15 +107,15 @@ The example file specifies the LLM type as **openai** and the model to use as **
 
 ### LLM Selection
 
-LLMs utilizaiton is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. You select your model by commenting/uncommenting the line 
+LLMs utilizaiton is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. You select your model by commenting/uncommenting the line
 
 ```
 export LLM_TYPE=<openai/groq/anthropic>
 ```
 
-Please ensure you only have one `LLM_TYPE` config parameter uncommented before running any code. Once you have selected the `LLM_TYPE`, select the model you'd like to use by uncommenting one corresponding model for the LLM Type you've chosen. 
+Please ensure you only have one `LLM_TYPE` config parameter uncommented before running any code. Once you have selected the `LLM_TYPE`, select the model you'd like to use by uncommenting one corresponding model for the LLM Type you've chosen.
 
-To do this for OpenAI, uncomment one `OPENAI_MODEL=` line, for groq, uncomment one `GROQ_MODEL` line, or for Anthropic, uncomment one `ANTHROPIC_MODEL` line. Below is an example config that is set up to run OpenAI's GPT-4o model. 
+To do this for OpenAI, uncomment one `OPENAI_MODEL=` line, for groq, uncomment one `GROQ_MODEL` line, or for Anthropic, uncomment one `ANTHROPIC_MODEL` line. Below is an example config that is set up to run OpenAI's GPT-4o model.
 
 ```
 # ____________ OPENAI ________________
@@ -236,7 +236,7 @@ Before mining or validating, you will need a UID, which you can acquire by follo
 
 To register on testnet, add the flag `--subtensor.network test` to your registration command, and specify `--netuid 138` which is our testnet subnet uid.
 
-To register on mainnet, you can speciy `--netuid 33` which is our mainnet subnet uid. 
+To register on mainnet, you can speciy `--netuid 33` which is our mainnet subnet uid.
 
 
 # Subnet Roles
@@ -253,7 +253,7 @@ If you are running on runpod, please read instructions [here](#Using-Runpod).
 python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
 
-Once you've registered on on mainnet SN33, you can start your miner with this command: 
+Once you've registered on on mainnet SN33, you can start your miner with this command:
 
 ```
 python3 -m neurons.miner --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>
@@ -272,12 +272,111 @@ If you are running on runpod, please read instructions [here](#Using-Runpod)
 python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
 
-Once you've registered on on mainnet SN33, you can start your miner with this command: 
+Once you've registered on on mainnet SN33, you can start your miner with this command:
 
 ```
 python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --axon.port <port>
 ```
 
+## Validating with a Custom Conversation Server
+
+Validators, by default, access the CGP API to retrieve conversations and store results. However, the subnet is designed to be a decentralized “Scale AI” where each validator can sell access to their bandwidth for structuring conversational/text data. The validator can run against any of its own data sources and process custom or even proprietary conversation data.
+
+> Make sure the conversation data source is reasonably large. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
+
+### The Code
+
+In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs.
+
+The relevant code files in the web/ folder include:
+
+- conversation_data_importer.py -- An example processor that reads the subset of the Facebook conversation data and processes it into the conversations.sqlite data store
+- app.py -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
+
+Data files include:
+
+- facebook-chat-data_2000rows.csv -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
+- conversations.sqlite -- Database of the processed Facebook data subset
+- cgp_tags_YYYY.MM.DD.sqlite -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
+
+Additional files include:
+
+- start_conversation_store.sh -- Convenient bash file to start the server
+
+### Converting the Example Data
+
+Run the converter script:
+
+```console
+python conversation_data_importer.py
+```
+
+This will process the `facebook-chat-data_2000rows.csv` and insert the conversations into the `conversations.sqlite` database. If you delete the `conversations.sqlite` then it will create a new one and insert the data. You should see progress like this:
+
+```console
+22:58:44 Starting data insert of max_rows=1200...
+22:58:45 Committing 100 rows. Total count: 100
+22:58:45 Insert complete. Total count: 128
+```
+
+If you have `sqlite3` installed, you can open the database file and see the inserted data like like:
+
+```console
+sqlite3 conversations.sqlite
+.tables
+SELECT * FROM conversations LIMIT 1;
+```
+
+That will show you the tables in the database (only 1 -- `conversations`) and then you will see one of the conversations like this:
+
+```console
+1|1|81087215704299650220210175538345752183|0|i like to remodel homes.... !"], [0, ""]], "participant": {"0": {"idx": 0, "guid": 81099766792120672433284180456245507719, "title": "Leslie Brown"}, "1": {"idx": 1, "guid": 81099927942203226444412726509314455175, "title": "Jason Mckenzie MD"}}}|2024-05-29 23:50:33|2024-05-29 23:50:33
+```
+
+With the data populated, you're ready to start running the server.
+
+> *Important:* Do not run your validator against this example dataset on mainnet. Please use a custom dataset of at least 50,000 conversations at a minimum to prevent miners from re-using previous results. Modify this script to process and load the data from a more robust data store that you've selected.
+
+### Running the Conversation Server locally
+
+To get the server up and running, you can use the bash file:
+
+```console
+bash start_conversation_store.sh
+```
+
+To run this in pm2, please following installation instructions [here](#pm2-Installation) and then use the command
+
+```console
+pm2 start "bash start_conversation_store.sh" --name <process name>
+```
+
+Finally, modify the .env of your Validator to point at the web server. Comment out the section that points to the main CGP conversation server and uncomment the local data points. That section of the configuration file should look like this:
+
+```console
+# ____________ LOCAL ________________
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=8000
+export CGP_API_WRITE_HOST=http://localhost
+export CGP_API_WRITE_PORT=8000
+
+
+# ____________ MAIN ________________
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+#export CGP_API_WRITE_HOST=https://db.conversations.xyz
+#export CGP_API_WRITE_PORT=443
+```
+
+Now you can run the test script and see the data written properly (replace the filename with your database file).
+
+```console
+sqlite3 cgp_tags_YYYY.MM.DD.sqlite
+.tables
+SELECT id,c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
+```
+
+That will provide some of the data inserted into the results table.
 
 # Helpful Guides
 
