@@ -32,7 +32,7 @@ except:
 
 class Evaluator:
     min_tags = 3
-    max_tags = 4
+    max_scored_tags = 20
     verbose = False
     scoring_factors = {
         "top_3_mean": 0.55,
@@ -241,8 +241,8 @@ class Evaluator:
             Utils.append_log(log_path, f"Evaluator diff between ground truth and window -- both: {diff['both']} unique window: {diff['unique_2']}")
 
         for idx, tag in enumerate(tag_set):
-            if idx > self.max_tags:
-                bt.logging.debug(f"WARNING 638871: Total tag count ({len(tag_set)}) is greater than max_scored_tags. Only {self.max_tags} will be scored")
+            if idx > self.max_scored_tags:
+                bt.logging.debug(f"WARNING 638871: Total tag count ({len(tag_set)}) is greater than max_scored_tags. Only {self.max_scored_tags} will be scored")
                 break
 
             is_unique = False
