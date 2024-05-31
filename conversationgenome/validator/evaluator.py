@@ -32,7 +32,7 @@ except:
 
 class Evaluator:
     min_tags = 3
-    max_tags=20
+    max_tags = 4
     verbose = False
     scoring_factors = {
         "top_3_mean": 0.55,
@@ -167,16 +167,6 @@ class Evaluator:
                         bt.logging.info(f"Only {len(miner_result['tags'])} tag(s) found for miner {miner_result['uid']}. Skipping.")
                         zero_score_mask[idx] = 0
                         continue
-                    elif len(miner_result['tags']) > self.max_tags:
-                        bt.logging.info(f"Miner {miner_result['uid']} has {len(miner_result['tags'])} tags, exceeding the maximum limit of {self.max_tags}. Truncating.")
-                        miner_result['tags'] = miner_result['tags'][:self.max_tags]
-                        
-                        truncated_vectors = {}
-                        for i, (key, value) in enumerate(miner_result['vectors'].items()):
-                            if i >= self.max_tags:
-                                break
-                            truncated_vectors[key] = value
-                        miner_result['vectors'] = truncated_vectors
                 except Exception as e:
                     bt.logging.error(f"Error while intitial checking {idx}-th response: {e}, 0 score")
                     bt.logging.debug(print_exception(type(e), e, e.__traceback__))
@@ -222,7 +212,6 @@ class Evaluator:
                 final_scores.append({"uid": idx+1, "uuid": uuid, "hotkey": hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
                 bt.logging.debug(f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
 
-
         bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
         # Force to use cuda if available -- otherwise, causes device mismatch
         try:
@@ -251,7 +240,11 @@ class Evaluator:
             Utils.append_log(log_path, f"Evaluator calculating scores for tag_set: {tag_set}")
             Utils.append_log(log_path, f"Evaluator diff between ground truth and window -- both: {diff['both']} unique window: {diff['unique_2']}")
 
-        for tag in tag_set:
+        for idx, tag in enumerate(tag_set):
+            if idx > self.max_tags:
+                bt.logging.debug(f"WARNING 638871: Total tag count ({len(tag_set)}) is greater than max_tags {self.max_tags}. No scoring for extras.")
+                break
+
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
