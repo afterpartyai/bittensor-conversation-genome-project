@@ -50,43 +50,6 @@ class ValidatorLib:
     def __init__(self):
         super(ValidatorLib, self).__init__()
 
-    async def begin_log_wandb(self, c_guid):
-        api = wandb.Api()
-        wandb_api_key = c.get("env", "WANDB_API_KEY")
-        if not wandb_api_key:
-            raise ValueError("Please log in to wandb using `wandb login` or set the WANDB_API_KEY environment variable.")
-        run = 5
-        #bt.logging.info("INIT", wandb_api_key)
-        epochs = 10
-        wandb.init(
-              # Set the project where this run will be logged
-              project="cgp_test_run",
-              # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
-              name=f"conversationgenome/cguid_{c_guid}",
-              # Track hyperparameters and run metadata
-              config={
-              "learning_rate": 0.02,
-              "architecture": "CNN",
-              "dataset": "CIFAR-100",
-              "epochs": epochs,
-        })
-
-    async def end_log_wandb(self, c_guid):
-        # Mark the run as finished
-        wandb.finish()
-
-    async def log_wandb_finish(self):
-        epochs = 2
-        offset = random.random() / 5
-        for epoch in range(2, epochs):
-            acc = 1 - 2 ** -epoch - random.random() / epoch - offset
-            loss = 2 ** -epoch + random.random() / epoch + offset
-
-            wandb.log({"acc": acc, "loss": loss})
-
-        # Mark the run as finished
-        wandb.finish()
-
 
     async def reserve_conversation(self, minConvWindows = 1, batch_num=None):
         import time

@@ -32,6 +32,7 @@ except:
 
 class Evaluator:
     min_tags = 3
+    max_scored_tags = 20
     verbose = False
     scoring_factors = {
         "top_3_mean": 0.55,
@@ -211,7 +212,6 @@ class Evaluator:
                 final_scores.append({"uid": idx+1, "uuid": uuid, "hotkey": hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
                 bt.logging.debug(f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
 
-
         bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
         # Force to use cuda if available -- otherwise, causes device mismatch
         try:
@@ -240,7 +240,11 @@ class Evaluator:
             Utils.append_log(log_path, f"Evaluator calculating scores for tag_set: {tag_set}")
             Utils.append_log(log_path, f"Evaluator diff between ground truth and window -- both: {diff['both']} unique window: {diff['unique_2']}")
 
-        for tag in tag_set:
+        for idx, tag in enumerate(tag_set):
+            if idx > self.max_scored_tags:
+                bt.logging.debug(f"WARNING 638871: Total tag count ({len(tag_set)}) is greater than max_scored_tags. Only {self.max_scored_tags} will be scored")
+                break
+
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
