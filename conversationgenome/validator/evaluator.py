@@ -242,7 +242,7 @@ class Evaluator:
 
         for idx, tag in enumerate(tag_set):
             if idx > self.max_tags:
-                bt.logging.debug(f"WARNING 638871: Total tag count ({len(tag_set)}) is greater than max_tags {self.max_tags}. No scoring for extras.")
+                bt.logging.debug(f"WARNING 638871: Total tag count ({len(tag_set)}) is greater than max_scored_tags. Only {self.max_tags} will be scored")
                 break
 
             is_unique = False
