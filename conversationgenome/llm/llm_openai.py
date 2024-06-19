@@ -128,16 +128,17 @@ class llm_openai:
         elif not response['success']:
             print(f"Tagging failed: {response}. Aborting")
             return response
-
+        content = Utils.get(response, 'content')
         if self.return_json:
             tags = self.process_json_tag_return(response)
         else:
-            content = Utils.get(response, 'content')
-            if content:
+            if isinstance(content, str):
                 tags = content.split(",")
             else:
-                tags = ""
-            tags = Utils.clean_tags(tags)
+                print("Error: Unexpected response format. Content type:", type(content))
+                return None
+            
+        tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
             if self.verbose:
@@ -305,12 +306,23 @@ class llm_openai:
             prompt += self.getExampleFunctionConv()
 
         if not direct_call:
-            client = AsyncOpenAI()
-            completion = await client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt} ],
-            )
-            out = completion.choices[0].message
+            try:
+                client = AsyncOpenAI()
+                completion = await client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                content = completion.choices[0].message.content
+                out = {
+                    'success': True,
+                    'content': content
+                }
+            except Exception as e:
+                print("Error in non-direct call:", e)
+                out = {
+                    'success': False,
+                    'content': None
+                }
         else:
             data = {
               "model": self.model,

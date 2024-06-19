@@ -1,7 +1,12 @@
+# Core dependencies
 python-dotenv==1.0.1
 bittensor==6.9.0
 torch==2.1.1
-spacy==3.2.6
-openai==0.28.1
+spacy==3.5.0
+openai==1.30.3
 loguru==0.7.0
-wandb
+wandb==0.17.0
+
+# Dependencies for compatibility
+pydantic==1.10.7
+typing-extensions==4.7.0
