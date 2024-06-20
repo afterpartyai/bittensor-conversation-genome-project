@@ -69,6 +69,7 @@ class WandbLib:
         wandb.init(
               project=PROJECT_NAME,
               name=run_name, #f"conversationgenome/cguid_{c_guid}",
+              entity='afterparty',
               config=config
         )
 
