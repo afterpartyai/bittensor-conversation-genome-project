@@ -165,6 +165,7 @@ class Evaluator:
                     # Make sure there are enough tags to make processing worthwhile
                     if miner_result is None or not miner_result or len(miner_result['tags']) < self.min_tags:
                         bt.logging.info(f"Only {len(miner_result['tags'])} tag(s) found for miner {miner_result['uid']}. Skipping.")
+                        final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
                         zero_score_mask[idx] = 0
                         continue
                 except Exception as e:
@@ -219,6 +220,10 @@ class Evaluator:
         except:
             pass
         # Convert to tensors
+        if  len(final_scores) != len(rank_scores):
+            bt.logging.error(f"ERROR: final scores length ({len(final_scores)})  doesn't match rank scores ({len(rank_scores)}). Aborting.")
+            return (None, None)
+
         for idx, final_score in enumerate(final_scores):
             rank_scores[idx] = final_scores[idx]['adjustedScore']
         return (final_scores, rank_scores)

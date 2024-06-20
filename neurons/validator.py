@@ -167,29 +167,29 @@ class Validator(BaseValidatorNeuron):
 
                     (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
 
-                    
 
-                    for idx, score in enumerate(final_scores):
-                        if self.verbose:
-                            bt.logging.info(f"score {score}")
+                    if final_scores:
+                        for idx, score in enumerate(final_scores):
+                            if self.verbose:
+                                bt.logging.info(f"score {score}")
 
-                        uid=-1
-                        try:
-                            uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
-                        except Exception as e:
-                            print(f"ERROR 1162494 -- WandB logging error: {e}") 
-                        wl.log({
-                            "conversation_guid."+uid: conversation_guid,
-                            "window_id."+uid: window_idx,
-                            "hotkey."+uid: Utils.get(score, "hotkey"),
-                            "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
-                            "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
-                        })
-                        if self.verbose:
-                            print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
+                            uid=-1
+                            try:
+                                uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
+                            except Exception as e:
+                                print(f"ERROR 1162494 -- WandB logging error: {e}")
+                            wl.log({
+                                "conversation_guid."+uid: conversation_guid,
+                                "window_id."+uid: window_idx,
+                                "hotkey."+uid: Utils.get(score, "hotkey"),
+                                "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                                "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                            })
+                            if self.verbose:
+                                print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
 
-                    # Update the scores based on the rewards.
-                    self.update_scores(rank_scores, miner_uids)
+                        # Update the scores based on the rewards.
+                        self.update_scores(rank_scores, miner_uids)
             else:
                 bt.logging.error(f"No conversation received from endpoint")
         except Exception as e:
@@ -197,7 +197,7 @@ class Validator(BaseValidatorNeuron):
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
-    
+
     wl = WandbLib()
 
     try:

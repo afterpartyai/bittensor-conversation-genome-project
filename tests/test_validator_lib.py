@@ -117,18 +117,19 @@ async def test_full():
                 mock_miner_responses.append(response)
             # Evaluate results of miners
             (final_scores, rank_scores) = await el.evaluate(full_conversation_metadata, mock_miner_responses)
-            for idx, score in enumerate(final_scores):
-                bt.logging.debug(f"Score for miner idx: {idx} score: {score}")
-                uid = str(Utils.get(score, "uuid"))
-                if wandb_enabled:
-                    wl.log({
-                        "conversation_guid."+uid: conversation_guid,
-                        "window_id."+uid: window_idx,
-                        "uuid."+uid: Utils.get(score, "uuid"),
-                        "hotkey."+uid: Utils.get(score, "hotkey"),
-                        "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
-                        "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
-                    })
+            if final_scores:
+                for idx, score in enumerate(final_scores):
+                    bt.logging.debug(f"Score for miner idx: {idx} score: {score}")
+                    uid = str(Utils.get(score, "uuid"))
+                    if wandb_enabled:
+                        wl.log({
+                            "conversation_guid."+uid: conversation_guid,
+                            "window_id."+uid: window_idx,
+                            "uuid."+uid: Utils.get(score, "uuid"),
+                            "hotkey."+uid: Utils.get(score, "hotkey"),
+                            "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                            "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                        })
 
             break
     if wandb_enabled:
