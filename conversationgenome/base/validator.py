@@ -23,6 +23,7 @@ import argparse
 import threading
 import bittensor as bt
 import random
+import os
 
 from typing import List
 from traceback import print_exception
@@ -38,6 +39,8 @@ class BaseValidatorNeuron(BaseNeuron):
     """
 
     neuron_type: str = "ValidatorNeuron"
+
+    first_sync = True
 
     @classmethod
     def add_args(cls, parser: argparse.ArgumentParser):
@@ -357,7 +360,13 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def save_state(self):
         """Saves the state of the validator to a file."""
-        bt.logging.info("Saving validator state.")
+        if self.first_sync:
+            bt.logging.info(f"Ignore first sync so it doesn't save over last data.")
+            self.first_sync = False
+            return
+
+        state_path = self.config.neuron.full_path + "/state.pt"
+        bt.logging.info(f"Saving validator state to {state_path}.")
 
         # Save the state of the validator to file.
         torch.save(
@@ -366,15 +375,30 @@ class BaseValidatorNeuron(BaseNeuron):
                 "scores": self.scores,
                 "hotkeys": self.hotkeys,
             },
-            self.config.neuron.full_path + "/state.pt",
+            state_path,
         )
+        if os.path.isfile(state_path):
+            bt.logging.info(f"Save state confirmed")
+        else:
+            bt.logging.info(f"Save state failed.")
 
     def load_state(self):
         """Loads the state of the validator from a file."""
-        bt.logging.info("Loading validator state.")
+        state_path = self.config.neuron.full_path + "/state.pt"
+        bt.logging.info(f"Loading validator state from {state_path}.")
 
         # Load the state of the validator from file.
-        state = torch.load(self.config.neuron.full_path + "/state.pt")
-        self.step = state["step"]
-        self.scores = state["scores"]
-        self.hotkeys = state["hotkeys"]
+        if os.path.isfile(state_path):
+            state = torch.load(state_path)
+            self.step = state["step"]
+            self.scores = state["scores"]
+            self.hotkeys = state["hotkeys"]
+            first_hotkey = ""
+            if self.hotkeys and len(self.hotkeys) > 0:
+                first_hotkey = self.hotkeys[0]
+            try:
+                bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
+            except Exception as e:
+                print("Log error", e)
+        else:
+            bt.logging.info(f"No state file found.")
