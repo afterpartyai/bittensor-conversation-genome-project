@@ -393,9 +393,7 @@ class BaseValidatorNeuron(BaseNeuron):
             self.step = state["step"]
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
-            first_hotkey = ""
-            if self.hotkeys and len(self.hotkeys) > 0:
-                first_hotkey = self.hotkeys[0]
+
             try:
                 bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
             except Exception as e:
