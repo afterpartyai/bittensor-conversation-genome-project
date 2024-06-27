@@ -5,10 +5,8 @@ from typing import Dict, List
 import wandb 
 import logging
 import pandas as pd # type: ignore
-import matplotlib.pyplot as plt # type: ignore
 import threading
 import argparse
-from pprint import pformat
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -56,7 +54,7 @@ def process_runs(runs: List[wandb.run], uid: int, hotkey: str) -> pd.DataFrame:
     hotkey_query_string= f"hotkey.{my_uid}"
     netuid_query_string=f"netuid"
 
-    print(f"\nSearching Validator Runs for your Hotkey/UID Combo\n")
+    print(f"\nSearching Validator Runs for your Hotkey/UID Combo. This may take a few minutes.\n")
     print(f"UID: {my_uid}")
     print(f"Hotkey: {my_hotkey}\n")
 
@@ -85,9 +83,10 @@ def process_runs(runs: List[wandb.run], uid: int, hotkey: str) -> pd.DataFrame:
         if hotkey_query_string in history.columns:
             # Filter the history DataFrame
             filtered_history = history[history[hotkey_query_string] == my_hotkey]
-            thisRun.final_scores = filtered_history
-            MyRuns.append(thisRun)
-            count_found+=1
+            if not filtered_history.empty:
+                thisRun.final_scores = filtered_history
+                MyRuns.append(thisRun)
+                count_found+=1
         
         count+=1
 
@@ -107,7 +106,7 @@ def process_runs(runs: List[wandb.run], uid: int, hotkey: str) -> pd.DataFrame:
             all_scores.append(thisrun.final_scores)
         
         else:
-            print(f"No data to display.")
+            print(f"No data to display – Myruns empty. Likely mismatch of UID/Hotkey combo", file=sys.stderr)
 
     return pd.concat(all_scores, ignore_index=True) if all_scores else pd.DataFrame()
 
@@ -190,14 +189,14 @@ def pretty_print_stats(stats):
 
 def main():
     args = parse_arguments()
-    api = wandb.Api(timeout=59)
+    api = wandb.Api(timeout=180)
     runs = fetch_runs(api, "conversationgenome", "afterparty")
     scores_df = process_runs(runs, args.uid, args.hotkey)
     if not scores_df.empty:
         stats = analyze_scores(scores_df, args.uid)
         pretty_print_stats(stats)
     else:
-        logger.info("No data available for analysis.")
+        print("No data available for analysis. Please confirm UID/Hokey Pair")
 
 if __name__ == "__main__":
     main()
