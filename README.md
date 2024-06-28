@@ -7,7 +7,7 @@
   - [Key Features](#key-features)
   - [Benefits](#Benefits)
   - [System Design](#System-Design)
-  - [Rewards and Incentives](#rewards-and-incentives)
+  - [Rewards and Incentives](#reward-mechanism)
 - [Getting Started](#Getting-Started)
   - [Installation & Compute Requirements](#installation--compute-requirements)
   - [Configuration](#configuration)
@@ -482,15 +482,11 @@ Conversation Genome Project (CGP) uses the Bittensor infrastructure to annotate 
 - Miner roles: Process conversation windows, provide metadata and tags
 - Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
 
-## Rewards and Incentives
+## Reward Mechanism
 
-- Miners rewarded for accurate and valuable metadata contributions
-- Balanced distribution of rewards to encourage high-quality submissions
-- Cross-referencing and vector embeddings analysis to ensure data integrity
-- Algorithm for assessing conversation quality (not yet used for miner rewards)
+The reward mechanism for the CGP subnet is designed to incentivize miners to contribute accurate and valuable metadata to the Conversation Genome dataset. Three miners are selected by a validator to receive the same Conversation Window, which is pulled from a larger conversation. After they generate a set of tags for their assigned window, miners are rewarded based on the quality and relevance of their tags, as evaluated by validators against the set of tags for the full, ground truth conversation.
 
-
-
+A score for each miner-submitted tag is derived by a cosine distance calculation from the embedding of that tag to the vector neighborhood of the ground truth tags. The set of miner tags is then evaluated in full based on the mean of their top 3 unique tag scores (55% weight), the overall mean score of the set of tags submitted (25% weight), the median score of the tags submitted (10% weight) and their single top score (10% weight).  The weights for each scoring component prioritize the overall goal of the miner– to provide unique and meaningful tags on the corpus of data – while still allowing room for overlap between the miner and ground truth tag sets, which is an indication of a successful miner. There are also a set of penalties that will be assessed if the miner response doesn’t meet specific requirements - such as not providing any tags shared with the ground truth, not providing a minimum number of unique tags, and not providing any tags over a low-score threshold. The tag scoring system informs the weighting and ranking of each server in the subnet.
 
 
 ```mermaid
