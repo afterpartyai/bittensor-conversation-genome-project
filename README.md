@@ -88,7 +88,9 @@ You'll need to duplicate the dotenv file to setup your own configuration:
 cp env.example .env
 ```
 
-Use your editor to add your Api keys for **Weights and Biases** and **OpenAI**. An OpenAI API key is required by both miners and validators to access the embeddings model for the tags you mine. As a miner or validator, you can select which LLM you'd like to use for tagging conversations and/or windows. Please see [LLM Selection](#LLM-Selection) Below for more information.
+Use your editor to open the .env file, and follow instructions to enter the required API Keys and configurations. **An OpenAI API key is required by both miners and validators*** to access the embeddings model for the tags you mine. **A Weights and Biases Key is required by both miners and validators** as well. As a miner or validator, you can select which LLM you'd like to use for tagging conversations and/or windows. Please see [LLM Selection](#LLM-Selection) Below for more information.
+
+**Please follow all instructions in the .env**
 
 If you're on a Linux box, the nano editor is usually the easiest:
 
@@ -96,84 +98,57 @@ If you're on a Linux box, the nano editor is usually the easiest:
 nano .env
 ```
 
-Open the .env file in your editor and change these variables to your API keys:
-
-```console
-WANDB_API_KEY=some_key
-OPENAI_API_KEY=some_key
-```
-
-The example file specifies the LLM type as **openai** and the model to use as **gpt-3.5-turbo**, but you can change it depending on your preferences.
-
 ### LLM Selection
 
-LLMs utilizaiton is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. You select your model by commenting/uncommenting the line
+**Please follow all instructions in the .env**
+
+LLMs utilization is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. 
+
+You select your model by commenting/uncommenting a line in this section of the .env:
 
 ```
-export LLM_TYPE=<openai/groq/anthropic>
-```
-
-Please ensure you only have one `LLM_TYPE` config parameter uncommented before running any code. Once you have selected the `LLM_TYPE`, select the model you'd like to use by uncommenting one corresponding model for the LLM Type you've chosen.
-
-To do this for OpenAI, uncomment one `OPENAI_MODEL=` line, for groq, uncomment one `GROQ_MODEL` line, or for Anthropic, uncomment one `ANTHROPIC_MODEL` line. Below is an example config that is set up to run OpenAI's GPT-4o model.
-
-```
-# ____________ OPENAI ________________
-
-export LLM_TYPE=openai
-export OPENAI_API_KEY=sk-12345678912023
-export OPENAI_DIRECT_CALL=1
-
-
-#export OPENAI_MODEL=gpt-4-turbo
-export OPENAI_MODEL=gpt-4o
-#export OPENAI_MODEL=gpt-3.5-turbo
-
-export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
-
-# ____________ GROQ ________________
-#export LLM_TYPE=groq
-export GROQ_API_KEY=
-export GROQ_MODEL=llama3-8b-8192
-export GROQ_EMBEDDINGS_MODEL=text-embedding-ada-002
-export GROQ_DIRECT_CALL=1
-
-# ____________ ANTHROPIC ________________
-#export LLM_TYPE=anthropic
-export ANTHROPIC_API_KEY=
-export ANTHROPIC_MODEL=claude-3-sonnet-20240229
-#export ANTHROPIC_MODEL=claude-3-opus-20240229
-```
-
-Below is an example config that is set up to run Anthropic's Claude 3 Opus Model:
-
-```
-# ____________ OPENAI ________________
-
+# ____________ Select LLM Provider________________
+# Select one LLM provider from the options below by uncommenting the line of your choice. 
+# This will determine which API is used to generate your window tags.
 #export LLM_TYPE=openai
-export OPENAI_API_KEY=
-export OPENAI_DIRECT_CALL=1
-
-
-#export OPENAI_MODEL=gpt-4-turbo
-export OPENAI_MODEL=gpt-4o
-#export OPENAI_MODEL=gpt-3.5-turbo
-
-export OPENAI_EMBEDDINGS_MODEL=text-embedding-ada-002
-
-# ____________ GROQ ________________
 #export LLM_TYPE=groq
+#export LLM_TYPE=anthropic
+```
+
+Please ensure you only have one `LLM_TYPE` config parameter uncommented before moving on. Once you have selected the `LLM_TYPE`, continue on to the configuration of your LLM type below. Enter the desired value into any fields marked as required.
+
+**You only need to make changes to the section that corresponds with your LLM_TYPE.**
+
+```
+# ____________ OpenAI Configuration: ________________
+# *** Below Fields Required if you chose LLM_TYPE=openai *** 
+
+# Enter a model below. See all options at: https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4
+export OPENAI_MODEL=3.5-turbo
+
+# Uncomment to use direct API call instead of OpenAI Package. Commented out by default
+#export OPENAI_DIRECT_CALL=1
+
+
+# ____________ GROQ Configuration: ________________
+# *** Below Fields Required if you chose LLM_TYPE=groq ***
 export GROQ_API_KEY=
+
+# Enter a model below. See all options (use model ID): https://console.groq.com/docs/models
 export GROQ_MODEL=llama3-8b-8192
-export GROQ_EMBEDDINGS_MODEL=text-embedding-ada-002
+
+# DO NOT CHANGE - required if LLM_TYPE=groq
 export GROQ_DIRECT_CALL=1
 
-# ____________ ANTHROPIC ________________
-export LLM_TYPE=anthropic
-export ANTHROPIC_API_KEY=sk-12345678912023
+
+# ____________ ANTHROPIC Configuration: ________________
+# *** Below Fields Required if you chose LLM_TYPE=groq ***
+export ANTHROPIC_API_KEY=
+
+# Enter a model below. See all options (use "Latest 1P API model name"): https://docs.anthropic.com/en/docs/about-claude/models#model-names
 export ANTHROPIC_MODEL=claude-3-sonnet-20240229
-#export ANTHROPIC_MODEL=claude-3-opus-20240229
 ```
+
 
 ### Running the Tests
 
@@ -351,21 +326,35 @@ To run this in pm2, please following installation instructions [here](#pm2-Insta
 pm2 start "bash start_conversation_store.sh" --name <process name>
 ```
 
-Finally, modify the .env of your Validator to point at the web server. Comment out the section that points to the main CGP conversation server and uncomment the local data points. That section of the configuration file should look like this:
+Finally, modify the .env of your Validator to point at the web server. Comment out the lines: 
 
-```console
-# ____________ LOCAL ________________
-export CGP_API_READ_HOST=http://localhost
-export CGP_API_READ_PORT=8000
-export CGP_API_WRITE_HOST=http://localhost
-export CGP_API_WRITE_PORT=8000
-
-
-# ____________ MAIN ________________
+```
 #export CGP_API_READ_HOST=https://api.conversations.xyz
 #export CGP_API_READ_PORT=443
-#export CGP_API_WRITE_HOST=https://db.conversations.xyz
-#export CGP_API_WRITE_PORT=443
+```
+
+Uncomment the lines: 
+'''
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=8000
+'''
+
+After these changes, the `DB Read/Write Configuration` section of the .env file should look like this:
+
+```console
+# ____________ DB Read/Write Configuration: ____________
+# For Validators. Read from api.conversations.xyz
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+
+# For Validators. Write to db.conversations.xyz
+export CGP_API_WRITE_HOST=https://db.conversations.xyz
+export CGP_API_WRITE_PORT=443
+
+# For Validators. Commented out by default. Used for local DB Configuration
+# See "Validating with a Custom Conversation Server" in the Readme.md for further information
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=8000
 ```
 
 Now you can run the test script and see the data written properly (replace the filename with your database file).
