@@ -198,7 +198,6 @@ You can follow the output to see the process executes the following flow:
 - The validator:
   - Receives the metadata from the miners
   - Scores each tag against the ground truth full conversation
-  - Compares each miner return against other miner returns
   - Pushes all the metadata to a local store or the CGP Api
 
 The data generated is explained in detail in the Overview section below. With the Info logging setting, the output should look something like this:
