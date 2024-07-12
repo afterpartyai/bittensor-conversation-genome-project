@@ -62,8 +62,7 @@ class Db:
 
 
     def insert_into_table(self, c_guid, content):
-        #today = Utils.get_time("%Y.%m.%d")
-        today = Utils.get_time("%Y.%m.%d.%H:%M")
+        today = Utils.get_time("%Y.%m.%d")
         db_name = f"{self.db_name}_{today}.sqlite"
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
