@@ -88,7 +88,7 @@ class Evaluator:
         # No both tags. Penalize.
         if num_both_tags == 0:
             bt.logging.debug("!!PENALTY: No BOTH tags")
-            final_score *= 0.75
+            final_score *= 0.9
 
         # All junk tags. Penalize
         if max_score < .2:
@@ -225,7 +225,7 @@ class Evaluator:
             return (None, None)
 
         for idx, final_score in enumerate(final_scores):
-            rank_scores[idx] = final_scores[idx]['adjustedScore']
+            rank_scores[idx] = final_scores[idx]['final_miner_score']
         return (final_scores, rank_scores)
 
     async def calc_scores(self, full_convo_metadata, full_conversation_neighborhood, miner_result):
