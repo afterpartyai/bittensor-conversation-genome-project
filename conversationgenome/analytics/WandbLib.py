@@ -1,5 +1,6 @@
 import random
 import json
+from conversationgenome import __version__ as init_version
 
 verbose = False
 
@@ -59,6 +60,12 @@ class WandbLib:
 
         PROJECT_NAME = 'conversationgenome'
         __version__ = "3.3.0"
+
+        try: 
+            __version__ = init_version
+        except: 
+            print(f"ERROR 1277289 -- WandB version init error: {e}")
+        
         run_name = f'cgp/validator-{my_uid}-{__version__}'
         config = {
             "uid": my_uid,
@@ -72,6 +79,7 @@ class WandbLib:
               entity='afterparty',
               config=config
         )
+
 
     def log(self, data):
         if self.verbose:
