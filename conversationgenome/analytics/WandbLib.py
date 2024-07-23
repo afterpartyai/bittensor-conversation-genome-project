@@ -30,12 +30,6 @@ class WandbLib:
     def init_wandb(self, config=None, data=None):
         my_hotkey=12345
         my_uid = -1
-        try:
-            wallet= bt.wallet()
-            subtensor = bt.subtensor()
-            metagraph = subtensor.metagraph()
-        except Exception as e:
-            print(f"ERROR 7592656 -- WandB init error: {e}")
 
         if config:
             #initialize data:
