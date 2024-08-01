@@ -165,3 +165,6 @@ testing/
 wandb/*
 virtualenv_*
 web/store
+
+# Editors
+.vscode/settings.json

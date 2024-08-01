@@ -1,4 +1,3 @@
-import torch
 import random
 from conversationgenome.mock.MockBt import MockBt
 
@@ -11,6 +10,7 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
+import numpy as np
 from typing import List
 
 
@@ -38,13 +38,13 @@ def check_uid_availability(
 
 def get_random_uids(
     self, k: int, exclude: List[int] = None
-) -> torch.LongTensor:
+) -> np.ndarray:
     """Returns k available random uids from the metagraph.
     Args:
         k (int): Number of uids to return.
         exclude (List[int]): List of uids to exclude from the random sampling.
     Returns:
-        uids (torch.LongTensor): Randomly sampled available uids.
+        uids (np.ndarray): Randomly sampled available uids.
     Notes:
         If `k` is larger than the number of available `uids`, set `k` to the number of available `uids`.
     """
@@ -70,5 +70,5 @@ def get_random_uids(
             [uid for uid in avail_uids if uid not in candidate_uids],
             k - len(candidate_uids),
         )
-    uids = torch.tensor(random.sample(available_uids, k))
+    uids = np.array(random.sample(available_uids, k))
     return uids

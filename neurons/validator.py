@@ -23,10 +23,17 @@ import random
 
 import bittensor as bt
 
+#<<<<<<< HEAD
 from conversationgenome.base.validator import BaseValidatorNeuron
 
 import conversationgenome.utils
 import conversationgenome.validator
+#=======
+# import base validator class which takes care of most of the boilerplate
+from template.base.validator import BaseValidatorNeuron
+# Bittensor Validator Template:
+from template.validator import forward
+#>>>>>>> dcaeb7ae0e405a05388667a1aa7b0a053ae338a1
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
@@ -197,7 +204,6 @@ class Validator(BaseValidatorNeuron):
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
-
     wl = WandbLib()
 
     try:
@@ -208,7 +214,7 @@ if __name__ == "__main__":
                 print(f"ERROR 2294375 -- WandB init error: {e}")
 
             while True:
-                bt.logging.info("CGP Validator running...", time.time())
+                bt.logging.info("CGP Validator running... {time.time()} ")
                 time.sleep(5)
     except KeyboardInterrupt:
         bt.logging.info("Keyboard interrupt detected. Exiting validator.")

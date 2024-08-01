@@ -83,7 +83,7 @@ class Miner(BaseMinerNeuron):
         define the logic for blacklisting requests based on your needs and desired security parameters.
 
         Blacklist runs before the synapse data has been deserialized (i.e. before synapse.data is available).
-        The synapse is instead contructed via the headers of the request. It is important to blacklist
+        The synapse is instead contracted via the headers of the request. It is important to blacklist
         requests before they are deserialized to avoid wasting resources on requests that will be ignored.
 
         Args:
@@ -107,6 +107,11 @@ class Miner(BaseMinerNeuron):
 
         Otherwise, allow the request to be processed further.
         """
+
+        if synapse.dendrite is None or synapse.dendrite.hotkey is None:
+            bt.logging.warning("Received a request without a dendrite or hotkey.")
+            return True, "Missing dendrite or hotkey"
+
         # TODO(developer): Define how miners should blacklist requests.
         if (
             not self.config.blacklist.allow_non_registered
@@ -141,26 +146,25 @@ class Miner(BaseMinerNeuron):
         Returns:
             float: A priority score derived from the stake of the calling entity.
 
-        Miners may recieve messages from multiple entities at once. This function determines which request should be
+        Miners may receive messages from multiple entities at once. This function determines which request should be
         processed first. Higher values indicate that the request should be processed first. Lower values indicate
         that the request should be processed later.
 
-         """
         caller_uid = self.metagraph.hotkeys.index(
             synapse.dendrite.hotkey
         )  # Get the caller index.
-        prirority = float(
+        priority = float(
             self.metagraph.S[caller_uid]
         )  # Return the stake as the priority.
         bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority
+            f"Prioritizing {synapse.dendrite.hotkey} with value: {priority}"
         )
-        return prirority
+        return priority
 
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
     with Miner() as miner:
         while True:
-            bt.logging.info("CGP Miner running...", time.time())
+            bt.logging.info("CGP Miner running... {time.time()} ")
             time.sleep(5)
