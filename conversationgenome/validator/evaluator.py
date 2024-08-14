@@ -17,7 +17,6 @@ import numpy as np
 
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
-from conversationgenome.llm.LlmLib import LlmLib
 
 from conversationgenome.mock.MockBt import MockBt
 
@@ -41,38 +40,6 @@ class Evaluator:
         "mean_score": 0.25,
         "max_score": 0.1,
     }
-
-    async def get_miner_embeddings(self, tags):
-
-        out = {"tags":{}}
-        if not Utils.empty(tags):
-            if self.verbose:
-                print(f"------- Found tags: {tags}. Getting vectors for tags...")
-            out['tags'] = tags
-            out['vectors'] = {}
-            tag_logs = []
-
-            if self.factory_llm:
-                for tag in tags:
-                    try: 
-                        vectors = await self.factory_llm.get_vector_embeddings(tag)
-                    except: 
-                        print("error with factory LLM")
-                    if not vectors:
-                        print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                    else:
-                        tag_logs.append(f"{tag}={len(vectors)}vs")
-                    out['vectors'][tag] = {"vectors":vectors}
-                if self.verbose:
-                    print("        Embeddings received: " + ", ".join(tag_logs))
-                    print("VECTORS", tag, vectors)
-                out['success'] = 1
-            else:
-                out=None
-        else:
-            print("No tags returned by OpenAI", response)
-        return out
-
 
     # Tag all the vectors from all the tags and return set of vectors defining the neighborhood
     async def calculate_semantic_neighborhood(self, conversation_metadata, tag_count_ceiling=None):
@@ -152,12 +119,6 @@ class Evaluator:
             verbose = self.verbose
         final_scores = []
         now = datetime.now(timezone.utc)
-
-        try: 
-            self.LLM = LlmLib()
-            self.factory_llm= await self.LLM.generate_llm_instance()
-        except: 
-            bt.logging.error("Evaluator LLM not created")
 
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
         if verbose:
@@ -270,27 +231,7 @@ class Evaluator:
     async def calc_scores(self, full_convo_metadata, full_conversation_neighborhood, miner_result):
         full_convo_tags = full_convo_metadata['tags']
         tags = miner_result['tags']
-
-        #original tag vector dict
-        #tag_vector_dict = miner_result['vectors']
-
-        tag_vector_dict = {}
-        vali_side_tag_vector_dict = {}
-
-        #Set Validator-Side Embeddings
-        bt.logging.info("Getting Validator-Side Embeddings")
-        try: 
-            temp_out = await self.get_miner_embeddings(tags)
-            vali_side_tag_vector_dict = temp_out['vectors']
-        except: 
-            bt.logging.info("Error Getting Validator-side Embeddings.")
-
-        if vali_side_tag_vector_dict:
-            bt.logging.info("Validator-Side Embeddings Generated")
-            tag_vector_dict=vali_side_tag_vector_dict
-        else: 
-            bt.logging.info("Validator-Side Embeddings are Empty. ")
-
+        tag_vector_dict = miner_result['vectors']
         scores = []
         scores_both = []
         scores_unique = []
@@ -312,7 +253,7 @@ class Evaluator:
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
-            
+            #bt.logging.info(example, resp2)
             if not tag in tag_vector_dict:
                 bt.logging.error(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
                 scores.append(0)
@@ -332,11 +273,8 @@ class Evaluator:
                 Utils.append_log(log_path, f"Evaluator Score for '{tag}': {score} -- Unique: {is_unique}")
         bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
-        print(f"\n\nnew SCORES FROM VALI-SIDE EMBEDDINGS: {scores} | {scores_both} | {scores_unique}\n\n")
-
         return (scores, scores_both, scores_unique, diff)
 
-    
 if __name__ == "__main__":
     bt.logging.info("Setting up test data...")
 
