@@ -28,6 +28,10 @@ class WandbLib:
     verbose = False
 
     def init_wandb(self, config=None, data=None):
+        wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
+        if not wandb_enabled:
+            bt.logging.debug("Weights and Biases Logging Disabled -- Skipping Initialization")
+            return
         my_hotkey=12345
         my_uid = -1
 
@@ -42,9 +46,7 @@ class WandbLib:
             except Exception as e:
                 print(f"ERROR 8618322 -- WandB init error: {e}")
                 
-
-        if c.get("env", "WANDB_DISABLE"):
-            return
+        
         api = wandb.Api()
         wandb_api_key = c.get("env", "WANDB_API_KEY")
         if not wandb_api_key:
@@ -76,9 +78,14 @@ class WandbLib:
 
 
     def log(self, data):
-        if self.verbose:
-            print("WANDB LOG", data)
-        wandb.log(data)
+        wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
+        if wandb_enabled:
+            if self.verbose:
+                print("WANDB LOG", data)
+            wandb.log(data)
+        else:
+            bt.logging.debug("Weights and Biases Logging Disabled -- Skipping Log")
+            return
 
     def end_log_wandb(self):
         # Mark the run as finished
