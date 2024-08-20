@@ -52,7 +52,6 @@ class llm_anthropic:
 
         return response
 
-
     async def prompt_call_csv(self, convoXmlStr=None, participants=None):
         out = {"success":0}
         prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
@@ -83,6 +82,23 @@ class llm_anthropic:
         out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
 
         return out
+
+    def generate_convo_xml(self, convo):
+        xml = "<conversation id='%d'>" % (83945)
+        #print("CONVO OPENAI", convo)
+        participants = {}
+        for line in convo['lines']:
+            if len(line) != 2:
+                continue
+            #print(line)
+            participant = "p%d" % (line[0])
+            xml += "<%s>%s</%s>" % (participant, line[1], participant)
+            if not participant in participants:
+                participants[participant] = 0
+            # Count number entries for each participant -- may need it later
+            participants[participant] += 1
+        xml += "</conversation>"
+        return (xml, participants)
 
     async def conversation_to_metadata(self,  convo):
         llm_embeddings = llm_openai()
@@ -137,7 +153,46 @@ class llm_anthropic:
         else:
             print("No tags returned by OpenAI for Anthropic", response)
         return out
+    
+    async def miner_conversation_to_metadata(self,  convo):
+        (xml, participants) = self.generate_convo_xml(convo)
+        tags = None
+        out = {"tags":{}}
 
+        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
+        if not response:
+            print("No tagging response. Aborting")
+            return None
+        elif not response['success']:
+            print(f"Tagging failed: {response}. Aborting")
+            return response
+
+        content = Utils.get(response, 'content')
+        if content:
+            lines = content.replace("\n",",")
+            tag_dict = {}
+            parts = lines.split(",")
+            if len(parts) > 1:
+                for part in parts:
+                    tag = part.strip().lower()
+                    if tag[0:1] == "<":
+                        continue
+                    tag_dict[tag] = True
+                tags = list(tag_dict.keys())
+            else:
+                print("Less that 2 tags returned. Aborting.")
+                tags = []
+        else:
+            tags = []
+        tags = Utils.clean_tags(tags)
+
+        if len(tags) > 0:
+            out['tags'] = tags
+            out['vectors'] = {}
+            out['success'] = 1
+        else:
+            print("No tags returned by OpenAI for Anthropic", response)
+        return out
 
 
 if __name__ == "__main__":

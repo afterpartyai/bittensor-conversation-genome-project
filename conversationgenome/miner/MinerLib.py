@@ -36,10 +36,11 @@ class MinerLib:
         if not dryrun:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
-            result = await llml.conversation_to_metadata({"lines":lines})
+            result = await llml.miner_conversation_to_metadata({"lines":lines})
             tags = Utils.get(result, 'tags')
             out["tags"] = tags
-            out["vectors"] = Utils.get(result, 'vectors', {})
+            #out["vectors"] = Utils.get(result, 'vectors', {})
+            out["vectors"] = {}
             num_tags = len(Utils.get(out, 'tags', []))
             bt.logging.info(f"Miner: Mined {num_tags} vectors and tags")
 

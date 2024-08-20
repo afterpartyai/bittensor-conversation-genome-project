@@ -161,6 +161,38 @@ class llm_openai:
             print("No tags returned by OpenAI", response)
         return out
 
+    async def miner_conversation_to_metadata(self,  convo):
+        (xml, participants) = self.generate_convo_xml(convo)
+        tags = None
+        out = {"tags":{}}
+
+        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
+        if not response:
+            print("No tagging response. Aborting")
+            return None
+        elif not response['success']:
+            print(f"Tagging failed: {response}. Aborting")
+            return response
+        content = Utils.get(response, 'content')
+        if self.return_json:
+            tags = self.process_json_tag_return(response)
+        else:
+            if isinstance(content, str):
+                tags = content.split(",")
+            else:
+                print("Error: Unexpected response format. Content type:", type(content))
+                return None
+            
+        tags = Utils.clean_tags(tags)
+
+        if not Utils.empty(tags):
+            out['tags'] = tags
+            out['vectors'] = {}
+            out['success'] = 1
+        else:
+            print("No tags returned by OpenAI", response)
+        return out
+
 
     async def openai_prompt_call_function_advanced(self, convoXmlStr=None, participants=None):
         if not openai:
