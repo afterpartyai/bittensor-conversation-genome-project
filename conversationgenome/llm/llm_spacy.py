@@ -107,7 +107,7 @@ class llm_spacy:
 
 
 
-    async def conversation_to_metadata(self,  convo):
+    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
         # For this simple matcher, just munge all of the lines together
         body = json.dumps(convo['lines'])
         matches_dict = await self.simple_text_to_tags(body)

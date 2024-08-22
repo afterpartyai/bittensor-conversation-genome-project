@@ -116,7 +116,7 @@ class llm_openai:
         return tags
 
 
-    async def conversation_to_metadata(self,  convo):
+    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
         (xml, participants) = self.generate_convo_xml(convo)
         tags = None
         out = {"tags":{}}
@@ -137,25 +137,26 @@ class llm_openai:
             else:
                 print("Error: Unexpected response format. Content type:", type(content))
                 return None
-            
+
         tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
-            if self.verbose:
-                print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
             out['vectors'] = {}
-            tag_logs = []
-            for tag in tags:
-                vectors = await self.get_vector_embeddings(tag)
-                if not vectors:
-                    print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                else:
-                    tag_logs.append(f"{tag}={len(vectors)}vs")
-                out['vectors'][tag] = {"vectors":vectors}
-            if self.verbose:
-                print("        Embeddings received: " + ", ".join(tag_logs))
-                print("VECTORS", tag, vectors)
+            if generateEmbeddings:
+                if self.verbose:
+                    print(f"------- Found tags: {tags}. Getting vectors for tags...")
+                tag_logs = []
+                for tag in tags:
+                    vectors = await self.get_vector_embeddings(tag)
+                    if not vectors:
+                        print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
+                    else:
+                        tag_logs.append(f"{tag}={len(vectors)}vs")
+                    out['vectors'][tag] = {"vectors":vectors}
+                if self.verbose:
+                    print("        Embeddings received: " + ", ".join(tag_logs))
+                    print("VECTORS", tag, vectors)
             out['success'] = 1
         else:
             print("No tags returned by OpenAI", response)

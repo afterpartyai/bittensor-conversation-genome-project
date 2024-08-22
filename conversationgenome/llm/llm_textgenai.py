@@ -28,7 +28,7 @@ class llm_openai:
     def convert(self):
         print("Convert OpenAI")
 
-    async def conversation_to_metadata(self,  convo):
+    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
         #print("CONVO OPENAI", convo)
         xml = "<conversation id='%d'>" % (83945)
         participants = {}
@@ -55,7 +55,9 @@ class llm_openai:
             for tag in tags:
                 if self.verbose:
                     print("Get vectors for tag: %s" % (tag))
-                vectors = await self.getEmbeddings(tag)
+                vectors = {}
+                if generateEmbeddings:
+                    vectors = await self.getEmbeddings(tag)
                 out['tags'][tag] = {"tag":tag, "count":0, "vectors":vectors}
             #print("OUT", out)
         else:
