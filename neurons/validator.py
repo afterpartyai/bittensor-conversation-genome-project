@@ -161,9 +161,7 @@ class Validator(BaseValidatorNeuron):
                         except:
                             miner_response = response
                         miner_result = miner_response[0]
-                        miner_result['vectors'] = {}
-                        vectorSet = await vl.get_vector_embeddings_set(miner_result['tags'])
-                        miner_result['vectors'] = vectorSet
+                        miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
                         #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
                         bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
                         if response.axon.hotkey in hot_key_watchlist:

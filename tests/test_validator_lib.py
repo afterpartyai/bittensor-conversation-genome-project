@@ -107,9 +107,7 @@ async def test_full():
             tagVectors = {}
             bt.logging.info(f"Test Validator generating vectors from miner tags...")
             for idx, miner_result in enumerate(miner_results):
-                miner_result['vectors'] = {}
-                vectorSet = await vl.get_vector_embeddings_set(miner_result['tags'])
-                miner_result['vectors'] = vectorSet
+                miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
                 bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
 
                 #bt.logging.debug(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
