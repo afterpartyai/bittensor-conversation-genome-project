@@ -36,6 +36,10 @@ class llm_spacy:
             # python -m spacy download en_core_web_sm
             # python -m spacy download en_core_web_md
             # python -m spacy download en_core_web_lg
+            if not spacy:
+                bt.logging.error(f"Spacy not installed. Aborting.")
+                return
+
 
             if not spacy.util.is_package(dataset):
                 bt.logging.info(f"Downloading spacy model {dataset}...")
@@ -49,6 +53,10 @@ class llm_spacy:
         return nlp
 
     async def simple_text_to_tags(self, body, min_tokens=5):
+        if not spacy:
+            bt.logging.error(f"Spacy not installed. Aborting.")
+            return {}
+
         nlp = self.get_nlp()
 
         # Define patterns
