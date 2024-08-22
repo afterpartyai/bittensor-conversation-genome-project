@@ -3,6 +3,7 @@ import json
 
 from conversationgenome.Utils import Utils
 from conversationgenome.ConfigLib import c
+from conversationgenome.llm.llm_openai import llm_openai
 
 
 openai = None
@@ -245,6 +246,10 @@ class llm_openai:
            print("OpenAI embeddings USAGE", response.usage)
            print("OpenAI embeddings generated", len(embedding))
        return embedding
+
+    async def get_vector_embeddings_set(self,  tags):
+        llm_embeddings = llm_openai()
+        return await llm_embeddings.get_vector_embeddings_set(tags)
 
 
 

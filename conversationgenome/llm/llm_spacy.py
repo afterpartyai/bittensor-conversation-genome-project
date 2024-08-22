@@ -1,5 +1,8 @@
 import json
 
+from conversationgenome.llm.llm_openai import llm_openai
+
+
 spacy = None
 Matcher = None
 try:
@@ -105,8 +108,6 @@ class llm_spacy:
         #bt.logging.info(f"Similarity score between the content and the tag: {similarity_score}")
         return similarity_score
 
-
-
     async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
         # For this simple matcher, just munge all of the lines together
         body = json.dumps(convo['lines'])
@@ -114,4 +115,8 @@ class llm_spacy:
         tags = list(matches_dict.keys())
 
         return {"tags": tags, "vectors":matches_dict}
+
+    async def get_vector_embeddings_set(self,  tags):
+        llm_embeddings = llm_openai()
+        return await llm_embeddings.get_vector_embeddings_set(tags)
 

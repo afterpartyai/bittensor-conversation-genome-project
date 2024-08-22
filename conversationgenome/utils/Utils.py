@@ -238,7 +238,6 @@ class Utils:
         for line in convo['lines']:
             if len(line) != 2:
                 continue
-            #print(line)
             participant = "p%d" % (line[0])
             xml += "<%s>%s</%s>" % (participant, line[1], participant)
             if not participant in participants:
