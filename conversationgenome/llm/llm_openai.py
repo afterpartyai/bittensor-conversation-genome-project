@@ -116,7 +116,7 @@ class llm_openai:
         return tags
 
 
-    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
+    async def conversation_to_metadata(self, convo, generateEmbeddings=False):
         (xml, participants) = self.generate_convo_xml(convo)
         tags = None
         out = {"tags":{}}

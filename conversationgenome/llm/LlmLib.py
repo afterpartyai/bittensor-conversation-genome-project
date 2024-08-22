@@ -47,14 +47,14 @@ class LlmLib:
 
         return out
 
-    async def conversation_to_metadata(self,  conversation):
+    async def conversation_to_metadata(self,  conversation, generateEmbeddings=False):
         if not self.factory_llm:
             self.factory_llm = await self.generate_llm_instance()
             if not self.factory_llm:
                 bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
                 return
 
-        response = await self.factory_llm.conversation_to_metadata(conversation)
+        response = await self.factory_llm.conversation_to_metadata(conversation, generateEmbeddings=generateEmbeddings)
         return response
 
 
