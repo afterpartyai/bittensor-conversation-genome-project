@@ -105,21 +105,12 @@ async def test_full():
             miner_results = await vl.send_to_miners(conversation_guid, window_idx, conversation_window, selected_miner_uids)
             mock_miner_responses = []
             tagVectors = {}
+            bt.logging.info(f"Test Validator generating vectors from miner tags...")
             for idx, miner_result in enumerate(miner_results):
-                bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
-                bt.logging.info(f"Test Validator generating vectors from miner tags...")
                 miner_result['vectors'] = {}
-                for tag in miner_result['tags']:
-                    #vectors = None
-                    if tag in tagVectors:
-                        vectors = tagVectors[tag]
-                    else:
-                        vectors = await vl.get_vector_embeddings(tag)
-                        if not vectors:
-                            print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                            vectors = []
-                        tagVectors[tag] = vectors
-                    miner_result['vectors'][tag] = {"vectors":vectors}
+                vectorSet = await vl.get_vector_embeddings(miner_result['tags'])
+                miner_result['vectors'] = vectorSet
+                bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
 
                 #bt.logging.debug(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 response = MockResponse()
