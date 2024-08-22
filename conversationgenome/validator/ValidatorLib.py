@@ -74,7 +74,8 @@ class ValidatorLib:
 
                 return None
             full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
-            bt.logging.info(f"Found {len(full_conversation_tags)} tags in FullConvo")
+            full_conversation_vectors = Utils.get(full_conversation_metadata, "vectors", [])
+            bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
 
             log_path = c.get('env', 'SCORING_DEBUG_LOG')
             if not Utils.empty(log_path):
@@ -133,7 +134,7 @@ class ValidatorLib:
             bt.logging.info(f"Execute generate_full_convo_metadata")
 
         llml = LlmLib()
-        result = await llml.conversation_to_metadata(convo)
+        result = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
             return None
