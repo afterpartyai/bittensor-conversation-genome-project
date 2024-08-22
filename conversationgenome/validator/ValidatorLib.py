@@ -212,8 +212,9 @@ class ValidatorLib:
             for minerResult in minerResults:
                 uid = Utils.get(minerResult, 'uid')
                 tags = Utils.get(minerResult, 'tags')
+                bt.logging.info(f"Generate vectors from {len(tags)} miner tags")
+
                 vectors = Utils.get(minerResult, 'vectors')
-                #bt.logging.info("VECTORS", vectors)
                 compareResults = Utils.compare_arrays(full_conversationTags, tags)
                 compareResults['total_1'] = len(full_conversationTags)
                 compareResults['total_2'] = len(tags)

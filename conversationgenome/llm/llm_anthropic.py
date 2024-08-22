@@ -85,8 +85,7 @@ class llm_anthropic:
         return out
 
     async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
-        llm_embeddings = llm_openai()
-        (xml, participants) = llm_embeddings.generate_convo_xml(convo)
+        (xml, participants) = Utils.generate_convo_xml(convo)
         tags = None
         out = {"tags":{}}
 
@@ -123,6 +122,7 @@ class llm_anthropic:
             if generateEmbeddings:
                 if self.verbose:
                     print(f"------- Found tags: {tags}. Getting vectors for tags...")
+                llm_embeddings = llm_openai()
                 tag_logs = []
                 for tag in tags:
                     vectors = await llm_embeddings.get_vector_embeddings(tag)

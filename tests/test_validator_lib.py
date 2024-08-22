@@ -106,6 +106,7 @@ async def test_full():
             mock_miner_responses = []
             for idx, miner_result in enumerate(miner_results):
                 bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
+                bt.logging.info(f"Generating vectors from miner tags...")
                 #bt.logging.debug(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 response = MockResponse()
                 response.axon.hotkey = "HK-"+str(idx)
