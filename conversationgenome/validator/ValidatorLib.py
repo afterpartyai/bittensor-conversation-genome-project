@@ -153,6 +153,11 @@ class ValidatorLib:
         }
         return data
 
+    async def get_vector_embeddings_set(self, tag):
+        response = await self.llml.get_vector_embeddings_set(tag)
+        return response
+
+
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
         bt.logging.info(f"Send to conversation {conversation_guid} / {window_idx} to miners: {miner_uids}")
         results = []
