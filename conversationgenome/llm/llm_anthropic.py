@@ -122,23 +122,27 @@ class llm_anthropic:
             if generateEmbeddings:
                 if self.verbose:
                     print(f"------- Found tags: {tags}. Getting vectors for tags...")
-                llm_embeddings = llm_openai()
-                tag_logs = []
-                for tag in tags:
-                    vectors = await llm_embeddings.get_vector_embeddings(tag)
-                    if not vectors:
-                        print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                    else:
-                        tag_logs.append(f"{tag}={len(vectors)}vs")
-                    out['vectors'][tag] = {"vectors":vectors}
-                if self.verbose:
-                    print("        Embeddings received: " + ", ".join(tag_logs))
-                    print("VECTORS", tag, vectors)
+                out['vectors'] = await self.get_vector_embeddings(tag)
             out['success'] = 1
         else:
             print("No tags returned by OpenAI for Anthropic", response)
         return out
 
+    async def get_vector_embeddings(self,  tags):
+        llm_embeddings = llm_openai()
+        tag_logs = []
+        tagVectors = {}
+        for tag in tags:
+            vectors = await llm_embeddings.get_vector_embeddings(tag)
+            if not vectors:
+                print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
+            else:
+                tag_logs.append(f"{tag}={len(vectors)}vs")
+            tagVectors[tag] = {"vectors":vectors}
+        if self.verbose:
+            print("        Embeddings received: " + ", ".join(tag_logs))
+            print("VECTORS", tag, vectors)
+        return tagVectors
 
 
 if __name__ == "__main__":

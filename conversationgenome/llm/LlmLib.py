@@ -57,6 +57,10 @@ class LlmLib:
         response = await self.factory_llm.conversation_to_metadata(conversation, generateEmbeddings=generateEmbeddings)
         return response
 
+    async def get_vector_embeddings(self, tag):
+        response = await self.factory_llm.get_vector_embeddings(tag)
+        return response
+
 
 
 if __name__ == "__main__":

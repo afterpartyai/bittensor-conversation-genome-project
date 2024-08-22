@@ -46,6 +46,7 @@ class ValidatorLib:
     mode = "test" # test|local_llm|openai|anthropic
     hotkey = "v1234"
     verbose = False
+    llml = None
 
     def __init__(self):
         super(ValidatorLib, self).__init__()
@@ -134,6 +135,7 @@ class ValidatorLib:
             bt.logging.info(f"Execute generate_full_convo_metadata")
 
         llml = LlmLib()
+        self.llml = llml
         result = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
@@ -150,6 +152,10 @@ class ValidatorLib:
             "vectors": vectors,
         }
         return data
+
+    async def get_vector_embeddings(self, tag):
+        response = await self.llml.get_vector_embeddings(tag)
+        return response
 
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
         bt.logging.info(f"Send to conversation {conversation_guid} / {window_idx} to miners: {miner_uids}")

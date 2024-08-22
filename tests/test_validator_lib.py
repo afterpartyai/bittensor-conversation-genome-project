@@ -106,7 +106,16 @@ async def test_full():
             mock_miner_responses = []
             for idx, miner_result in enumerate(miner_results):
                 bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
-                bt.logging.info(f"Generating vectors from miner tags...")
+                bt.logging.info(f"Test Validator generating vectors from miner tags...")
+                miner_result['vectors'] = {}
+                for tag in miner_result['tags']:
+                    #vectors = None
+                    vectors = await vl.get_vector_embeddings(tag)
+                    if not vectors:
+                        print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
+                        vectors = []
+                    miner_result['vectors'][tag] = {"vectors":vectors}
+
                 #bt.logging.debug(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 response = MockResponse()
                 response.axon.hotkey = "HK-"+str(idx)
