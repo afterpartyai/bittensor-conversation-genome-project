@@ -416,6 +416,21 @@ class llm_openai:
             print("OpenAI embeddings generated", len(embedding))
         return embedding
 
+    async def get_vector_embeddings_set(self,  tags):
+        tag_logs = []
+        tagVectorSet = {}
+        for tag in tags:
+            vectors = await self.get_vector_embeddings(tag)
+            if not vectors:
+                print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
+            else:
+                tag_logs.append(f"{tag}={len(vectors)}vs")
+            tagVectorSet[tag] = {"vectors":vectors}
+        if self.verbose:
+            print("        Embeddings received: " + ", ".join(tag_logs))
+            print("VECTORS", tag, vectors)
+        return tagVectorSet
+
 
 
 if __name__ == "__main__":
