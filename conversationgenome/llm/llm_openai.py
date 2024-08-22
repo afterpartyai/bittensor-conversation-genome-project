@@ -129,17 +129,7 @@ class llm_openai:
             if generateEmbeddings:
                 if self.verbose:
                     print(f"------- Found tags: {tags}. Getting vectors for tags...")
-                tag_logs = []
-                for tag in tags:
-                    vectors = await self.get_vector_embeddings(tag)
-                    if not vectors:
-                        print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                    else:
-                        tag_logs.append(f"{tag}={len(vectors)}vs")
-                    out['vectors'][tag] = {"vectors":vectors}
-                if self.verbose:
-                    print("        Embeddings received: " + ", ".join(tag_logs))
-                    print("VECTORS", tag, vectors)
+                out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = 1
         else:
             print("No tags returned by OpenAI", response)

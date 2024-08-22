@@ -122,12 +122,16 @@ class llm_anthropic:
             if generateEmbeddings:
                 if self.verbose:
                     print(f"------- Found tags: {tags}. Getting vectors for tags...")
-                llm_embeddings = llm_openai()
-                out['vectors'] = await llm_embeddings.get_vector_embeddings_set(tags)
+                out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = 1
         else:
             print("No tags returned by OpenAI for Anthropic", response)
         return out
+
+    async def get_vector_embeddings_set(self,  tags):
+        llm_embeddings = llm_openai()
+        return await llm_embeddings.get_vector_embeddings_set(tags)
+
 
 
 if __name__ == "__main__":
