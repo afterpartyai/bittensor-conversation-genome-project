@@ -46,6 +46,7 @@ class ValidatorLib:
     mode = "test" # test|local_llm|openai|anthropic
     hotkey = "v1234"
     verbose = False
+    llml = None
 
     def __init__(self):
         super(ValidatorLib, self).__init__()
@@ -74,7 +75,8 @@ class ValidatorLib:
 
                 return None
             full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
-            bt.logging.info(f"Found {len(full_conversation_tags)} tags in FullConvo")
+            full_conversation_vectors = Utils.get(full_conversation_metadata, "vectors", [])
+            bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
 
             log_path = c.get('env', 'SCORING_DEBUG_LOG')
             if not Utils.empty(log_path):
@@ -133,7 +135,8 @@ class ValidatorLib:
             bt.logging.info(f"Execute generate_full_convo_metadata")
 
         llml = LlmLib()
-        result = await llml.conversation_to_metadata(convo)
+        self.llml = llml
+        result = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
             return None
@@ -149,6 +152,11 @@ class ValidatorLib:
             "vectors": vectors,
         }
         return data
+
+    async def get_vector_embeddings_set(self, tags):
+        response = await self.llml.get_vector_embeddings_set(tags)
+        return response
+
 
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
         bt.logging.info(f"Send to conversation {conversation_guid} / {window_idx} to miners: {miner_uids}")
@@ -211,8 +219,9 @@ class ValidatorLib:
             for minerResult in minerResults:
                 uid = Utils.get(minerResult, 'uid')
                 tags = Utils.get(minerResult, 'tags')
+                bt.logging.info(f"Generate vectors from {len(tags)} miner tags")
+
                 vectors = Utils.get(minerResult, 'vectors')
-                #bt.logging.info("VECTORS", vectors)
                 compareResults = Utils.compare_arrays(full_conversationTags, tags)
                 compareResults['total_1'] = len(full_conversationTags)
                 compareResults['total_2'] = len(tags)

@@ -1,5 +1,6 @@
 import requests
 import os
+import re
 
 class Utils:
     @staticmethod
@@ -229,4 +230,35 @@ class Utils:
                 f.write(Utils.datetime_str() + " | " + text_string + "\n")
         except Exception as e:
             print(f"ERROR append_log :{e}")
+
+    @staticmethod
+    def generate_convo_xml(convo):
+        xml = "<conversation id='%d'>" % (83945)
+        #print("CONVO OPENAI", convo)
+        participants = {}
+        for line in convo['lines']:
+            if len(line) != 2:
+                continue
+            participant = "p%d" % (line[0])
+            xml += "<%s>%s</%s>" % (participant, line[1], participant)
+            if not participant in participants:
+                participants[participant] = 0
+            # Count number entries for each participant -- may need it later
+            participants[participant] += 1
+        xml += "</conversation>"
+        return (xml, participants)
+
+    @staticmethod
+    def get_safe_tag(inStr, seperator=' '):
+        # Remove non-alpha numeric
+        pass1 = re.sub(r'\s{2,}|[^a-zA-Z0-9\s]', seperator, inStr)
+        return re.sub(r'[^\w\s]|(?<=\s)\s*', '', pass1).lower().strip()
+
+    @staticmethod
+    def get_clean_tag_set(tags):
+        cleanTags = set()
+        for tag in tags:
+            cleanTags.add(Utils.get_safe_tag(tag))
+        return list(cleanTags)
+
 

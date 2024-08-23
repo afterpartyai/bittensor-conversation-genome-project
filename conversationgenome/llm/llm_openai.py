@@ -68,23 +68,6 @@ class llm_openai:
 
         return response
 
-    def generate_convo_xml(self, convo):
-        xml = "<conversation id='%d'>" % (83945)
-        #print("CONVO OPENAI", convo)
-        participants = {}
-        for line in convo['lines']:
-            if len(line) != 2:
-                continue
-            #print(line)
-            participant = "p%d" % (line[0])
-            xml += "<%s>%s</%s>" % (participant, line[1], participant)
-            if not participant in participants:
-                participants[participant] = 0
-            # Count number entries for each participant -- may need it later
-            participants[participant] += 1
-        xml += "</conversation>"
-        return (xml, participants)
-
 
     def process_json_tag_return(self, response):
         if type(response) == str:
@@ -116,8 +99,8 @@ class llm_openai:
         return tags
 
 
-    async def conversation_to_metadata(self,  convo):
-        (xml, participants) = self.generate_convo_xml(convo)
+    async def conversation_to_metadata(self, convo, generateEmbeddings=False):
+        (xml, participants) = Utils.generate_convo_xml(convo)
         tags = None
         out = {"tags":{}}
 
@@ -137,25 +120,16 @@ class llm_openai:
             else:
                 print("Error: Unexpected response format. Content type:", type(content))
                 return None
-            
+
         tags = Utils.clean_tags(tags)
 
         if not Utils.empty(tags):
-            if self.verbose:
-                print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
             out['vectors'] = {}
-            tag_logs = []
-            for tag in tags:
-                vectors = await self.get_vector_embeddings(tag)
-                if not vectors:
-                    print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                else:
-                    tag_logs.append(f"{tag}={len(vectors)}vs")
-                out['vectors'][tag] = {"vectors":vectors}
-            if self.verbose:
-                print("        Embeddings received: " + ", ".join(tag_logs))
-                print("VECTORS", tag, vectors)
+            if generateEmbeddings:
+                if self.verbose:
+                    print(f"------- Found tags: {tags}. Getting vectors for tags...")
+                out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = 1
         else:
             print("No tags returned by OpenAI", response)
@@ -431,6 +405,23 @@ class llm_openai:
             print("OpenAI embeddings USAGE", response.usage)
             print("OpenAI embeddings generated", len(embedding))
         return embedding
+
+    async def get_vector_embeddings_set(self, tags):
+        originalTags = tags
+        tags = Utils.get_clean_tag_set(originalTags)
+        tag_logs = []
+        tagVectorSet = {}
+        for tag in tags:
+            vectors = await self.get_vector_embeddings(tag)
+            if not vectors:
+                print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
+            else:
+                tag_logs.append(f"{tag}={len(vectors)}vs")
+            tagVectorSet[tag] = {"vectors":vectors}
+        if self.verbose:
+            print("        Embeddings received: " + ", ".join(tag_logs))
+            print("VECTORS", tag, vectors)
+        return tagVectorSet
 
 
 

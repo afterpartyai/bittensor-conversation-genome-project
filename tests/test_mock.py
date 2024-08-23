@@ -16,4 +16,3 @@ class TemplateCgTestCase(unittest.TestCase):
             print("Skeleton response: ", response)
         assert response == "Skeleton"
 
-

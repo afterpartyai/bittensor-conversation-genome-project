@@ -114,9 +114,8 @@ class llm_groq:
 
         return out
 
-    async def conversation_to_metadata(self,  convo):
-        llm_embeddings = llm_openai()
-        (xml, participants) = llm_embeddings.generate_convo_xml(convo)
+    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
+        (xml, participants) = Utils.generate_convo_xml(convo)
         tags = None
         out = {"tags":{}}
 
@@ -148,26 +147,20 @@ class llm_groq:
         tags = Utils.clean_tags(tags)
 
         if len(tags) > 0:
-            if self.verbose:
-                print(f"------- Found tags: {tags}. Getting vectors for tags...")
             out['tags'] = tags
             out['vectors'] = {}
-            tag_logs = []
-            for tag in tags:
-                vectors = await llm_embeddings.get_vector_embeddings(tag)
-                if not vectors:
-                    print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
-                else:
-                    tag_logs.append(f"{tag}={len(vectors)}vs")
-                out['vectors'][tag] = {"vectors":vectors}
-            if self.verbose:
-                print("        Embeddings received: " + ", ".join(tag_logs))
-                print("VECTORS", tag, vectors)
+            if generateEmbeddings:
+                if self.verbose:
+                    print(f"------- Found tags: {tags}. Getting vectors for tags...")
+                out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = 1
         else:
             print("No tags returned by OpenAI for Groq", response)
         return out
 
+    async def get_vector_embeddings_set(self,  tags):
+        llm_embeddings = llm_openai()
+        return await llm_embeddings.get_vector_embeddings_set(tags)
 
 
 if __name__ == "__main__":

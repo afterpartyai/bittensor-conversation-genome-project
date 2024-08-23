@@ -1,5 +1,8 @@
 import json
 
+from conversationgenome.llm.llm_openai import llm_openai
+
+
 spacy = None
 Matcher = None
 try:
@@ -33,6 +36,10 @@ class llm_spacy:
             # python -m spacy download en_core_web_sm
             # python -m spacy download en_core_web_md
             # python -m spacy download en_core_web_lg
+            if not spacy:
+                bt.logging.error(f"Spacy not installed. Aborting.")
+                return
+
 
             if not spacy.util.is_package(dataset):
                 bt.logging.info(f"Downloading spacy model {dataset}...")
@@ -46,6 +53,10 @@ class llm_spacy:
         return nlp
 
     async def simple_text_to_tags(self, body, min_tokens=5):
+        if not spacy:
+            bt.logging.error(f"Spacy not installed. Aborting.")
+            return {}
+
         nlp = self.get_nlp()
 
         # Define patterns
@@ -105,13 +116,15 @@ class llm_spacy:
         #bt.logging.info(f"Similarity score between the content and the tag: {similarity_score}")
         return similarity_score
 
-
-
-    async def conversation_to_metadata(self,  convo):
+    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
         # For this simple matcher, just munge all of the lines together
         body = json.dumps(convo['lines'])
         matches_dict = await self.simple_text_to_tags(body)
         tags = list(matches_dict.keys())
 
         return {"tags": tags, "vectors":matches_dict}
+
+    async def get_vector_embeddings_set(self,  tags):
+        llm_embeddings = llm_openai()
+        return await llm_embeddings.get_vector_embeddings_set(tags)
 

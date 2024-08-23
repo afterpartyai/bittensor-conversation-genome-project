@@ -3,6 +3,7 @@ import json
 
 from conversationgenome.Utils import Utils
 from conversationgenome.ConfigLib import c
+from conversationgenome.llm.llm_openai import llm_openai
 
 
 openai = None
@@ -28,7 +29,7 @@ class llm_openai:
     def convert(self):
         print("Convert OpenAI")
 
-    async def conversation_to_metadata(self,  convo):
+    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
         #print("CONVO OPENAI", convo)
         xml = "<conversation id='%d'>" % (83945)
         participants = {}
@@ -55,7 +56,9 @@ class llm_openai:
             for tag in tags:
                 if self.verbose:
                     print("Get vectors for tag: %s" % (tag))
-                vectors = await self.getEmbeddings(tag)
+                vectors = {}
+                if generateEmbeddings:
+                    vectors = await self.getEmbeddings(tag)
                 out['tags'][tag] = {"tag":tag, "count":0, "vectors":vectors}
             #print("OUT", out)
         else:
@@ -243,6 +246,10 @@ class llm_openai:
            print("OpenAI embeddings USAGE", response.usage)
            print("OpenAI embeddings generated", len(embedding))
        return embedding
+
+    async def get_vector_embeddings_set(self,  tags):
+        llm_embeddings = llm_openai()
+        return await llm_embeddings.get_vector_embeddings_set(tags)
 
 
 
