@@ -36,7 +36,12 @@ class MinerLib:
         if not dryrun:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
-            result = await llml.conversation_to_metadata({"lines":lines})
+            # TODO: Disable embeddings generation on miner once all validators upgraded
+            generateEmbeddings = True
+            if generateEmbeddings:
+                bt.logging.info(f"Miner: generating embeddings...")
+
+            result = await llml.conversation_to_metadata({"lines":lines}, generateEmbeddings=generateEmbeddings)
             tags = Utils.get(result, 'tags')
             out["tags"] = tags
             out["vectors"] = Utils.get(result, 'vectors', {})
