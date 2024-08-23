@@ -250,5 +250,7 @@ class Utils:
 
     @staticmethod
     def get_safe_tag(inStr, seperator=' '):
-        return re.sub(r'\s{2,}|[^a-zA-Z0-9\s]', seperator, inStr)
+        # Remove non-alpha numeric
+        pass1 = re.sub(r'\s{2,}|[^a-zA-Z0-9\s]', seperator, inStr)
+        return re.sub(r'[^\w\s]|(?<=\s)\s*', '', pass1).lower().strip()
 

@@ -18,7 +18,7 @@ class TemplateUtilsTestCase(unittest.TestCase):
         # Visually spot-check various tags
         for tag in unsafeTags:
             safeTag = Utils.get_safe_tag(tag)
-            print("Sample tags", tag, safeTag, tag == safeTag)
+            print("Sample tags (visual check)", tag, safeTag, tag == safeTag)
 
         truthTag = "tag same"
         identicalTags = [
@@ -31,7 +31,7 @@ class TemplateUtilsTestCase(unittest.TestCase):
         ]
 
         for tag in identicalTags:
-            safeTag = Utils.get_safe_tag(tag).lower().strip()
-            print(f"Truth match: {truthTag == safeTag}      | safe: {safeTag} truth: {truthTag} original: {tag} ")
-            #assert identicalTags[0] == safeTag
+            safeTag = Utils.get_safe_tag(tag)
+            print(f"Truth match: {truthTag == safeTag}       safe: {safeTag} truth: {truthTag} original: |{tag}| ")
+            assert identicalTags[0] == safeTag
 
