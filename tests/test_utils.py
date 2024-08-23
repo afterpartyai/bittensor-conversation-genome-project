@@ -35,3 +35,6 @@ class TemplateUtilsTestCase(unittest.TestCase):
             print(f"Truth match: {truthTag == safeTag}       safe: {safeTag} truth: {truthTag} original: |{tag}| ")
             assert identicalTags[0] == safeTag
 
+        cleanTagSet = Utils.get_clean_tag_set(identicalTags)
+        print(f"Clean tags: {cleanTagSet}")
+        assert identicalTags[0] == safeTag

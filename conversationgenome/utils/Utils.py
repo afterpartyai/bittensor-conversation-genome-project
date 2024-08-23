@@ -254,3 +254,11 @@ class Utils:
         pass1 = re.sub(r'\s{2,}|[^a-zA-Z0-9\s]', seperator, inStr)
         return re.sub(r'[^\w\s]|(?<=\s)\s*', '', pass1).lower().strip()
 
+    @staticmethod
+    def get_clean_tag_set(tags):
+        cleanTags = set()
+        for tag in tags:
+            cleanTags.add(Utils.get_safe_tag(tag))
+        return list(cleanTags)
+
+

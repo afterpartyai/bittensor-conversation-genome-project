@@ -153,8 +153,8 @@ class ValidatorLib:
         }
         return data
 
-    async def get_vector_embeddings_set(self, tag):
-        response = await self.llml.get_vector_embeddings_set(tag)
+    async def get_vector_embeddings_set(self, tags):
+        response = await self.llml.get_vector_embeddings_set(tags)
         return response
 
 
