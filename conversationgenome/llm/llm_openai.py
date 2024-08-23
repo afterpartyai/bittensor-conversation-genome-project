@@ -406,7 +406,9 @@ class llm_openai:
             print("OpenAI embeddings generated", len(embedding))
         return embedding
 
-    async def get_vector_embeddings_set(self,  tags):
+    async def get_vector_embeddings_set(self, tags):
+        originalTags = tags
+        tags = Utils.get_clean_tag_set(originalTags)
         tag_logs = []
         tagVectorSet = {}
         for tag in tags:
