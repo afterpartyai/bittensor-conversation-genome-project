@@ -1,5 +1,6 @@
 import requests
 import os
+import re
 
 class Utils:
     @staticmethod
@@ -246,4 +247,8 @@ class Utils:
             participants[participant] += 1
         xml += "</conversation>"
         return (xml, participants)
+
+    @staticmethod
+    def get_safe_tag(inStr, seperator=' '):
+        return re.sub(r'\s{2,}|[^a-zA-Z0-9\s]', seperator, inStr)
 
