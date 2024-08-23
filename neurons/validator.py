@@ -161,9 +161,14 @@ class Validator(BaseValidatorNeuron):
                         except:
                             miner_response = response
                         miner_result = miner_response[0]
+                        miner_result['original_tags'] = miner_result['tags']
+
+                        # Clean tags for duplicates or whitespace matches
+                        miner_result['tags'] = Utils.get_clean_tag_set(miner_result['original_tags'])
+
                         miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
                         #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
-                        bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
+                        bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} original tags: {len(miner_result['original_tags'])}")
                         if response.axon.hotkey in hot_key_watchlist:
                             print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                         log_path = c.get('env', 'SCORING_DEBUG_LOG')
