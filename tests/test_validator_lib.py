@@ -107,8 +107,16 @@ async def test_full():
             tagVectors = {}
             bt.logging.info(f"Test Validator generating vectors from miner tags...")
             for idx, miner_result in enumerate(miner_results):
+                miner_result['original_tags'] = miner_result['tags']
+                # Append a couple of "unclean" test tags to make sure they are removed for scoring
+                miner_result['original_tags'].append(miner_result['original_tags'][0]+"    ")
+                miner_result['original_tags'].append("    "+miner_result['original_tags'][0])
+
+                # Clean tags for duplicates or whitespace matches
+                miner_result['tags'] = Utils.get_clean_tag_set(miner_result['original_tags'])
+
                 miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
-                bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])}")
+                bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, clean tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} , original tags: {len(miner_result['original_tags'])}")
 
                 #bt.logging.debug(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, tags: {miner_result['tags']} vector count: {len(miner_result['vectors'])}")
                 response = MockResponse()
