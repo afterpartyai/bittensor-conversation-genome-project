@@ -1,3 +1,4 @@
+
 # **Conversation Genome Project** <!-- omit in toc -->
 [![Discord Chat](https://img.shields.io/discord/308323056592486420.svg)](https://discord.gg/bittensor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -24,15 +25,15 @@
 
 ---
 
-# Introduction to the Conversation Genome Project
+# Introduction to ReadyAI
 
-The Conversation Genome Project (CGP) is an open-source initiative aimed at enabling personalized conversational AI by providing a comprehensive dataset of indexed and tagged conversations.
+ReadyAI is an open-source initiative aimed at provide a low-cost resource-minimal data structuring and semantic tagging pipeline for any individual or business. AI runs on Structured Data. ReadyAI is a low-cost, structured data pipeline to turn your raw data into structured data for your vector databases and AI applications.
 
 If you are new to Bittensor, please checkout the [Bittensor Website](https://bittensor.com/) before proceeding to the setup section.
 
 ```mermaid
 flowchart TD
-    A(CGP API) === Validator1([Validator1])
+    A(Ready AI) === Validator1([Validator1])
     A -.- Validator2([Validator2])
     A -.- Validator3([Validator3])
     Validator1 --- C(Miner1)
@@ -51,11 +52,11 @@ flowchart TD
 
 ## Key Features
 
-- Indexing and tagging of billions of conversations across various sources (YouTube, podcasts, etc.)
-- Leveraging fractal data mining and conversation windows for efficient and privacy-preserving processing
-- Synthetic participant profiles generated from conversation metadata
-- Algorithm to assess conversation quality (relevance, engagement, novelty, coherence, and fluency)
-- Open-source dataset for training and fine-tuning conversational AI models
+- Raw Data in, structured AI Ready Data out
+- Fractal data mining allows miners to process a wide variety of data sources and create tagged, structured data for the end user’s specific needs
+- Validators establish a ground truth by tagging the data in full, create data windows for fractal mining, and score miner submissions
+- Scoring is based on a cosine distance calculation between the miner’s window tagged output and the validator’s ground truth tagged output
+- ReadyAI has created a low-cost structured data pipeline capitalizing on two key innovations: (1) LLMs are now more accurate and cheaper than human annotators and (2) Distributed compute vs. distributed workers make this infinitely scalable
 - Incentivized mining and validation system for data contribution and integrity
 
 
@@ -76,7 +77,7 @@ Miners & Validators using an OpenAI API Key will need a CPU with at least 8GB of
 
 ## Quickstart Mock Tests
 
-The best way to begin to understand the Conversation Genome Project (CGP) is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works.
+The best way to begin to understand ReadyAI’s data pipeline is to run the unit tests. These tests are meant to provide verbose output so you can see how the process works.
 
 ### Configuration
 
@@ -102,7 +103,7 @@ nano .env
 
 **Please follow all instructions in the .env**
 
-LLMs utilization is required in this subnet to tag the conversations or conversation windows. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. 
+LLM utilization is required in this subnet to annotate raw data. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. 
 
 You select your model by commenting/uncommenting a line in this section of the .env:
 
@@ -162,18 +163,18 @@ You can follow the output to see the process executes the following flow:
 
 - Starts a validator and three miners
 - The validator:
-  - Obtains a conversation to process from the CGP Api
-  - Generates tags for the entire conversation
-  - Breaks the conversation into conversation windows
+  - Obtains a conversation to process from the ReadyAI Api
+  - Generates ground truth tags for the raw data
+  - Breaks the data into fractal windows
   - Sends the first conversation window to 3 miners
 - Each miner:
   - Receives the conversation window
-  - Processes it through the LLM to generate tags, participant profiles, and vector embeddings for each semantic tag
-  - Returns the metadata to the validor
+  - Processes it through the LLM to generate tags, annotations, and vector embeddings for each semantic tag
+  - Returns the metadata to the validator
 - The validator:
   - Receives the metadata from the miners
-  - Scores each tag against the ground truth full conversation
-  - Pushes all the metadata to a local store or the CGP Api
+  - Scores each tag against the full ground truth
+  - Pushes all the metadata to a local store or the ReadyAI Api
 
 The data generated is explained in detail in the Overview section below. With the Info logging setting, the output should look something like this:
 
@@ -254,13 +255,13 @@ python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.ho
 
 ## Validating with a Custom Conversation Server
 
-Validators, by default, access the CGP API to retrieve conversations and store results. However, the subnet is designed to be a decentralized “Scale AI” where each validator can sell access to their bandwidth for structuring conversational/text data. The validator can run against any of its own data sources and process custom or even proprietary conversation data.
+Validators, by default, access the ReadyAI API to retrieve conversations and store results. However, the subnet is designed to be a decentralized “Scale AI” where each validator can sell access to their bandwidth for structuring raw data. The validator can run against any of its own data sources and process custom or even proprietary data.
 
-> Make sure the conversation data source is reasonably large. We recommend 50,000 conversations at a minimum to prevent miners re-using previous results.
+> Make sure the raw data source is reasonably large. We recommend 50,000 input items at a minimum to prevent miners re-using previous results.
 
 ### The Code
 
-In the web/ folder, you will find a sample implementation of a Conversation Server setup. You will want to modify this server for your own needs.
+In the web/ folder, you will find a sample implementation of a Custom Server setup. You will want to modify this server for your own needs.
 
 The relevant code files in the web/ folder include:
 
@@ -309,7 +310,7 @@ That will show you the tables in the database (only 1 -- `conversations`) and th
 
 With the data populated, you're ready to start running the server.
 
-> *Important:* Do not run your validator against this example dataset on mainnet. Please use a custom dataset of at least 50,000 conversations at a minimum to prevent miners from re-using previous results. Modify this script to process and load the data from a more robust data store that you've selected.
+> *Important:* Do not run your validator against this example dataset on mainnet. Please use a custom dataset of at least 50,000 raw data sources at a minimum to prevent miners from re-using previous results. Modify this script to process and load the data from a more robust data store that you've selected.
 
 ### Running the Conversation Server locally
 
@@ -333,10 +334,10 @@ Finally, modify the .env of your Validator to point at the web server. Comment o
 ```
 
 Uncomment the lines: 
-'''
+```
 export CGP_API_READ_HOST=http://localhost
 export CGP_API_READ_PORT=8000
-'''
+```
 
 After these changes, the `DB Read/Write Configuration` section of the .env file should look like this:
 
@@ -374,7 +375,7 @@ Runpod is a very helpful resource for easily launching and managing cloud GPU an
 
 ### Choosing an Instance
 
-To run the subnet code for CGP, you'll need either a GPU or a CPU, depending on your subnet role and configuration.
+To run the subnet code for ReadyAI, you'll need either a GPU or a CPU, depending on your subnet role and configuration.
 
 Miners & Validators using an OpenAI API Key, you will need a CPU with at least 8GB of Ram and 20GB of Disk Space. Runpod provides basic CPU units of different processing powers.
 
@@ -451,28 +452,28 @@ pm2 describe <pid> # prints out metadata on the process
 ```
 
 
-# Conversation Genome Project Overview
+# ReadyAI Overview
 
-Conversation Genome Project (CGP) uses the Bittensor infrastructure to annotate data related to conversations.
+ReadyAI uses the Bittensor infrastructure to annotate raw data creating structured data, the “oil” required by AI Applications to operate.
 
 ## Benefits
 
-- Addresses the lack of personalization in current conversational AI models
-- Enables natural and engaging conversations tailored to individual contexts and preferences
-- Provides a comprehensive and annotated dataset for conversational AI development
-- Encourages open-source community contributions and advancements
-- Maintains data integrity through validation and scoring mechanisms
+- Cost-efficiency: Our validators can generate structured data from any arbitrary raw text data. ReadyAI provides a cost-efficient pipeline for the processing of unstructured data into the valuable digital commodity of structured data.
+- Quality: By using advanced language models and built-in quality control via the incentive mechanism arbitrated by validation, we can achieve more consistent, higher-quality annotations compared to crowd workers.
+- Speed: AI-powered annotation can process data orders of magnitude faster than human annotators.
+- Flexibility: The decentralized nature of our system allows it to rapidly scale and adapt to new task types. Validators can independently sell access to this data generation pipeline to process any type of text-based data (e.g. conversational transcript, corporate documents, web scraped data, etc.)
+- Specialized knowledge: Unlike general-purpose crowd workers, our AI models can be fine-tuned on domain-specific data, allowing for high-quality annotations on specialized topics.
 
 ## System Design
 
-- Data stores: Primary source of truth, conversation windows, participant profiles, and vector database
-- Validator roles: Pull data, generates overview metadata for ground conversations, create windows, and score submissions
-- Miner roles: Process conversation windows, provide metadata and tags
+- Data stores: Primary source of truth, fractal data windows, and vector embedding creation
+- Validator roles: Pull data, generates overview metadata for data ground truth, create windows, and score submissions
+- Miner roles: Process data windows, provide metadata and annotations
 - Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
 
 ## Reward Mechanism
 
-The reward mechanism for the CGP subnet is designed to incentivize miners to contribute accurate and valuable metadata to the Conversation Genome dataset. Three miners are selected by a validator to receive the same Conversation Window, which is pulled from a larger conversation. After they generate a set of tags for their assigned window, miners are rewarded based on the quality and relevance of their tags, as evaluated by validators against the set of tags for the full, ground truth conversation.
+The reward mechanism for the ReadyAI subnet is designed to incentivize miners to contribute accurate and valuable metadata to the ReadyAI dataset. Three miners are selected by a validator to receive the same Data Window, which is pulled from a larger raw data source. After they generate a set of tags for their assigned window, miners are rewarded based on the quality and relevance of their tags, as evaluated by validators against the set of tags for the full, ground truth data source.
 
 A score for each miner-submitted tag is derived by a cosine distance calculation from the embedding of that tag to the vector neighborhood of the ground truth tags. The set of miner tags is then evaluated in full based on the mean of their top 3 unique tag scores (55% weight), the overall mean score of the set of tags submitted (25% weight), the median score of the tags submitted (10% weight) and their single top score (10% weight).  The weights for each scoring component prioritize the overall goal of the miner– to provide unique and meaningful tags on the corpus of data – while still allowing room for overlap between the miner and ground truth tag sets, which is an indication of a successful miner. There are also a set of penalties that will be assessed if the miner response doesn’t meet specific requirements - such as not providing any tags shared with the ground truth, not providing a minimum number of unique tags, and not providing any tags over a low-score threshold. The tag scoring system informs the weighting and ranking of each server in the subnet.
 
@@ -480,9 +481,9 @@ A score for each miner-submitted tag is derived by a cosine distance calculation
 ```mermaid
 %%{init: {'theme':'neutral'}}%%
 mindmap
-  root((Conversations))
+  root((ReadyAI))
     Output
-      Participant Profiles
+      Structured Data
       Semantic Tags
       Embeddings
     Sources
@@ -490,7 +491,7 @@ mindmap
       Podcasts
       Discord
       Twitter
-      Chat
+      Documents
 ```
 
 ## License
