@@ -66,6 +66,13 @@ class BaseValidatorNeuron(BaseNeuron):
             self.metagraph.n, dtype=torch.float32, device=self.device
         )
 
+        self.ema_scores = torch.zeros(
+            self.metagraph.n, dtype=torch.float32, device=self.device
+        )
+        
+        # Initialize the non-linear transformation power
+        self.nonlinear_power = 3.0
+
         # Init sync with the network. Updates the metagraph.
         self.sync()
 
@@ -318,45 +325,50 @@ class BaseValidatorNeuron(BaseNeuron):
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
 
     def update_scores(self, rewards: torch.FloatTensor, uids: List[int]):
-        """Performs exponential moving average on the scores based on the rewards received from the miners."""
-
-        # Check if rewards contains NaN values.
+        """
+        Performs exponential moving average on the scores based on the rewards received from the miners,
+        then normalizes, applies a non-linear transformation, and renormalizes the scores.
+        """
+        # NaN handling and UID tensor preparation (unchanged)
         if torch.isnan(rewards).any():
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
-            # Replace any NaN values in rewards with 0.
             rewards = torch.nan_to_num(rewards, 0)
 
-        # Check if `uids` is already a tensor and clone it to avoid the warning.
         if isinstance(uids, torch.Tensor):
             uids_tensor = uids.clone().detach()
         else:
-            uids_tensor = torch.tensor(uids).to(self.device)
+            uids_tensor = torch.tensor(uids, dtype=torch.long, device=self.device)
 
-        # Compute forward pass rewards, assumes uids are mutually exclusive.
-        # shape: [ metagraph.n ]
-        #print("SCATTER DEVICE", self.scores.device)
         uids_tensor = uids_tensor.to(self.scores.device)
-        rewards2 = rewards.to(self.scores.device)
-        rewards2 = torch.ones(len(uids_tensor), device=self.device)
-        for idx, reward in enumerate(rewards):
-            rewards2[idx] = rewards[idx] #random.random() #
-        #print(f"BEFORE SCATTER uids_tensor: {uids_tensor} rewards: {rewards} rewards2: {rewards2}")
+        rewards = rewards.to(self.scores.device)
 
-
-        scattered_rewards: torch.FloatTensor = self.scores.scatter(
+        # Scatter rewards
+        scattered_rewards: torch.FloatTensor = self.ema_scores.scatter(
             0, uids_tensor, rewards
         ).to(self.device)
 
-        bt.logging.debug(f"Scattered rewards: {rewards}")
-
-        # Update scores with rewards produced by this step.
-        # shape: [ metagraph.n ]
+        # Update EMA scores
         alpha: float = self.config.neuron.moving_average_alpha
-        self.scores: torch.FloatTensor = alpha * scattered_rewards + (
-            1 - alpha
-        ) * self.scores.to(self.device)
+        self.ema_scores = alpha * scattered_rewards + (1 - alpha) * self.ema_scores
 
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        # Normalize EMA scores
+        sum_scores = torch.sum(self.ema_scores)
+        if sum_scores > 0:
+            normalized_scores = self.ema_scores / sum_scores
+        else:
+            normalized_scores = torch.ones_like(self.ema_scores) / self.metagraph.n
+
+        # Apply non-linear transformation
+        transformed_scores = torch.pow(normalized_scores, self.nonlinear_power)
+
+        # Renormalize
+        sum_transformed = torch.sum(transformed_scores)
+        if sum_transformed > 0:
+            self.scores = transformed_scores / sum_transformed
+        else:
+            self.scores = torch.ones_like(transformed_scores) / self.metagraph.n
+
+        bt.logging.debug(f"Updated final scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
