@@ -329,6 +329,7 @@ class BaseValidatorNeuron(BaseNeuron):
         Performs exponential moving average on the scores based on the rewards received from the miners,
         then normalizes, applies a non-linear transformation, and renormalizes the scores.
         """
+        self.ema_scores = self.ema_scores.to(self.scores.device)
         # NaN handling and UID tensor preparation (unchanged)
         if torch.isnan(rewards).any():
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
@@ -386,6 +387,7 @@ class BaseValidatorNeuron(BaseNeuron):
                 "step": self.step,
                 "scores": self.scores,
                 "hotkeys": self.hotkeys,
+                "ema_scores": self.ema_scores,
             },
             state_path,
         )
@@ -405,6 +407,7 @@ class BaseValidatorNeuron(BaseNeuron):
             self.step = state["step"]
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
+            self.ema_scores = state["ema_scores"]
 
             try:
                 bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
