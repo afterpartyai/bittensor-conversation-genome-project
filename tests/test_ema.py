@@ -27,7 +27,7 @@ class TemplateEmaTestCase(unittest.TestCase):
 
     def test_nan(self):
        uids = [1,2,3]
-       ft = torch.FloatTensor([0.1,0.2,0.3])
+       ft = torch.FloatTensor([0.1,float('nan'),0.3])
        print(f"Testing: ", ft, uids)
        ema_scores = self.update_scores(ft, uids)
        assert ema_scores[0] == 0.4
