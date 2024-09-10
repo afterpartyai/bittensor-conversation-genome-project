@@ -36,6 +36,17 @@ class TemplateEmaTestCase(unittest.TestCase):
        assert ema_scores[1] == 0.0
        assert ema_scores[2] == 0.3
 
+    def test_out_of_range(self):
+       uids = [1,2,3]
+       ft = torch.FloatTensor([10.1, 0.2 ,-0.3])
+       print(f"Testing: ", ft, uids)
+       ema_scores = self.update_scores(ft, uids)
+       assert torch.isnan(ema_scores).any() == False
+       assert ema_scores[0] == 1.0
+       assert ema_scores[1] == 0.2
+       assert ema_scores[2] == 0.0
+
+
 
     def update_scores(self, rewards: torch.FloatTensor, uids: List[int]):
         #return torch.FloatTensor([0.4,0.5,0.6])
