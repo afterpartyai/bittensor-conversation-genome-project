@@ -27,13 +27,16 @@ class TemplateEmaTestCase(unittest.TestCase):
 
     def test_nan(self):
        uids = [1,2,3]
-       ft = torch.FloatTensor([0.1,float('nan'),0.3])
+       ft = torch.FloatTensor([0.1, float('nan') ,0.3])
+       assert torch.isnan(ft).any() == True
        print(f"Testing: ", ft, uids)
        ema_scores = self.update_scores(ft, uids)
-       assert ema_scores[0] == 0.4
-       assert ema_scores[1] == 0.5
-       assert ema_scores[2] == 0.6
+       assert torch.isnan(ema_scores).any() == False
+       assert ema_scores[0] == 0.1
+       assert ema_scores[1] == 0.0
+       assert ema_scores[2] == 0.3
 
 
     def update_scores(self, rewards: torch.FloatTensor, uids: List[int]):
-        return torch.FloatTensor([0.4,0.5,0.6])
+        #return torch.FloatTensor([0.4,0.5,0.6])
+        return torch.nan_to_num(rewards, 0.0)
