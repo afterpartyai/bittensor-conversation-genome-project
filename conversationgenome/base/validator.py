@@ -379,7 +379,14 @@ class BaseValidatorNeuron(BaseNeuron):
             self.step = state["step"]
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
-            self.ema_scores = state["ema_scores"]
+            
+            # Check if ema_scores exists in the state, if not, initialize it
+            if "ema_scores" in state:
+                self.ema_scores = state["ema_scores"]
+            else:
+                bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
+                # Initialize ema_scores with the same shape as scores
+                self.ema_scores = torch.ones_like(self.scores) / len(self.scores)
 
             try:
                 bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
