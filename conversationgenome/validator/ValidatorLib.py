@@ -275,7 +275,8 @@ class ValidatorLib:
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
         # NaN handling and UID tensor preparation (unchanged)
         if torch.isnan(rewards).any():
-            bt.logging.warning(f"NaN values detected in rewards: {rewards}")
+            if self.verbose:
+                bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             rewards = torch.nan_to_num(rewards, 0)
 
         if isinstance(uids, torch.Tensor):
