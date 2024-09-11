@@ -31,6 +31,7 @@ from traceback import print_exception
 from conversationgenome.base.neuron import BaseNeuron
 from conversationgenome.mock.mock import MockDendrite
 from conversationgenome.utils.config import add_validator_args
+from conversationgenome.validator.ValidatorLib import ValidatorLib
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -65,6 +66,13 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores = torch.zeros(
             self.metagraph.n, dtype=torch.float32, device=self.device
         )
+
+        self.ema_scores = torch.zeros(
+            self.metagraph.n, dtype=torch.float32, device=self.device
+        )
+        
+        # Initialize the non-linear transformation power
+        self.nonlinear_power = 3.0
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
@@ -231,6 +239,11 @@ class BaseValidatorNeuron(BaseNeuron):
                 f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
+        # if self.scores is empty or all zeros, return
+        if self.scores is None or torch.all(self.scores==0) or self.scores.numel()==0:
+            bt.logging.info(f"Score tensor is empty or all zeros. Skipping weight setting.")
+            return
+
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
         raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
@@ -318,45 +331,22 @@ class BaseValidatorNeuron(BaseNeuron):
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
 
     def update_scores(self, rewards: torch.FloatTensor, uids: List[int]):
-        """Performs exponential moving average on the scores based on the rewards received from the miners."""
+        """
+        Performs exponential moving average on the scores based on the rewards received from the miners,
+        then normalizes, applies a non-linear transformation, and renormalizes the scores.
+        """
+        self.ema_scores = self.ema_scores.to(self.scores.device)
 
-        # Check if rewards contains NaN values.
-        if torch.isnan(rewards).any():
-            bt.logging.warning(f"NaN values detected in rewards: {rewards}")
-            # Replace any NaN values in rewards with 0.
-            rewards = torch.nan_to_num(rewards, 0)
+        vl = ValidatorLib()
+        updated_scores, updated_ema_scores = vl.update_scores(rewards, uids, self.ema_scores, self.scores, self.config.neuron.moving_average_alpha, self.device, self.metagraph.n, self.nonlinear_power)
 
-        # Check if `uids` is already a tensor and clone it to avoid the warning.
-        if isinstance(uids, torch.Tensor):
-            uids_tensor = uids.clone().detach()
-        else:
-            uids_tensor = torch.tensor(uids).to(self.device)
+        if torch.numel(updated_scores) > 0 and torch.numel(updated_ema_scores) > 0 and not torch.isnan(updated_scores).any() and not torch.isnan(updated_ema_scores).any():
+            self.scores=updated_scores
+            self.ema_scores=updated_ema_scores
+        else: 
+            bt.logging.error("Error 2378312: Error with Nonlinear transformation and Renormalization in update_scores. self.scores not updated")
 
-        # Compute forward pass rewards, assumes uids are mutually exclusive.
-        # shape: [ metagraph.n ]
-        #print("SCATTER DEVICE", self.scores.device)
-        uids_tensor = uids_tensor.to(self.scores.device)
-        rewards2 = rewards.to(self.scores.device)
-        rewards2 = torch.ones(len(uids_tensor), device=self.device)
-        for idx, reward in enumerate(rewards):
-            rewards2[idx] = rewards[idx] #random.random() #
-        #print(f"BEFORE SCATTER uids_tensor: {uids_tensor} rewards: {rewards} rewards2: {rewards2}")
-
-
-        scattered_rewards: torch.FloatTensor = self.scores.scatter(
-            0, uids_tensor, rewards
-        ).to(self.device)
-
-        bt.logging.debug(f"Scattered rewards: {rewards}")
-
-        # Update scores with rewards produced by this step.
-        # shape: [ metagraph.n ]
-        alpha: float = self.config.neuron.moving_average_alpha
-        self.scores: torch.FloatTensor = alpha * scattered_rewards + (
-            1 - alpha
-        ) * self.scores.to(self.device)
-
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        bt.logging.debug(f"Updated final scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
@@ -364,6 +354,12 @@ class BaseValidatorNeuron(BaseNeuron):
             bt.logging.info(f"Ignore first sync so it doesn't save over last data.")
             self.first_sync = False
             return
+        
+        #check if self.scores and self.ema_scores are empty, if so, don't save
+        if (torch.all(self.ema_scores ==0) or torch.all(self.scores==0) or self.ema_scores.numel()==0 or self.scores.numel()==0):
+            bt.logging.info(f"EMA score and/or Score tensor is empty or all zeros. Skipping save state.")
+            return
+
 
         state_path = self.config.neuron.full_path + "/state.pt"
         bt.logging.info(f"Saving validator state to {state_path}.")
@@ -374,6 +370,7 @@ class BaseValidatorNeuron(BaseNeuron):
                 "step": self.step,
                 "scores": self.scores,
                 "hotkeys": self.hotkeys,
+                "ema_scores": self.ema_scores,
             },
             state_path,
         )
@@ -391,8 +388,15 @@ class BaseValidatorNeuron(BaseNeuron):
         if os.path.isfile(state_path):
             state = torch.load(state_path)
             self.step = state["step"]
-            self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
+            if "ema_scores" in state:
+                self.scores = state["scores"]
+                self.ema_scores = state["ema_scores"]
+            else:
+                bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
+                self.ema_scores = state["scores"]
+                # Initialize ema_scores with the same shape as scores
+                self.scores = torch.zeros_like(self.scores)
 
             try:
                 bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
