@@ -39,7 +39,7 @@ class TemplateEmaTestCase(unittest.TestCase):
        nonlinear_power = 3
        #print(f"Testing: ", rewards, uids)
        scores, ema_scores = self.vl.update_scores(rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power)
-       print(f"Testing nan: ", scores, ema_scores)
+       #print(f"Testing nan: ", scores, ema_scores)
        assert torch.isnan(ema_scores).any() == False
        assert torch.isnan(scores).any() == False
        assert ema_scores[0].item() == pytest.approx(0.1,abs=1e-3)
@@ -65,7 +65,7 @@ class TemplateEmaTestCase(unittest.TestCase):
        nonlinear_power = 3
        #print(f"Testing: ", rewards, uids)
        scores, ema_scores = self.vl.update_scores(rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power)
-       print(f"Testing great variation: ", scores, ema_scores)
+       #print(f"Testing great variation: ", scores, ema_scores)
        assert torch.isnan(ema_scores).any() == False
        assert torch.isnan(scores).any() == False
        assert ema_scores[0].item() == pytest.approx(0.1,abs=1e-3)
@@ -90,7 +90,7 @@ class TemplateEmaTestCase(unittest.TestCase):
        neurons = 5
        nonlinear_power = 3
        scores, ema_scores = self.vl.update_scores(rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power)
-       print(f"Testing small variation: ", scores, ema_scores)
+       #print(f"Testing small variation: ", scores, ema_scores)
        assert torch.isnan(ema_scores).any() == False
        assert torch.isnan(scores).any() == False
        assert ema_scores[0].item() == pytest.approx(0.2900, abs=1e-3)
@@ -116,7 +116,7 @@ class TemplateEmaTestCase(unittest.TestCase):
        nonlinear_power = 3
        scores, ema_scores = self.vl.update_scores(rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power)
        
-       print(f"Testing no variation: ", scores, ema_scores)
+       #print(f"Testing no variation: ", scores, ema_scores)
        assert torch.isnan(ema_scores).any() == False
        assert torch.isnan(scores).any() == False
        assert ema_scores[0].item() == pytest.approx(0.1,abs=1e-3)
