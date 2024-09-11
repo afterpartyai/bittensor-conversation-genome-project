@@ -31,6 +31,7 @@ from traceback import print_exception
 from conversationgenome.base.neuron import BaseNeuron
 from conversationgenome.mock.mock import MockDendrite
 from conversationgenome.utils.config import add_validator_args
+from conversationgenome.validator.ValidatorLib import ValidatorLib
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -330,44 +331,15 @@ class BaseValidatorNeuron(BaseNeuron):
         then normalizes, applies a non-linear transformation, and renormalizes the scores.
         """
         self.ema_scores = self.ema_scores.to(self.scores.device)
-        # NaN handling and UID tensor preparation (unchanged)
-        if torch.isnan(rewards).any():
-            bt.logging.warning(f"NaN values detected in rewards: {rewards}")
-            rewards = torch.nan_to_num(rewards, 0)
 
-        if isinstance(uids, torch.Tensor):
-            uids_tensor = uids.clone().detach()
-        else:
-            uids_tensor = torch.tensor(uids, dtype=torch.long, device=self.device)
+        vl = ValidatorLib()
+        updated_scores, updated_ema_scores = vl.update_scores(rewards, uids, self.ema_scores, self.scores, self.config.neuron.moving_average_alpha, self.device, self.metagraph.n, self.nonlinear_power)
 
-        uids_tensor = uids_tensor.to(self.scores.device)
-        rewards = rewards.to(self.scores.device)
-
-        # Scatter rewards
-        scattered_rewards: torch.FloatTensor = self.ema_scores.scatter(
-            0, uids_tensor, rewards
-        ).to(self.device)
-
-        # Update EMA scores
-        alpha: float = self.config.neuron.moving_average_alpha
-        self.ema_scores = alpha * scattered_rewards + (1 - alpha) * self.ema_scores
-
-        # Normalize EMA scores
-        sum_scores = torch.sum(self.ema_scores)
-        if sum_scores > 0:
-            normalized_scores = self.ema_scores / sum_scores
-        else:
-            normalized_scores = torch.ones_like(self.ema_scores) / self.metagraph.n
-
-        # Apply non-linear transformation
-        transformed_scores = torch.pow(normalized_scores, self.nonlinear_power)
-
-        # Renormalize
-        sum_transformed = torch.sum(transformed_scores)
-        if sum_transformed > 0:
-            self.scores = transformed_scores / sum_transformed
-        else:
-            self.scores = torch.ones_like(transformed_scores) / self.metagraph.n
+        if torch.numel(updated_scores) > 0 and torch.numel(updated_ema_scores) > 0 and not torch.isnan(updated_scores).any() and not torch.isnan(updated_ema_scores).any():
+            self.scores=updated_scores
+            self.ema_scores=updated_ema_scores
+        else: 
+            bt.logging.error("Error 2378312: Error with Nonlinear transformation and Renormalization in update_scores. self.scores not updated")
 
         bt.logging.debug(f"Updated final scores: {self.scores}")
 
