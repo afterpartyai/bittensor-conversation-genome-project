@@ -239,6 +239,11 @@ class BaseValidatorNeuron(BaseNeuron):
                 f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
+        # if self.scores is empty or all zeros, return
+        if self.scores is None or torch.all(self.scores==0) or self.scores.numel()==0:
+            bt.logging.info(f"Score tensor is empty or all zeros. Skipping weight setting.")
+            return
+
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
         raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
@@ -349,6 +354,12 @@ class BaseValidatorNeuron(BaseNeuron):
             bt.logging.info(f"Ignore first sync so it doesn't save over last data.")
             self.first_sync = False
             return
+        
+        #check if self.scores and self.ema_scores are empty, if so, don't save
+        if (torch.all(self.ema_scores ==0) or torch.all(self.scores==0) or self.ema_scores.numel()==0 or self.scores.numel()==0):
+            bt.logging.info(f"EMA score and/or Score tensor is empty or all zeros. Skipping save state.")
+            return
+
 
         state_path = self.config.neuron.full_path + "/state.pt"
         bt.logging.info(f"Saving validator state to {state_path}.")
@@ -377,16 +388,15 @@ class BaseValidatorNeuron(BaseNeuron):
         if os.path.isfile(state_path):
             state = torch.load(state_path)
             self.step = state["step"]
-            self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
-            
-            # Check if ema_scores exists in the state, if not, initialize it
             if "ema_scores" in state:
+                self.scores = state["scores"]
                 self.ema_scores = state["ema_scores"]
             else:
                 bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
+                self.ema_scores = state["scores"]
                 # Initialize ema_scores with the same shape as scores
-                self.ema_scores = torch.ones_like(self.scores) / len(self.scores)
+                self.scores = torch.zeros_like(self.scores)
 
             try:
                 bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
