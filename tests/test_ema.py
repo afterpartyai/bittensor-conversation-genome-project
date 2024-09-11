@@ -25,6 +25,7 @@ class TemplateEmaTestCase(unittest.TestCase):
 
     def setUp(self):
         self.vl=ValidatorLib()
+        self.vl.verbose=False
         pass
 
     def test_nan(self):
