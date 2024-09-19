@@ -21,7 +21,7 @@ from typing import Optional, List
 import typing
 
 class CgSynapse(bt.Synapse):
-    time_elapsed = 0
+    time_elapsed : int = 0
 
     # Required request input, filled by sending dendrite caller. It is a base64 encoded string.
     cgp_input: List[dict]

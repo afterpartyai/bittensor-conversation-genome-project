@@ -61,6 +61,17 @@ class LlmLib:
         response = await self.factory_llm.get_vector_embeddings_set(tags)
         return response
 
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+        # TODO: Refactor to single generate method
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+            if not self.factory_llm:
+                bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
+                return
+
+        response = await self.factory_llm.prompt_call_csv(convoXmlStr, participants, override_prompt)
+        return response
+
 
 
 if __name__ == "__main__":

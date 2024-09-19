@@ -29,10 +29,12 @@ if c.get('env', 'FORCE_LOG') == 'debug':
     bt.logging.enable_debug(True)
 elif c.get('env', 'FORCE_LOG') == 'info':
     bt.logging.enable_default(True)
+try:
+    import wandb
+except Exception as e:
+    print("Wand error")
 
-import wandb
-
-# xxx Refactor to multiple participants. Make abstract class?
+# TODO: Refactor to multiple participants. Make abstract class?
 proto = {
     "interests_of_q": [],
     "hobbies_of_q": [],
@@ -127,6 +129,9 @@ class ValidatorLib:
         # TODO: Write convo windows into local database with full convo metadata
         return windows
 
+    async def filter_valid_tags(self, tags):
+        # Filter valid tags
+        return tags
 
 
     async def generate_full_convo_metadata(self, convo):
@@ -316,4 +321,7 @@ class ValidatorLib:
         bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
 
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+        llml = LlmLib()
+        return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
 

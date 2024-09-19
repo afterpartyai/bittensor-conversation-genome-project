@@ -270,14 +270,17 @@ class llm_openai:
         return out
 
 
-    async def openai_prompt_call_csv(self, convoXmlStr=None, participants=None):
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
         direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"))
-        prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
-        prompt = prompt1 + "\n\n\n"
-        if convoXmlStr:
-            prompt += convoXmlStr
+        if override_prompt:
+            prompt = override_prompt
         else:
-            prompt += self.getExampleFunctionConv()
+            prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
+            prompt = prompt1 + "\n\n\n"
+            if convoXmlStr:
+                prompt += convoXmlStr
+            else:
+                prompt += self.getExampleFunctionConv()
 
         if not direct_call:
             try:
