@@ -163,10 +163,8 @@ class Validator(BaseValidatorNeuron):
                         miner_result = miner_response[0]
                         miner_result['original_tags'] = miner_result['tags']
 
-                        # Clean tags for duplicates or whitespace matches
-                        miner_result['clean_tags'] = Utils.get_clean_tag_set(miner_result['original_tags'])
-                        # Send to LLM to make sure the tags are valid before scoring
-                        miner_result['tags'] = await vl.filter_valid_tags(miner_result['clean_tags'])
+                        # Clean and validate tags for duplicates or whitespace matches
+                        miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
 
                         miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
                         #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
