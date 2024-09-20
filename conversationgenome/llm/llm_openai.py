@@ -21,7 +21,7 @@ except:
 class llm_openai:
     verbose = False
     return_json = False
-    model = "gpt-4"
+    model = "gpt-4o"
     embeddings_model = "text-embedding-ada-002"
     direct_call = 0
     root_url = "https://api.openai.com"
@@ -43,9 +43,15 @@ class llm_openai:
         if not self.direct_call:
             OpenAI.api_key = self.api_key
 
-        model = c.get("env", "OPENAI_MODEL")
+        llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+        if not llm_type_override:
+            model = 'gpt-4o'
+        else:
+            model = c.get("env", "OPENAI_MODEL")
         if model:
             self.model = model
+        if self.verbose:
+            print(f"Using openai with model: {model}")
         embeddings_model = c.get("env", "OPENAI_EMBEDDINGS_MODEL")
         if embeddings_model:
             self.embeddings_model = embeddings_model

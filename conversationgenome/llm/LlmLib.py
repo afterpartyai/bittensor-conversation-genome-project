@@ -22,12 +22,16 @@ class LlmLib:
     verbose = False
     factory_llm = None
 
-    async def generate_llm_instance(self, llm_type=None):
-        if not llm_type:
-            llm_type = c.get("env", "LLM_TYPE")
+    async def generate_llm_instance(self, llm_type_override=None):
+        if not llm_type_override:
+            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+        if not llm_type_override:
+            llm_type = "openai"
+        else:
+            llm_type = llm_type_override
+
         llm_class = "llm_"+llm_type
-        if self.verbose:
-            bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
+        bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
         out = None
 
         # Import the required LLM class dynamically
