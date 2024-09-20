@@ -259,7 +259,7 @@ class Utils:
         cleanTags = set()
         for tag in tags:
             safeTag = Utils.get_safe_tag(tag)
-            print("len(safeTag)", len(safeTag), "----", safeTag)
+            #print("len(safeTag)", len(safeTag), "----", safeTag)
             if(len(safeTag) < 3 or len(safeTag) > 64):
                 continue
             cleanTags.add(safeTag)
