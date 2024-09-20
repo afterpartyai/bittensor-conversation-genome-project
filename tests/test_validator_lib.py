@@ -113,8 +113,9 @@ async def test_full():
                 miner_result['original_tags'].append(miner_result['original_tags'][0]+"    ")
                 miner_result['original_tags'].append("    "+miner_result['original_tags'][0])
 
-                # Clean tags for duplicates or whitespace matches
-                miner_result['tags'] = Utils.get_clean_tag_set(miner_result['original_tags'])
+                # Clean and validate tags for duplicates or whitespace matches
+                miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
+                print("TAGS", miner_result['original_tags'], "->", miner_result['tags'])
 
                 miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
                 bt.logging.info(f"RESULTS from miner idx: {idx} uid: {miner_result['uid']}, clean tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} , original tags: {len(miner_result['original_tags'])}")

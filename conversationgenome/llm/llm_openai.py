@@ -367,7 +367,7 @@ class llm_openai:
         elif call_type == "json":
             out = await self.openai_prompt_call_json(convoXmlStr=convoXmlStr, participants=participants)
         else:
-            out = await self.openai_prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
+            out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
 
         return out
 
