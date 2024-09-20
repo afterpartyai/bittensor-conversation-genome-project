@@ -325,3 +325,24 @@ class ValidatorLib:
         llml = LlmLib()
         return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
 
+    async def validate_tag_set(self, originalTagList):
+        cleanTagList = Utils.get_clean_tag_set(originalTagList)
+        if self.verbose:
+            print("Original tag set len: %d clean tag set len: %d" % (len(originalTagList), len(cleanTagList)))
+        cleanTagsStr = ",".join(cleanTagList)
+
+        # Tag validation prompt
+        prompt = "You are an intelligent and strict tag filtering system. Your task is to rigorously analyze and filter a given list of potential tags, returning only those that are genuinely useful and meaningful in a tagging context. Analyze the tags as they are presented, do not assume they are anything other than what they appear."
+        prompt += "Below is a list of tags with each tag is separated by a comma. Please review these tags and return only a comma-delimited array of valid tags. A valid tag must be a recognizable English word, proper noun, or descriptive phrase that makes sense as a tag. Technical words should only be allowed if they are commonly recognized or listed as valid technical terms. Invalid tags include non-English words, random characters, gibberish, combined words without spaces (e.g., 'speeddating'), and any term that is not a recognized English word or proper technical term. Return only the comma-delimited array with no explanation or formatting."
+        prompt += "\n\n<tags>\n%s\n</tags>\n\n" % (cleanTagsStr)
+
+        response = await self.prompt_call_csv(override_prompt=prompt)
+        if len(response['content']) == 0:
+            print("EMPTY RESPONSE -- no valid tags", response['content'])
+            return None
+        finalTags = response['content'].split(",")
+        finalTags = Utils.get_clean_tag_set(finalTags)
+        return finalTags
+
+
+

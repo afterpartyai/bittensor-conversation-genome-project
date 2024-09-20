@@ -1,6 +1,7 @@
 import pytest
 import random
 
+
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
 
@@ -39,6 +40,7 @@ class MockResponse:
 
 @pytest.mark.asyncio
 async def test_full():
+    verbose = True
     # Config variables
     c.set('system', 'mode', 'test')
 
@@ -78,35 +80,19 @@ async def test_full():
         {"title": "Group24", "gte":1, "lte":2, "tags": ["relationship stressd", "000", "100", "101 dalmations", "cockfield", "remainingwithinish", "politics", "humor", "medine", "bullcoming", "cocktailusing", "bullmore", "government", "inchpast", "current events", "redsashes", "saidaustin", "bornes", "astrain", "governmentmedia"]},
     ]
 
-    #miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
-    import json
     for test_tag_group in test_tag_groups:
         originalTagList = test_tag_group['tags']
-        cleanTagList = Utils.get_clean_tag_set(originalTagList)
-        print("Original tag set len: %d clean tag set len: %d" % (len(originalTagList), len(cleanTagList)))
+        # Append canary tag that should always return to make sure prompt is working
+        originalTagList.append('canary')
 
-        # Append tag that should always return to make sure prompt is working
-        cleanTagList.append('canary')
-
-        originalTagsStr = ",".join(cleanTagList)
-        prompt = "You are an intelligent and strict tag filtering system. Your task is to rigorously analyze and filter a given list of potential tags, returning only those that are genuinely useful and meaningful in a tagging context. Analyze the tags as they are presented, do not assume they are anything other than what they appear."
-        prompt += "Below is a list of tags with each tag is separated by a comma. Please review these tags and return only a comma-delimited array of valid tags. A valid tag must be a recognizable English word, proper noun, or descriptive phrase that makes sense as a tag. Technical words should only be allowed if they are commonly recognized or listed as valid technical terms. Invalid tags include non-English words, random characters, gibberish, combined words without spaces (e.g., 'speeddating'), and any term that is not a recognized English word or proper technical term. Return only the comma-delimited array with no explanation or formatting."
-        prompt += "\n\n<tags>\n%s\n</tags>\n\n" % (originalTagsStr)
-        #print("PROMPT", prompt)
-        #print("OT", json.dumps(list(original_tags)))
         print(f"Running test: {test_tag_group['title']}")
         for i in range(3):
-            response = await vl.prompt_call_csv(override_prompt=prompt)
-            #print("RESPONSE", response['content'])
-            assert len(response['content']) > 0
-            finalTags = response['content'].split(",")
-            finalTags = Utils.get_clean_tag_set(finalTags)
-            assert len(finalTags) >=  test_tag_group['gte'] #
-            assert len(finalTags) <= test_tag_group['lte']
-
-            print(i, finalTags)
-        #json_str = Utils.get(response, "content")
-        #print(json.loads(json_str))
+            validTags = await vl.validate_tag_set(originalTagList)
+            assert len(validTags) > 0
+            assert len(validTags) >=  test_tag_group['gte'] # Make sure valid tag set has minimum tags
+            assert len(validTags) <= test_tag_group['lte'] # Make sure valid tag set doesn't have more than maximum tags
+            if verbose:
+                print(i, validTags)
         break
 
 
