@@ -83,8 +83,13 @@ class Validator(BaseValidatorNeuron):
                 #print("full_conversation", full_conversation)
                 bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
 
-                llm_type = c.get("env", "LLM_TYPE")
-                model = c.get("env", "OPENAI_MODEL")
+                llm_type = "openai"
+                model = "gpt-4o"
+                llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+                if llm_type_override:
+                    llm_type = llm_type_override
+                    model = c.get("env", "OPENAI_MODEL")
+
                 full_convo_tags = Utils.get(full_conversation_metadata, "tags", [])
                 full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
                 full_conversation_tag_count = len(full_convo_tags)

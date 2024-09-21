@@ -31,7 +31,8 @@ class LlmLib:
             llm_type = llm_type_override
 
         llm_class = "llm_"+llm_type
-        bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
+        if self.verbose:
+            bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
         out = None
 
         # Import the required LLM class dynamically

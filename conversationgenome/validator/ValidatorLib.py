@@ -67,10 +67,13 @@ class ValidatorLib:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
             num_lines = len(Utils.get(full_conversation, 'lines', []))
             llm_type = "openai"
-            if c.get('env','LLM_TYPE_OVERRIDE'):
-                llm_type = c.get('env','LLM_TYPE_OVERRIDE')
+            model = "gpt-4o"
+            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+            if llm_type_override:
+                llm_type = llm_type_override
+                model = c.get("env", "OPENAI_MODEL")
 
-            bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {llm_type} LLM...")
+            bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
 
             # Do overview tagging and generate base participant profiles
             full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)

@@ -56,8 +56,12 @@ async def test_full():
     test_mode = True
     if result:
         (full_conversation, full_conversation_metadata, conversation_windows) = result
-        llm_type = c.get("env", "LLM_TYPE")
-        model = c.get("env", "OPENAI_MODEL")
+        llm_type = "openai"
+        model = "gpt-4o"
+        llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+        if llm_type_override:
+            llm_type = llm_type_override
+            model = c.get("env", "OPENAI_MODEL")
         conversation_guid = Utils.get(full_conversation, "guid")
         tags = Utils.get(full_conversation_metadata, "tags", [])
         vectors = Utils.get(full_conversation_metadata, "vectors", [])
