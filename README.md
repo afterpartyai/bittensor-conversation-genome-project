@@ -89,7 +89,9 @@ You'll need to duplicate the dotenv file to setup your own configuration:
 cp env.example .env
 ```
 
-Use your editor to open the .env file, and follow instructions to enter the required API Keys and configurations. **An OpenAI API key is required by both miners and validators*** to access the embeddings model for the tags you mine. **A Weights and Biases Key is required by both miners and validators** as well. As a miner or validator, you can select which LLM you'd like to use for tagging conversations and/or windows. Please see [LLM Selection](#LLM-Selection) Below for more information.
+Use your editor to open the .env file, and follow instructions to enter the required API Keys and configurations. **An OpenAI API key is required by both miners and validators***. GPT-4o is the default LLM used for all operations, as it is the cheapest and most performant model accessible via API. Please see [LLM Selection](#LLM-Selection) Below for more information.
+
+**A Weights and Biases Key is required by both miners and validators** as well.
 
 **Please follow all instructions in the .env**
 
@@ -103,52 +105,31 @@ nano .env
 
 **Please follow all instructions in the .env**
 
-LLM utilization is required in this subnet to annotate raw data. As a miner or validator, you can select which LLM you'd like to leverage via the config file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. 
+LLM utilization is required in this subnet to annotate raw data. As a miner or validator, GPT-4o is the default LLM used for all operations. If you wish to override this default selection, you can follow override instructions below or in your `.env` file. After completing the steps in [Configuration](#Configuration), you can open up your `.env` file, and view the options. Currently, we offer out-of-the-box configuration for OpenAI, Anthropic, and groq APIs. 
 
-You select your model by commenting/uncommenting a line in this section of the .env:
-
-```
-# ____________ Select LLM Provider________________
-# Select one LLM provider from the options below by uncommenting the line of your choice. 
-# This will determine which API is used to generate your window tags.
-#export LLM_TYPE=openai
-#export LLM_TYPE=groq
-#export LLM_TYPE=anthropic
-```
-
-Please ensure you only have one `LLM_TYPE` config parameter uncommented before moving on. Once you have selected the `LLM_TYPE`, continue on to the configuration of your LLM type below. Enter the desired value into any fields marked as required.
-
-**You only need to make changes to the section that corresponds with your LLM_TYPE.**
+To change the default OpenAI Model used by your miner or validator, you first must uncomment `LLM_TYPE_OVERRIDE=openai` and the select your model using the `OPENAI_MODEL` parameter in the .env:
 
 ```
 # ____________ OpenAI Configuration: ________________
-# *** Below Fields Required if you chose LLM_TYPE=openai *** 
+# OpenAI is the default LLM provider for all miner and validator operations, utilizing GPT-4o.
+# To override your OpenAI model choice, uncomment the line below, then proceed to selecting a model. For other override options, see "Select LLM Override" below.
+#export LLM_TYPE_OVERRIDE=openai
 
-# Enter a model below. See all options at: https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4
-export OPENAI_MODEL=3.5-turbo
-
-# Uncomment to use direct API call instead of OpenAI Package. Commented out by default
-#export OPENAI_DIRECT_CALL=1
-
-
-# ____________ GROQ Configuration: ________________
-# *** Below Fields Required if you chose LLM_TYPE=groq ***
-export GROQ_API_KEY=
-
-# Enter a model below. See all options (use model ID): https://console.groq.com/docs/models
-export GROQ_MODEL=llama3-8b-8192
-
-# DO NOT CHANGE - required if LLM_TYPE=groq
-export GROQ_DIRECT_CALL=1
-
-
-# ____________ ANTHROPIC Configuration: ________________
-# *** Below Fields Required if you chose LLM_TYPE=groq ***
-export ANTHROPIC_API_KEY=
-
-# Enter a model below. See all options (use "Latest 1P API model name"): https://docs.anthropic.com/en/docs/about-claude/models#model-names
-export ANTHROPIC_MODEL=claude-3-sonnet-20240229
+Enter a model below. See all options at: https://platform.openai.com/docs/models
+#export OPENAI_MODEL=gpt-3.5-turbo
+#export OPENAI_MODEL=gpt-4-turbo
 ```
+
+If you wish to use a provider other than OpenAI, you select your LLM Override by uncommenting a line in this section of the .env:
+
+```
+# ____________ Select LLM Override________________
+...
+#export LLM_TYPE_OVERRIDE=groq
+#export LLM_TYPE_OVERRIDE=anthropic
+```
+
+Please ensure you only have one `LLM_TYPE_OVERRIDE` config parameter uncommented before moving on. Once you have selected the `LLM_TYPE`, follow prompts in the .env file to fill in required fields for your override LLM provider.
 
 
 ### Running the Tests
