@@ -331,7 +331,7 @@ class ValidatorLib:
         llml = LlmLib()
         return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
 
-    async def validate_tag_set(self, originalTagList):
+    async def validate_tag_set2(self, originalTagList):
         cleanTagList = Utils.get_clean_tag_set(originalTagList)
         if self.verbose:
             print("Original tag set len: %d clean tag set len: %d" % (len(originalTagList), len(cleanTagList)))
@@ -368,5 +368,21 @@ class ValidatorLib:
 
         return final_tag_list
 
+    async def validate_tag_set(self, originalTagList):
+        cleanTagList = Utils.get_clean_tag_set(originalTagList)
+        if self.verbose:
+            print("Original tag set len: %d clean tag set len: %d" % (len(originalTagList), len(cleanTagList)))
+        cleanTagsStr = ",".join(cleanTagList)
+
+        # Tag validation prompt
+        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Return two comma-delimited lists."
+        prompt1 += "\n\n<keywords>\n%s\n</keywords>\n\n" % (cleanTagsStr)
+
+        response = await self.prompt_call_csv(override_prompt=prompt1)
+        if len(response['content']) == 0:
+            print("EMPTY RESPONSE -- no valid tags", response['content'])
+            return None
+
+        return response
 
 
