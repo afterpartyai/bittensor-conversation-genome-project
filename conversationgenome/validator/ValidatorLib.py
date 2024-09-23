@@ -338,17 +338,35 @@ class ValidatorLib:
         cleanTagsStr = ",".join(cleanTagList)
 
         # Tag validation prompt
-        prompt = "You are an intelligent and strict tag filtering system. Your task is to rigorously analyze and filter a given list of potential tags, returning only those that are genuinely useful and meaningful in a tagging context. Analyze the tags as they are presented, do not assume they are anything other than what they appear."
-        prompt += "Below is a list of tags with each tag is separated by a comma. Please review these tags and return only a comma-delimited array of valid tags. A valid tag must be a recognizable English word, proper noun, or descriptive phrase that makes sense as a tag. Technical words should only be allowed if they are commonly recognized or listed as valid technical terms. Invalid tags include non-English words, random characters, gibberish, combined words without spaces (e.g., 'speeddating'), and any term that is not a recognized English word or proper technical term. Return only the comma-delimited array with no explanation or formatting."
-        prompt += "\n\n<tags>\n%s\n</tags>\n\n" % (cleanTagsStr)
+        prompt1 = "You are an intelligent and strict tag filtering system. Your task is to filter these tags based on the following strict criteria: 1. MOST IMPORTANT RULE: Reject ANY tag that combines multiple words without spaces (e.g. 'bookclub', 'fitnessmotivation'). 2. Accept ONLY valid English words or proper nouns. 3. Reject non-English words, gibberish, individual letters and incomplete words. Do not alter, modify, or split any tags. Either accept a tag as-is or reject it entirely. Return only a comma-separated list of valid tags, with no explanation or formatting"
+        prompt1 += "Here is the list of tags: "
+        prompt1 += "\n\n<tags>\n%s\n</tags>\n\n" % (cleanTagsStr)
 
-        response = await self.prompt_call_csv(override_prompt=prompt)
+        response = await self.prompt_call_csv(override_prompt=prompt1)
         if len(response['content']) == 0:
             print("EMPTY RESPONSE -- no valid tags", response['content'])
             return None
         finalTags = response['content'].split(",")
         finalTags = Utils.get_clean_tag_set(finalTags)
-        return finalTags
+
+        prompt2 = "You are an intelligent and strict tag filtering system. Your task is to rigorously analyze and filter a given list of potential tags, returning only those that are genuinely useful and meaningful in a tagging context. Analyze the tags as they are presented, do not assume they are anything other than what they appear."
+        prompt2 += "Below is the original, unfiltered set of tags that you have already filtered based on criteria specified below"
+        prompt2 += "\n\n<tags>\n%s\n</tags>\n\n" % (cleanTagsStr)
+        prompt2 += "Below is the filtered set of tags:"
+        prompt2 += "\n\n<tags>\n%s\n</tags>\n\n" % (finalTags)
+        prompt2 += "Double check that you followed these instructions PERFECTLY when filtering the tags: You are an intelligent and strict tag filtering system. Your task is to filter these tags based on the following strict criteria: 1. MOST IMPORTANT RULE: Reject ANY tag that combines multiple words without spaces (e.g. 'bookclub', 'fitnessmotivation'). 2. Accept ONLY valid English words or proper nouns. 3. Reject non-English words, gibberish, individual letters and incomplete words. Do not alter, modify, or split any tags. Either accept a tag as-is or reject it entirely. Return only a comma-separated list of valid tags, with no explanation or formatting"
+        prompt2 += "Make any adjustments needed, and Return only the FINAL comma-delimited array with no explanation or formatting."
+
+        response2 = await self.prompt_call_csv(override_prompt=prompt2)
+        if len(response2['content']) == 0:
+            print("EMPTY RESPONSE -- no valid tags", response2['content'])
+            return None
+        finalTags2 = response2['content'].split(",")
+        finalTags2 = Utils.get_clean_tag_set(finalTags2)
+
+        final_tag_list = [element for element in finalTags2 if element in cleanTagsStr]
+
+        return final_tag_list
 
 
 
