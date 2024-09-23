@@ -92,12 +92,6 @@ async def test_full():
         print(f"Running test: {test_tag_group['title']}")
         for i in range(3):
             validTags = await vl.validate_tag_set(originalTagList)
-            contentStr = validTags['content'].lower()
-            goodPos = contentStr.find("good")
-            malformedPos = contentStr.find("malformed")
-            goodKeywordsStr = contentStr[0:malformedPos].replace("good english keywords:", "").replace("***","").replace("\n","").strip()
-            validTags = goodKeywordsStr.split(",")
-            validTags = Utils.get_clean_tag_set(validTags)
             #continue
             #assert "canary" in validTags
             assert len(validTags) >=  test_tag_group['gte'] # Make sure valid tag set has minimum tags

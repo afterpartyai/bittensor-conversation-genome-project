@@ -382,7 +382,13 @@ class ValidatorLib:
         if len(response['content']) == 0:
             print("EMPTY RESPONSE -- no valid tags", response['content'])
             return None
+        contentStr = response['content'].lower()
+        goodPos = contentStr.find("good")
+        malformedPos = contentStr.find("malformed")
+        goodKeywordsStr = contentStr[0:malformedPos].replace("good english keywords:", "").replace("***","").replace("\n","").strip()
+        validTags = goodKeywordsStr.split(",")
+        validTags = Utils.get_clean_tag_set(validTags)
 
-        return response
+        return validTags
 
 
