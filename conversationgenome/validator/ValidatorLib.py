@@ -375,7 +375,7 @@ class ValidatorLib:
         cleanTagsStr = ",".join(cleanTagList)
 
         # Tag validation prompt
-        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Return two comma-delimited lists."
+        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Malformed keywords should include combined/compound words that are not in the English Dictionary, abbreviations, and typos. Return two comma-delimited lists."
         prompt1 += "\n\n<keywords>\n%s\n</keywords>\n\n" % (cleanTagsStr)
 
         response = await self.prompt_call_csv(override_prompt=prompt1)
@@ -389,6 +389,8 @@ class ValidatorLib:
         validTags = goodKeywordsStr.split(",")
         validTags = Utils.get_clean_tag_set(validTags)
 
-        return validTags
+        processed_tag_list = [element for element in validTags if element in cleanTagsStr]
+
+        return processed_tag_list
 
 
