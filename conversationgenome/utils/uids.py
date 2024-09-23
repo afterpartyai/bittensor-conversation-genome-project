@@ -71,5 +71,4 @@ def get_random_uids(
             k - len(candidate_uids),
         )
     uids = torch.tensor(random.sample(available_uids, k))
-    uids = torch.tensor([19,29,33])
     return uids
