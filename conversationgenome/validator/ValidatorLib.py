@@ -338,17 +338,22 @@ class ValidatorLib:
         cleanTagsStr = ",".join(cleanTagList)
 
         # Tag validation prompt
-        prompt = "You are an intelligent and strict tag filtering system. Your task is to rigorously analyze and filter a given list of potential tags, returning only those that are genuinely useful and meaningful in a tagging context. Analyze the tags as they are presented, do not assume they are anything other than what they appear."
-        prompt += "Below is a list of tags with each tag is separated by a comma. Please review these tags and return only a comma-delimited array of valid tags. A valid tag must be a recognizable English word, proper noun, or descriptive phrase that makes sense as a tag. Technical words should only be allowed if they are commonly recognized or listed as valid technical terms. Invalid tags include non-English words, random characters, gibberish, combined words without spaces (e.g., 'speeddating'), and any term that is not a recognized English word or proper technical term. Return only the comma-delimited array with no explanation or formatting."
-        prompt += "\n\n<tags>\n%s\n</tags>\n\n" % (cleanTagsStr)
+        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Malformed keywords should include combined/compound words that are not in the English Dictionary, abbreviations, and typos. Return two comma-delimited lists."
+        prompt1 += "\n\n<keywords>\n%s\n</keywords>\n\n" % (cleanTagsStr)
 
-        response = await self.prompt_call_csv(override_prompt=prompt)
+        response = await self.prompt_call_csv(override_prompt=prompt1)
         if len(response['content']) == 0:
             print("EMPTY RESPONSE -- no valid tags", response['content'])
             return None
-        finalTags = response['content'].split(",")
-        finalTags = Utils.get_clean_tag_set(finalTags)
-        return finalTags
+        contentStr = response['content'].lower()
+        goodPos = contentStr.find("good")
+        malformedPos = contentStr.find("malformed")
+        goodKeywordsStr = contentStr[0:malformedPos].replace("good english keywords:", "").replace("***","").replace("\n","").strip()
+        validTags = goodKeywordsStr.split(",")
+        validTags = Utils.get_clean_tag_set(validTags)
 
+        processed_tag_list = [element for element in validTags if element in cleanTagsStr]
+
+        return processed_tag_list
 
 
