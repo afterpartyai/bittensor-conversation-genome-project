@@ -53,10 +53,13 @@ class llm_anthropic:
         return response
 
 
-    async def prompt_call_csv(self, convoXmlStr=None, participants=None):
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
         out = {"success":0}
-        prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
-        prompt = f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"
+        if override_prompt:
+            prompt = override_prompt
+        else:
+            prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+            prompt = f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"
         try:
             data = {
                 "model": self.model,

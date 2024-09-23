@@ -13,7 +13,13 @@ class ConvoLib:
         return convo
 
     async def put_conversation(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):
-        llm_model = c.get('env', c.get('env', 'LLM_TYPE').upper() + "_MODEL")
+        llm_type = "openai"
+        model = "gpt-4o"
+        llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+        if llm_type_override:
+            llm_type = llm_type_override
+            model = c.get("env", "OPENAI_MODEL")
+        llm_model = c.get('env', llm_type.upper() + "_MODEL")
         output = {
             "type": type,
             "mode": c.get('env', 'SYSTEM_MODE'),

@@ -22,9 +22,14 @@ class LlmLib:
     verbose = False
     factory_llm = None
 
-    async def generate_llm_instance(self, llm_type=None):
-        if not llm_type:
-            llm_type = c.get("env", "LLM_TYPE")
+    async def generate_llm_instance(self, llm_type_override=None):
+        if not llm_type_override:
+            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+        if not llm_type_override:
+            llm_type = "openai"
+        else:
+            llm_type = llm_type_override
+
         llm_class = "llm_"+llm_type
         if self.verbose:
             bt.logging.info("Factory generate LLM class of type %s" % (llm_type))
@@ -59,6 +64,17 @@ class LlmLib:
 
     async def get_vector_embeddings_set(self, tags):
         response = await self.factory_llm.get_vector_embeddings_set(tags)
+        return response
+
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+        # TODO: Refactor to single generate method
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+            if not self.factory_llm:
+                bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
+                return
+
+        response = await self.factory_llm.prompt_call_csv(convoXmlStr, participants, override_prompt)
         return response
 
 

@@ -21,7 +21,7 @@ except:
 class llm_openai:
     verbose = False
     return_json = False
-    model = "gpt-4"
+    model = "gpt-4o"
     embeddings_model = "text-embedding-ada-002"
     direct_call = 0
     root_url = "https://api.openai.com"
@@ -43,9 +43,15 @@ class llm_openai:
         if not self.direct_call:
             OpenAI.api_key = self.api_key
 
-        model = c.get("env", "OPENAI_MODEL")
+        llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+        if not llm_type_override:
+            model = 'gpt-4o'
+        else:
+            model = c.get("env", "OPENAI_MODEL")
         if model:
             self.model = model
+        if self.verbose:
+            print(f"Using openai with model: {model}")
         embeddings_model = c.get("env", "OPENAI_EMBEDDINGS_MODEL")
         if embeddings_model:
             self.embeddings_model = embeddings_model
@@ -270,14 +276,17 @@ class llm_openai:
         return out
 
 
-    async def openai_prompt_call_csv(self, convoXmlStr=None, participants=None):
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
         direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"))
-        prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
-        prompt = prompt1 + "\n\n\n"
-        if convoXmlStr:
-            prompt += convoXmlStr
+        if override_prompt:
+            prompt = override_prompt
         else:
-            prompt += self.getExampleFunctionConv()
+            prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
+            prompt = prompt1 + "\n\n\n"
+            if convoXmlStr:
+                prompt += convoXmlStr
+            else:
+                prompt += self.getExampleFunctionConv()
 
         if not direct_call:
             try:
@@ -364,7 +373,7 @@ class llm_openai:
         elif call_type == "json":
             out = await self.openai_prompt_call_json(convoXmlStr=convoXmlStr, participants=participants)
         else:
-            out = await self.openai_prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
+            out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
 
         return out
 

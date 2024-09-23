@@ -29,10 +29,12 @@ if c.get('env', 'FORCE_LOG') == 'debug':
     bt.logging.enable_debug(True)
 elif c.get('env', 'FORCE_LOG') == 'info':
     bt.logging.enable_default(True)
+try:
+    import wandb
+except Exception as e:
+    print("Wand error")
 
-import wandb
-
-# xxx Refactor to multiple participants. Make abstract class?
+# TODO: Refactor to multiple participants. Make abstract class?
 proto = {
     "interests_of_q": [],
     "hobbies_of_q": [],
@@ -64,8 +66,14 @@ class ValidatorLib:
         if full_conversation:
             conversation_guid = str(Utils.get(full_conversation, "guid"))
             num_lines = len(Utils.get(full_conversation, 'lines', []))
+            llm_type = "openai"
+            model = "gpt-4o"
+            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+            if llm_type_override:
+                llm_type = llm_type_override
+                model = c.get("env", "OPENAI_MODEL")
 
-            bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {c.get('env','LLM_TYPE')} LLM...")
+            bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
 
             # Do overview tagging and generate base participant profiles
             full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
@@ -127,6 +135,9 @@ class ValidatorLib:
         # TODO: Write convo windows into local database with full convo metadata
         return windows
 
+    async def filter_valid_tags(self, tags):
+        # Filter valid tags
+        return tags
 
 
     async def generate_full_convo_metadata(self, convo):
@@ -315,5 +326,34 @@ class ValidatorLib:
 
         bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
+
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+        llml = LlmLib()
+        return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
+
+    async def validate_tag_set(self, originalTagList):
+        cleanTagList = Utils.get_clean_tag_set(originalTagList)
+        if self.verbose:
+            print("Original tag set len: %d clean tag set len: %d" % (len(originalTagList), len(cleanTagList)))
+        cleanTagsStr = ",".join(cleanTagList)
+
+        # Tag validation prompt
+        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Malformed keywords should include combined/compound words that are not in the English Dictionary, abbreviations, and typos. Return two comma-delimited lists."
+        prompt1 += "\n\n<keywords>\n%s\n</keywords>\n\n" % (cleanTagsStr)
+
+        response = await self.prompt_call_csv(override_prompt=prompt1)
+        if len(response['content']) == 0:
+            print("EMPTY RESPONSE -- no valid tags", response['content'])
+            return None
+        contentStr = response['content'].lower()
+        goodPos = contentStr.find("good")
+        malformedPos = contentStr.find("malformed")
+        goodKeywordsStr = contentStr[0:malformedPos].replace("good english keywords:", "").replace("***","").replace("\n","").strip()
+        validTags = goodKeywordsStr.split(",")
+        validTags = Utils.get_clean_tag_set(validTags)
+
+        processed_tag_list = [element for element in validTags if element in cleanTagsStr]
+
+        return processed_tag_list
 
 

@@ -83,8 +83,13 @@ class Validator(BaseValidatorNeuron):
                 #print("full_conversation", full_conversation)
                 bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
 
-                llm_type = c.get("env", "LLM_TYPE")
-                model = c.get("env", "OPENAI_MODEL")
+                llm_type = "openai"
+                model = "gpt-4o"
+                llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+                if llm_type_override:
+                    llm_type = llm_type_override
+                    model = c.get("env", "OPENAI_MODEL")
+
                 full_convo_tags = Utils.get(full_conversation_metadata, "tags", [])
                 full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
                 full_conversation_tag_count = len(full_convo_tags)
@@ -163,8 +168,8 @@ class Validator(BaseValidatorNeuron):
                         miner_result = miner_response[0]
                         miner_result['original_tags'] = miner_result['tags']
 
-                        # Clean tags for duplicates or whitespace matches
-                        miner_result['tags'] = Utils.get_clean_tag_set(miner_result['original_tags'])
+                        # Clean and validate tags for duplicates or whitespace matches
+                        miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
 
                         miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
                         #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
