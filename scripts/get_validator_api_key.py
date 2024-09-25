@@ -1,7 +1,7 @@
 import bittensor as bt
 import base58
 from hashlib import blake2b
-#from substrateinterface import Keccak
+from scalecodec.utils.ss58 import ss58_decode
 
 class CgpApiLib():
     def get(self):
@@ -31,9 +31,9 @@ class CgpApiLib():
         #wallet = bittensor.wallet(hotkey)
         #print("WALLET",wallet, dir(wallet))
         print("SUBNET",subnet, dir(subnet))
-        list_object_properties(subnet)
+        self.list_wallets_properties(subnet)
 
-    def list_object_properties(obj):
+    def list_wallets_properties(self, obj):
         properties = dir(obj)
         for prop in properties:
             try:
@@ -48,80 +48,6 @@ class CgpApiLib():
 
 
 
-    def ss58_to_public_key(ss58_address: str) -> str:
-        print("Converting:", ss58_address)
-        """
-        Convert an SS58-encoded cold key address to a public key.
-
-        Args:
-            ss58_address (str): The SS58-encoded cold key address.
-
-        Returns:
-            str: The corresponding public key.
-        """
-        # Decode the SS58 address
-        decoded_address = base58.b58decode_check(ss58_address).hex()
-
-        # Extract the public key from the decoded address
-        public_key = decoded_address[-64:]  # Last 64 characters are the public key
-
-        # Convert the public key to bytes
-        public_key_bytes = bytes.fromhex(public_key)
-
-        # Compute the Keccak-256 hash of the public key
-        keccak_hash = hashlib.keccak_256(public_key_bytes).hexdigest()
-
-        # Return the public key as a hex string
-        return keccak_hash
-
-
-    def ss58_to_public_key(ss58_address):
-        """
-        Convert an SS58 coldkey address to a public key.
-
-        Args:
-        ss58_address (str): The SS58 encoded address
-
-        Returns:
-        str: The public key in hexadecimal format
-        """
-        try:
-            # Create an Ss58Address object
-            address = Ss58Address(ss58_address)
-
-            # Get the public key and convert it to hexadecimal
-            public_key = address.public_key.hex()
-
-            return public_key
-        except ValueError as e:
-            print(f"Error: {e}")
-            return None
-
-    def ss58_to_public_key2(ss58_address: str) -> str:
-        """
-        Convert an SS58-encoded cold key address to a public key.
-
-        Args:
-            ss58_address (str): The SS58-encoded cold key address.
-
-        Returns:
-            str: The corresponding public key.
-        """
-        # Decode the SS58 address
-        decoded_address = base58.b58decode_check(ss58_address).hex()
-
-        # Extract the public key from the decoded address
-        public_key = decoded_address[-64:]  # Last 64 characters are the public key
-
-        # Convert the public key to bytes
-        public_key_bytes = bytes.fromhex(public_key)
-
-        # Compute the Keccak-256 hash of the public key
-        keccak_hash = hashlib.keccak_256(public_key_bytes).hexdigest()
-
-        # Return the public key as a hex string
-        return keccak_hash
-
 
 #print(ss58_to_public_key(coldkey))
 
@@ -131,14 +57,9 @@ class CgpApiLib():
 # Example usage
 if __name__ == "__main__":
     ss58_address = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
-    if False:
-        public_key = ss58_to_public_key(ss58_address)
-        if public_key:
-            print(f"SS58 Address: {ss58_address}")
-            print(f"Public Key: {public_key}")
-    #print(dir(SubstrateInterface))
 
     if False:
+        # Works but keys don't match
         from substrateinterface import SubstrateInterface
         si = SubstrateInterface(url="wss://rpc.polkadot.io")
         ss58 = "5GnBLhJG16Ra2WMdKGPUpLopu5wsFPTY6pGyf9u3N1T4cqsC"
@@ -148,21 +69,11 @@ if __name__ == "__main__":
         print(ss58_decoded, ss58_decoded==publicKey)
         #print(si.ss58_encode("5GnBLhJG16Ra2WMdKGPUpLopu5wsFPTY6pGyf9u3N1T4cqsC"))
         #print(ss58_to_public_key2("0x5GnBLhJG16Ra2WMdKGPUpLopu5wsFPTY6pGyf9u3N1T4cqsC"))
-        if False:
-            import codecs
-            # Remove the network prefix (first byte)
-            # Remove the network prefix (first byte)
-            # Remove the network prefix (first byte) and the checksum (last 2 bytes)
-            public_key_bytes = ss58_decoded[1:-2]
-
-            # Convert the public key bytes to a hex string
-            public_key_hex = '0x' + public_key_bytes.hex()
-
-            print(public_key_hex, public_key_hex==publicKey)
 
     if True:
-        import scalecodec
-        from scalecodec.utils.ss58 import ss58_decode
+        cal = CgpApiLib()
+        cal.get()
+        # Works
         ss58_address = "5GnBLhJG16Ra2WMdKGPUpLopu5wsFPTY6pGyf9u3N1T4cqsC"
         account_id = ss58_decode(ss58_address, valid_ss58_format=42)
         print(f"The decoded account ID for the address {ss58_address} is: {account_id}")
