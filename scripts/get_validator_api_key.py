@@ -162,15 +162,17 @@ class ReadyAiApiLib():
         return coldkey
 
     def sign_message_with_coldkey(self, coldkey_object, message):
-        if self.test_mode:
+        if self.test_mode and not coldkey_object:
             return {"signed":message + "SIGNED"}
 
         signature = coldkey_object.sign(message.encode("utf-8")).hex()
         keypair = Keypair(ss58_address=coldkey_object.ss58_address)
         is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
         if not is_valid:
-           print(f"{RED}Signature is not valid{COLOR_END}")
-           exit(1)
+            print(f"{RED}Signature is not valid{COLOR_END}")
+            exit(1)
+        else:
+            print(f"{GREEN}Signature is valid{COLOR_END}")
         return {"signed":signature}
 
 
@@ -178,8 +180,8 @@ class ReadyAiApiLib():
 if __name__ == "__main__":
     args = sys.argv[1:] + [''] * 10
     test_mode = False
-    if args[0] == "1":
-        print(f"{YELLOW}*** Test mode ***{COLOR_END}")
+    if args[0] == "1" or args[0] == "2":
+        print(f"{YELLOW}*** Test mode {args[0]} ***{COLOR_END}")
         test_mode = True
     raal = ReadyAiApiLib(test_mode)
     cmd = 'test'
@@ -230,7 +232,10 @@ if __name__ == "__main__":
             ss58_coldkey = args[1]
         print(f"{YELLOW}Checking subnet {subnet_id} for coldkey {ss58_coldkey}...{COLOR_END}")
         print(f'{YELLOW}{DIVIDER}{COLOR_END}')
-        validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
+        if not test_mode:
+            validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
+        else:
+            validator_info = {"a":10}
         if validator_info:
             # Coldkey confirmed as validator on subnet with require stake.
             # TODO: Add testnet selector
