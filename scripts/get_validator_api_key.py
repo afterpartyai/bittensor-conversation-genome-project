@@ -26,7 +26,7 @@ class CgpApiLib():
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
 
-    def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=True):
+    def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=False):
         subnet = bt.metagraph(netuid)
         if not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
@@ -139,6 +139,7 @@ if __name__ == "__main__":
     cmd = 'testapi'
     cmd = 'testsign'
     cmd = 'full'
+    test_mode = True
 
     subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
     subnet_id = 33
@@ -167,15 +168,16 @@ if __name__ == "__main__":
         validator_info = {}
         name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
         path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
-        coldkey = cal.get_coldkey_object(name, path)
-        signed_message = cal.sign_message_with_coldkey(coldkey, message)
+        coldkey_object = cal.get_coldkey_object(name, path)
+        signed_message = cal.sign_message_with_coldkey(coldkey_object, message)
         if signed_message:
             print("signed_message", signed_message)
     elif cmd == 'full':
-        if False:
+        coldkey_obj = None
+        if not test_mode:
             name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
             path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
-            coldkey = cal.get_coldkey_object(name, path)
+            coldkey_obj = cal.get_coldkey_object(name, path)
             ss58_coldkey = coldkey_obj.ss58_address
         else:
             ss58_coldkey = "5DaUQrFC3kEuqCkvBELUs47pJpNoqXTTiHop7c3pcq1KngQo"
