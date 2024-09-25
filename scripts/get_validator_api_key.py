@@ -9,6 +9,7 @@ COLOR_END = '\033[m'
 DIVIDER = '_' * 120
 
 import bittensor as bt
+import sys
 import requests
 import json
 import requests
@@ -31,6 +32,7 @@ class ReadyAiApiLib():
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
     minimum_stake = 1.0
+    verbose = False
 
     def __init__(self, test_mode=False):
         self.test_mode = test_mode
@@ -41,25 +43,27 @@ class ReadyAiApiLib():
         subnet = bt.metagraph(netuid)
         if not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
-            if verbose:
+            if self.verbose or verbose:
                 #print("SUBNET COLDKEYS", subnet.coldkeys)
                 found_validator_staked = False
                 found_validator_unstaked = False
                 found_non_validator = False
-                for idx, coldkey in enumerate(subnet.coldkeys):
-                    if not found_validator_staked and subnet.validator_permit[idx] and subnet.stake[idx] >= self.minimum_stake:
-                        print(f"Validator staked: {coldkey} stake: {subnet.stake[idx]}")
+                for test_coldkey in subnet.coldkeys:
+                    test_uid = subnet.coldkeys.index( test_coldkey )
+                    is_test_validator = bool(subnet.validator_permit[test_uid])
+                    if not found_validator_staked and is_test_validator and subnet.stake[test_uid] >= self.minimum_stake:
+                        print(f"Validator {test_uid} staked: {test_coldkey} validator:{subnet.validator_permit[test_uid]} stake: {subnet.stake[test_uid]}")
                         found_validator_staked = True
-                    elif not found_validator_unstaked and subnet.validator_permit[idx] and subnet.stake[idx] < self.minimum_stake:
-                        print(f"Validator unstaked: {coldkey} stake: {subnet.stake[idx]}")
+                    elif not found_validator_unstaked and is_test_validator and subnet.stake[test_uid] < self.minimum_stake:
+                        print(f"Validator {test_uid} unstaked: {test_coldkey} validator:{subnet.validator_permit[test_uid]} stake: {subnet.stake[test_uid]}")
                         found_validator_unstaked = True
-                    elif not found_non_validator and not subnet.validator_permit[idx]:
-                        print(f"Not Validator: {coldkey} stake: {subnet.stake[idx]}")
+                    elif not found_non_validator and not subnet.validator_permit[test_uid]:
+                        print(f"Not Validator {test_uid} : {test_coldkey} stake: {subnet.stake[test_uid]}")
                         found_non_validator = True
             return
         my_uid = subnet.coldkeys.index( ss58_coldkey )
         print(f"Subnet UID for coldkey: {ss58_coldkey} : {my_uid}")
-        if verbose:
+        if self.verbose or verbose:
             # Display properties for this uid
             self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
         if not ss58_coldkey in subnet.coldkeys:
@@ -68,7 +72,7 @@ class ReadyAiApiLib():
 
         is_validator = bool(subnet.validator_permit[my_uid])
         if not is_validator:
-            print(f"{RED}Coldkey is not a validator. Aborting.{COLOR_END}")
+            print(f"{RED}Coldkey {my_uid} is not a validator : {is_validator}. Aborting.{COLOR_END}")
             return
 
         total_stake = float(subnet.stake[my_uid])
@@ -157,12 +161,12 @@ class ReadyAiApiLib():
             exit(1)
         return coldkey
 
-    def sign_message_with_coldkey(self, coldkey_obj, message):
+    def sign_message_with_coldkey(self, coldkey_object, message):
         if self.test_mode:
             return {"signed":message + "SIGNED"}
 
-        signature = coldkey_obj.sign(message.encode("utf-8")).hex()
-        keypair = Keypair(ss58_address=coldkey_obj.ss58_address)
+        signature = coldkey_object.sign(message.encode("utf-8")).hex()
+        keypair = Keypair(ss58_address=coldkey_object.ss58_address)
         is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
         if not is_valid:
            print(f"{RED}Signature is not valid{COLOR_END}")
@@ -172,7 +176,11 @@ class ReadyAiApiLib():
 
 
 if __name__ == "__main__":
-    test_mode = True
+    args = sys.argv[1:] + [''] * 10
+    test_mode = False
+    if args[0] == "1":
+        print(f"{YELLOW}*** Test mode ***{COLOR_END}")
+        test_mode = True
     raal = ReadyAiApiLib(test_mode)
     cmd = 'test'
     cmd = 'testapi'
@@ -211,21 +219,21 @@ if __name__ == "__main__":
         if signed_message:
             print("signed_message", signed_message)
     elif cmd == 'full':
-        if not test_mode:
+        if not test_mode or args[0] == "2":
             name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
             path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
             coldkey_object = raal.get_coldkey_object(name, path)
-            ss58_coldkey = coldkey_obj.ss58_address
+            ss58_coldkey = coldkey_object.ss58_address
         else:
+            raal.verbose = True
             coldkey_object = None
-            ss58_coldkey = "5HB4EbnVdtmBVdnrUxce2jDE7BJJM1cv9xV1X1wiriyeKy8R" # Not validator
-            ss58_coldkey = "5GTVbEdiPtmJ1XWG7FgKaYifLciwWUDDXeauVKgpzKkNDCQL" # Unstaked
-            ss58_coldkey = '5GZSAgaVGQqegjhEkxpJjpSVLVmNnE2vx2PFLzr7kBBMKpGQ' # Staked
+            ss58_coldkey = args[1]
         print(f"{YELLOW}Checking subnet {subnet_id} for coldkey {ss58_coldkey}...{COLOR_END}")
         print(f'{YELLOW}{DIVIDER}{COLOR_END}')
         validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
         if validator_info:
             # Coldkey confirmed as validator on subnet with require stake.
+            # TODO: Add testnet selector
 
             #validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
             #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
