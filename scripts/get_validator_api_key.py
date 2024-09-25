@@ -184,10 +184,6 @@ if __name__ == "__main__":
         print(f"{YELLOW}*** Test mode {args[0]} ***{COLOR_END}")
         test_mode = True
     raal = ReadyAiApiLib(test_mode)
-    cmd = 'test'
-    cmd = 'testapi'
-    cmd = 'testsign'
-    cmd = 'full'
 
     subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
     subnet_id = 33
@@ -196,51 +192,28 @@ if __name__ == "__main__":
     except:
         pass
 
-    if cmd == 'test':
-        if subnet_id == 1:
-            ss58_hotkey = '5F4tQyWrhfGVcNhoqeiNsR6KjD4wMZ2kfhLj4oHYuyHbZAc3' # Open Tensor Foundation hotkey
-        else:
-            ss58_hotkey = '5G1awceKsZ4MKTCSkT7qqzhQ5Z3WjWfE5cifCm237Vz3fmN3' # Random validator hotkey
-        print(f"{YELLOW}Checking subnet {subnet_id} for hotkey {ss58_hotkey}...{COLOR_END}")
-        print(f'{YELLOW}{DIVIDER}{COLOR_END}')
-        validator_info = raal.get_validator_info(ss58_hotkey, subnet_id)
-        if validator_info:
-            validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
-            #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
-            api_info = raal.get_api_key_from_coldkey(validator_info)
-    elif cmd == 'testapi':
-            validator_info = {}
-            api_info = raal.get_api_key_from_coldkey(validator_info)
-    elif cmd == 'testsign':
-        message = "Shiver me timbers!"
-        validator_info = {}
+    if not test_mode or args[0] == "2":
         name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
         path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
         coldkey_object = raal.get_coldkey_object(name, path)
-        signed_message = raal.sign_message_with_coldkey(coldkey_object, message)
-        if signed_message:
-            print("signed_message", signed_message)
-    elif cmd == 'full':
-        if not test_mode or args[0] == "2":
-            name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
-            path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
-            coldkey_object = raal.get_coldkey_object(name, path)
-            ss58_coldkey = coldkey_object.ss58_address
-        else:
-            raal.verbose = True
-            coldkey_object = None
-            ss58_coldkey = args[1]
-        print(f"{YELLOW}Checking subnet {subnet_id} for coldkey {ss58_coldkey}...{COLOR_END}")
-        print(f'{YELLOW}{DIVIDER}{COLOR_END}')
-        if not test_mode:
-            validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
-        else:
-            validator_info = {"a":10}
-        if validator_info:
-            # Coldkey confirmed as validator on subnet with require stake.
-            # TODO: Add testnet selector
+        ss58_coldkey = coldkey_object.ss58_address
+    else:
+        raal.verbose = True
+        coldkey_object = None
+        ss58_coldkey = args[1]
+    print(f"{YELLOW}Checking subnet {subnet_id} for coldkey {ss58_coldkey}...{COLOR_END}")
+    print(f'{YELLOW}{DIVIDER}{COLOR_END}')
 
-            #validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
-            #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
-            api_info = raal.get_api_key_from_coldkey(validator_info, coldkey_object)
+    if args[0] == "2":
+        validator_info = {"test_mode":2}
+    else:
+        validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
+
+    if validator_info:
+        # Coldkey confirmed as validator on subnet with require stake.
+        # TODO: Add testnet selector
+
+        #validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
+        #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
+        api_info = raal.get_api_key_from_coldkey(validator_info, coldkey_object)
 
