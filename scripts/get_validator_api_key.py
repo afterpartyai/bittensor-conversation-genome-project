@@ -11,20 +11,31 @@ DIVIDER = '_' * 120
 import bittensor as bt
 import requests
 import json
+import requests
 
 ss58_decode = None
 try:
     from scalecodec.utils.ss58 import ss58_decode
 except:
-    print("{RED}scalecodec is not installed. Try: pip install xxx")
-import requests
+    print("{RED}scalecodec is not installed. Try: pip install scalecodec")
 
-from substrateinterface import Keypair
+Keypair = None
+try:
+    from substrateinterface import Keypair
+except:
+    print("{RED}substrateinterface is not installed. Try: pip install substrateinterface")
 
-class CgpApiLib():
-    api_root_url = "http://localhost:8000"
+
+class ReadyAiApiLib():
+    api_root_url = "https://conversations.xyz"
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
+    minimum_stake = 0.5
+
+    def __init__(self, test_mode=False):
+        self.test_mode = test_mode
+        if test_mode:
+            self.api_root_url = "http://localhost:8000"
 
     def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=False):
         subnet = bt.metagraph(netuid)
@@ -34,17 +45,27 @@ class CgpApiLib():
                 print("SUBNET COLDKEYS", subnet.coldkeys)
             return
         my_uid = subnet.coldkeys.index( ss58_coldkey )
-        print(f"UID for coldkey: {ss58_coldkey} : {my_uid}")
-        if ss58_coldkey not in subnet.coldkeys:
+        print(f"Subnet UID for coldkey: {ss58_coldkey} : {my_uid}")
+        if not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} is not registered in subnet list ({len(subnet.coldkeys)}). Aborting.{COLOR_END}")
             return
-        else:
-            validator_info = {"subnet_id": netuid, "uid":my_uid, "coldkey": ss58_coldkey, "hotkey":subnet.hotkeys[my_uid], "is_validator": bool(subnet.validator_permit[my_uid]), "total_stake":float(subnet.stake[my_uid])}
-            print(f"{GREEN}COLDKEY {ss58_coldkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
-            if verbose:
-                # Display properties for this uid
-                self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.hotkeys))
-            return validator_info
+
+        is_validator = bool(subnet.validator_permit[my_uid])
+        if not is_validator:
+            print(f"{RED}Coldkey is not a validator. Aborting.{COLOR_END}")
+            return
+
+        total_stake = float(subnet.stake[my_uid])
+        if total_stake < self.minimum_stake:
+            print(f"{RED}Total state of {total_stake} is less than minimum stake of {self.minimum_stake}. Aborting.{COLOR_END}")
+            return
+
+        validator_info = {"subnet_id": netuid, "uid":my_uid, "coldkey": ss58_coldkey, "hotkey":subnet.hotkeys[my_uid], "is_validator": is_validator, "total_stake":total_stake}
+        print(f"{GREEN}COLDKEY {ss58_coldkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
+        if verbose:
+            # Display properties for this uid
+            self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.hotkeys))
+        return validator_info
 
     def list_wallets_properties(self, obj, uid=5, tensor_len=1024):
         properties = dir(obj)
@@ -80,19 +101,20 @@ class CgpApiLib():
         except requests.exceptions.RequestException as e:
             print(f"{RED}Error posting to {url}: {e}{COLOR_END}")
 
-    def get_api_key_from_coldkey(self, validator_info):
-        print(f"{YELLOW}POST {validator_info}{COLOR_END}")
+    def get_api_key_from_coldkey(self, validator_info, coldkey_object):
         message_url = self.api_root_url + self.api_message_route
         key_url = self.api_root_url + self.api_key_route
+        # Get one-time-use message that will expire in 10 minutes
         response = self.post_json_to_endpoint(message_url, validator_info)
         if not response:
             return
         message_data = response.json()
         if message_data['success'] != 1:
-            print(f"{RED}Error: {message_data['errors']}{COLOR_END}")
+            print(f"{RED}Error getting message: {message_data['errors']}{COLOR_END}")
             return
+        # If successfully generated message, sign message with coldkey
         message = message_data['data']['message']
-        signed_message = self.sign_message({}, message)
+        signed_message = self.sign_message_with_coldkey(coldkey_object, message)
 
         response_key = self.post_json_to_endpoint(key_url, signed_message)
         if not response_key:
@@ -106,7 +128,7 @@ class CgpApiLib():
         f = open(fname, 'w')
         f.write(json.dumps(api_key_data))
         f.close()
-        print(f"{GREEN}ReadyAI key successfully generated and stored in file: {fname}{COLOR_END}")
+        print(f"\n\n{GREEN}ReadyAI key successfully generated and stored in file: {fname}{COLOR_END}")
         print(f"{YELLOW}    Place this json file in your validator execution directory.{COLOR_END}")
 
 
@@ -123,23 +145,26 @@ class CgpApiLib():
         return coldkey
 
     def sign_message_with_coldkey(self, coldkey_obj, message):
+        if self.test_mode:
+            return {"signed":message + "SIGNED"}
+
         signature = coldkey_obj.sign(message.encode("utf-8")).hex()
         keypair = Keypair(ss58_address=coldkey_obj.ss58_address)
         is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
         if not is_valid:
            print(f"{RED}Signature is not valid{COLOR_END}")
            exit(1)
-        return signature
+        return {"signed":signature}
 
 
 
 if __name__ == "__main__":
-    cal = CgpApiLib()
+    test_mode = True
+    raal = ReadyAiApiLib(test_mode)
     cmd = 'test'
     cmd = 'testapi'
     cmd = 'testsign'
     cmd = 'full'
-    test_mode = True
 
     subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
     subnet_id = 33
@@ -155,37 +180,39 @@ if __name__ == "__main__":
             ss58_hotkey = '5G1awceKsZ4MKTCSkT7qqzhQ5Z3WjWfE5cifCm237Vz3fmN3' # Random validator hotkey
         print(f"{YELLOW}Checking subnet {subnet_id} for hotkey {ss58_hotkey}...{COLOR_END}")
         print(f'{YELLOW}{DIVIDER}{COLOR_END}')
-        validator_info = cal.get_validator_info(ss58_hotkey, subnet_id)
+        validator_info = raal.get_validator_info(ss58_hotkey, subnet_id)
         if validator_info:
-            validator_info['account_id'] = cal.get_account_from_coldkey(validator_info['coldkey'])
+            validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
             #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
-            api_info = cal.get_api_key_from_coldkey(validator_info)
+            api_info = raal.get_api_key_from_coldkey(validator_info)
     elif cmd == 'testapi':
             validator_info = {}
-            api_info = cal.get_api_key_from_coldkey(validator_info)
+            api_info = raal.get_api_key_from_coldkey(validator_info)
     elif cmd == 'testsign':
         message = "Shiver me timbers!"
         validator_info = {}
         name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
         path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
-        coldkey_object = cal.get_coldkey_object(name, path)
-        signed_message = cal.sign_message_with_coldkey(coldkey_object, message)
+        coldkey_object = raal.get_coldkey_object(name, path)
+        signed_message = raal.sign_message_with_coldkey(coldkey_object, message)
         if signed_message:
             print("signed_message", signed_message)
     elif cmd == 'full':
-        coldkey_obj = None
         if not test_mode:
             name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
             path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
-            coldkey_obj = cal.get_coldkey_object(name, path)
+            coldkey_object = raal.get_coldkey_object(name, path)
             ss58_coldkey = coldkey_obj.ss58_address
         else:
+            coldkey_object = None
             ss58_coldkey = "5DaUQrFC3kEuqCkvBELUs47pJpNoqXTTiHop7c3pcq1KngQo"
         print(f"{YELLOW}Checking subnet {subnet_id} for coldkey {ss58_coldkey}...{COLOR_END}")
         print(f'{YELLOW}{DIVIDER}{COLOR_END}')
-        validator_info = cal.get_validator_info(ss58_coldkey, subnet_id)
+        validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
         if validator_info:
-            validator_info['account_id'] = cal.get_account_from_coldkey(validator_info['coldkey'])
+            # Coldkey confirmed as validator on subnet with require stake.
+
+            #validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
             #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
-            api_info = cal.get_api_key_from_coldkey(validator_info)
+            api_info = raal.get_api_key_from_coldkey(validator_info, coldkey_object)
 
