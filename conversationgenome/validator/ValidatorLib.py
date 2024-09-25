@@ -362,6 +362,14 @@ class ValidatorLib:
 
         if not final_scores:
             return final_scores
+        
+        for item in final_scores:
+            score = item['final_miner_score']
+            if not isinstance(score, (float, int, np.floating)):
+                try:
+                    item['final_miner_score'] = float(0.0)
+                except ValueError:
+                    raise ValueError(f"Invalid final_miner_score: {score}. Must be convertible to float.")
 
         # Sort the list by final_miner_score in descending order
         final_scores.sort(key=lambda x: x['final_miner_score'], reverse=True)
