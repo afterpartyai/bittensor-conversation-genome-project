@@ -42,6 +42,9 @@ class ReadyAiApiLib():
 
     def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=False):
         subnet = bt.metagraph(netuid, network=self.network)
+        #ss58_hotkey = "YOUR HOTKEY"
+        #my_hotkey_uid = subnet.hotkeys.index( ss58_hotkey )
+        #print(ss58_hotkey, subnet.coldkeys[my_hotkey_uid])
         if not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
             if self.verbose or verbose:
@@ -62,6 +65,7 @@ class ReadyAiApiLib():
                         print(f"Not Validator {test_uid} : {test_coldkey} stake: {subnet.stake[test_uid]}")
                         found_non_validator = True
             return
+
         my_uid = subnet.coldkeys.index( ss58_coldkey )
         print(f"Subnet UID for coldkey: {ss58_coldkey} : {my_uid}")
         if self.verbose or verbose:
@@ -71,17 +75,29 @@ class ReadyAiApiLib():
             print(f"{RED}Coldkey {ss58_coldkey} is not registered in subnet list ({len(subnet.coldkeys)}). Aborting.{COLOR_END}")
             return
 
-        is_validator = bool(subnet.validator_permit[my_uid])
+
+        # Find stakes across all hotkeys
+        total_stake = 0.0
+        stake = 0.0
+        is_validator = False
+        for idx, ck in enumerate(subnet.coldkeys):
+            if ss58_coldkey == ck:
+                #self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
+                total_stake += float(subnet.total_stake[idx])
+                stake += float(subnet.stake[idx])
+                if bool(subnet.validator_permit[idx]):
+                    is_validator = True
+                #print("FOUND!", subnet.coldkeys[idx], subnet.hotkeys[idx], subnet.stake[idx], subnet.total_stake[idx], subnet.validator_permit[idx])
+
         if not is_validator:
             print(f"{RED}Coldkey {my_uid} is not a validator : {is_validator}. Aborting.{COLOR_END}")
             return
 
-        total_stake = float(subnet.stake[my_uid])
         if total_stake < self.minimum_stake:
             print(f"{RED}Total state of {total_stake} is less than minimum stake of {self.minimum_stake}. Aborting.{COLOR_END}")
             return
 
-        validator_info = {"subnet_id": netuid, "uid":my_uid, "coldkey": ss58_coldkey, "hotkey":subnet.hotkeys[my_uid], "is_validator": is_validator, "total_stake":total_stake}
+        validator_info = {"subnet_id": netuid, "uid":my_uid, "coldkey": ss58_coldkey, "hotkey":subnet.hotkeys[my_uid], "is_validator": is_validator, "stake":stake, "total_stake":total_stake}
         print(f"{GREEN}COLDKEY {ss58_coldkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
         return validator_info
 
@@ -179,6 +195,8 @@ class ReadyAiApiLib():
 
 
 if __name__ == "__main__":
+    subnet_id = 33
+
     args = sys.argv[1:] + [''] * 10
     network = args[0]
     test_mode_num = args[1]
@@ -186,6 +204,7 @@ if __name__ == "__main__":
     test_mode = False
     if test_mode_num == "1" or test_mode_num == "2":
         print(f"{YELLOW}*** Test mode {test_mode_num} ***{COLOR_END}")
+        subnet_id = 138
         test_mode = True
     raal = ReadyAiApiLib(test_mode)
 
@@ -194,8 +213,7 @@ if __name__ == "__main__":
         raal.network = network
 
 
-    subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
-    subnet_id = 33
+    subnet_str = input(f"{CYAN}Subnet (default={subnet_id}): {COLOR_END}")
     try:
         subnet_id = int(subnet_str)
     except:
