@@ -110,6 +110,20 @@ class CgpApiLib():
     def sign_message(self, validator_info, message):
         return {"signed":message + "SIGNED"}
 
+    def sign_message_with_coldkey(self, name, path, message):
+        wallet = bt.wallet(name=name, path=path)
+        try:
+            coldkey = wallet.get_coldkey()
+        except Exception as e:
+            print(f"{RED}Error loading coldkey: {e} {COLOR_END}")
+            exit(1)
+        signature = coldkey.sign(message.encode("utf-8")).hex()
+        keypair = Keypair(ss58_address=coldkey.ss58_address)
+        is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
+        if not is_valid:
+           print(f"{RED}Signature is not valid{COLOR_END}")
+           exit(1)
+        print(signature)
 
 
 
@@ -145,20 +159,7 @@ if __name__ == "__main__":
             validator_info = {}
             name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
             path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
-            wallet = bt.wallet(name=name, path=path)
-            try:
-                coldkey = wallet.get_coldkey()
-            except Exception as e:
-                print(f"{RED}Error loading coldkey: {e} {COLOR_END}")
-                exit(1)
-            signature = coldkey.sign(message.encode("utf-8")).hex()
-            keypair = Keypair(ss58_address=coldkey.ss58_address)
-            is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
-            if not is_valid:
-               print(f"{RED}Signature is not valid{COLOR_END}")
-               exit(1)
-            print(signature)
-
+            signed_message = cal.sign_message_with_coldkey(name, path, message)
             #signed_message = cal.sign_message(validator_info, message)
             #print("signed_message", signed_message)
 
