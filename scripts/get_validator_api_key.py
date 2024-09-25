@@ -8,6 +8,8 @@ DIVIDER = '_' * 120
 import bittensor as bt
 import base58
 from hashlib import blake2b
+import requests
+import json
 
 ss58_decode = None
 try:
@@ -19,7 +21,10 @@ import requests
 
 
 class CgpApiLib():
-    def get(self, ss58_hotkey, netuid = 1, verbose=False):
+    api_root_url = "http://localhost"
+    api_route = "/generate_api_key"
+
+    def get_validator_info(self, ss58_hotkey, netuid = 1, verbose=False):
         subnet = bt.metagraph(netuid)
         if not ss58_hotkey in subnet.hotkeys:
             print(f"{RED}Hotkey {ss58_hotkey} not registered on subnet. Aborting.{COLOR_END}")
@@ -32,13 +37,12 @@ class CgpApiLib():
             print(f"{RED}Hotkey {ss58_hotkey} is not registered in subnet list ({len(subnet.hotkeys)}). Aborting.{COLOR_END}")
             return
         else:
-            validator_info = {"subnet_id": netuid, "uid":my_uid, "hotkey": ss58_hotkey, "coldkey":subnet.coldkeys[my_uid], "is_validator": subnet.validator_permit[my_uid], "total_stake":subnet.stake[my_uid]}
+            validator_info = {"subnet_id": netuid, "uid":my_uid, "hotkey": ss58_hotkey, "coldkey":subnet.coldkeys[my_uid], "is_validator": bool(subnet.validator_permit[my_uid]), "total_stake":float(subnet.stake[my_uid])}
             print(f"{GREEN}HOTKEY {ss58_hotkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
             if verbose:
                 # Display properties for this uid
                 self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.hotkeys))
             return validator_info
-
 
     def list_wallets_properties(self, obj, uid=5, tensor_len=1024):
         properties = dir(obj)
@@ -56,6 +60,29 @@ class CgpApiLib():
             print("{RED}scalecodec is not installed. Aborting.")
             return
         return ss58_decode(ss58_coldkey, valid_ss58_format=42)
+
+    def post_json_to_endpoint(self, url, json_body):
+        try:
+            json_body_str = json.dumps(json_body)
+
+            headers = {'Content-Type': 'application/json'}
+
+            response = requests.post(url, data=json_body_str, headers=headers, timeout=30)
+
+            if response.status_code >= 400:
+                print(f"{RED}Error posting to {url}: {response.status_code} - {response.text}{COLOR_END}")
+                return
+
+            return response
+
+        except requests.exceptions.RequestException as e:
+            print(f"{RED}Error posting to {url}: {e}{COLOR_END}")
+
+    def get_api_key_from_coldkey(self, validator_info):
+        print(f"{YELLOW}POST {validator_info}{COLOR_END}")
+        url = self.api_root_url + self.api_route
+        response = self.post_json_to_endpoint(url, validator_info)
+        print("RESPONSE", response)
 
 
 if __name__ == "__main__":
@@ -75,7 +102,9 @@ if __name__ == "__main__":
             ss58_hotkey = '5G1awceKsZ4MKTCSkT7qqzhQ5Z3WjWfE5cifCm237Vz3fmN3' # Random validator hotkey
         print(f"{YELLOW}Checking subnet {subnet_id} for hotkey {ss58_hotkey}...{COLOR_END}")
         print(f'{YELLOW}{DIVIDER}{COLOR_END}')
-        validator_info = cal.get(ss58_hotkey, subnet_id)
-        account_id = cal.get_account_from_coldkey(ss58_hotkey)
-        print(f"The decoded account ID for the address {ss58_hotkey} is: {account_id}")
+        validator_info = cal.get_validator_info(ss58_hotkey, subnet_id)
+        if validator_info:
+            validator_info['account_id'] = cal.get_account_from_coldkey(validator_info['coldkey'])
+            #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
+            api_info = cal.get_api_key_from_coldkey(validator_info)
 
