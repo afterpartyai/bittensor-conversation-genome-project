@@ -174,3 +174,30 @@ def put_record_request(c_guid, data: dict):
         out['errors'].append([9893843, "Missing hotkey",])
     return out
 
+
+@app.post("/api/v1/generate_message")
+def post_get_api_key_message(data: dict):
+    out = {"success": 0, "errors":[], "data":{}}
+    if False:
+        out['errors'].append([9893844, "Missing hotkey",])
+    else:
+        out['success'] = 1
+        out['data']['message'] = "Message seed: akldjslakjdlkajsldkjalskdjalskdj llka jsljdj lah uioeryo uq023 4h lsdfclasd f90 408roi hlkad lakk sdo"
+    return out
+    if data:
+        db = Db("cgp_tags", "tags")
+        db.insert_into_table(c_guid, data)
+        out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
+    else:
+        out['errors'].append([9893843, "Missing hotkey",])
+    return out
+
+@app.post("/api/v1/generate_api_key")
+def post_get_api_generate_key(data: dict):
+    out = {"success": 0, "errors":[], "data":{}}
+    if False:
+        out['errors'].append([9893845, "Missing stuff",])
+    else:
+        out['success'] = 1
+        out['data'] = {"api_key":239423}
+    return out

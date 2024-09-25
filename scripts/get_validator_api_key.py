@@ -6,8 +6,6 @@ COLOR_END = '\033[m'
 DIVIDER = '_' * 120
 
 import bittensor as bt
-import base58
-from hashlib import blake2b
 import requests
 import json
 
@@ -21,8 +19,9 @@ import requests
 
 
 class CgpApiLib():
-    api_root_url = "http://localhost"
-    api_route = "/generate_api_key"
+    api_root_url = "http://localhost:8000"
+    api_message_route = "/api/v1/generate_message"
+    api_key_route = "/api/v1/generate_api_key"
 
     def get_validator_info(self, ss58_hotkey, netuid = 1, verbose=False):
         subnet = bt.metagraph(netuid)
@@ -80,16 +79,40 @@ class CgpApiLib():
 
     def get_api_key_from_coldkey(self, validator_info):
         print(f"{YELLOW}POST {validator_info}{COLOR_END}")
-        url = self.api_root_url + self.api_route
-        response = self.post_json_to_endpoint(url, validator_info)
-        print("RESPONSE", response)
+        message_url = self.api_root_url + self.api_message_route
+        key_url = self.api_root_url + self.api_key_route
+        response = self.post_json_to_endpoint(message_url, validator_info)
+        if not response:
+            return
+        message_data = response.json()
+        if message_data['success'] != 1:
+            print(f"{RED}Error: {message_data['errors']}{COLOR_END}")
+            return
+        message = message_data['data']['message']
+        signed_message = self.sign_message(message)
+
+        response_key = self.post_json_to_endpoint(key_url, signed_message)
+        if not response_key:
+            return
+        key_data = response_key.json()
+        if key_data['success'] != 1:
+            print(f"{RED}Keygen Error: {key_data['errors']}{COLOR_END}")
+            return
+        api_key_data = key_data['data']
+        print(api_key_data)
+
+    def sign_message(self, message):
+        return {"signed":message + "SIGNED"}
+
+
 
 
 if __name__ == "__main__":
+    cal = CgpApiLib()
     cmd = 'test'
+    cmd = 'testurl'
 
     if cmd == 'test':
-        cal = CgpApiLib()
         subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
         subnet_id = 33
         try:
@@ -107,4 +130,8 @@ if __name__ == "__main__":
             validator_info['account_id'] = cal.get_account_from_coldkey(validator_info['coldkey'])
             #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
             api_info = cal.get_api_key_from_coldkey(validator_info)
+    else:
+            validator_info = {}
+            api_info = cal.get_api_key_from_coldkey(validator_info)
+
 
