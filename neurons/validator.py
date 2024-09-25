@@ -20,6 +20,7 @@ import time
 import os
 import hashlib
 import random
+import pprint
 
 import bittensor as bt
 
@@ -181,8 +182,10 @@ class Validator(BaseValidatorNeuron):
                             Utils.append_log(log_path, f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
                         await vl.put_convo(response.axon.hotkey, conversation_guid, miner_result, type="miner",  batch_num=batch_num, window=window_idx)
 
-                    (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
-
+                    final_scores = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
+                    
+                    final_scores, rank_scores = await vl.assign_fixed_scores(final_scores)
+                    bt.logging.debug(f"Complete evaluation. Fixed scores:\n{pprint.pformat(rank_scores, indent=2)}")
 
                     if final_scores:
                         for idx, score in enumerate(final_scores):
@@ -200,6 +203,7 @@ class Validator(BaseValidatorNeuron):
                                 "hotkey."+uid: Utils.get(score, "hotkey"),
                                 "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
                                 "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                                "fixed_score"+uid: Utils.get(score, "fixed_score")
                             })
                             if self.verbose:
                                 print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
