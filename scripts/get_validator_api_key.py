@@ -4,6 +4,13 @@ from hashlib import blake2b
 from scalecodec.utils.ss58 import ss58_decode
 import requests
 
+CYAN = "\033[96m" # field color
+GREEN = "\033[92m" # indicating success
+RED = "\033[91m" # indicating error
+RESET = "\033[0m" # resetting color to the default
+DIVIDER = '-' * 86
+
+
 class CgpApiLib():
     def get(self, ss58_hotkey, netuid = 1, verbose=True):
         subnet = bt.metagraph(netuid)
@@ -39,7 +46,7 @@ if __name__ == "__main__":
 
     if cmd == 'test':
         cal = CgpApiLib()
-        print("Subnet (default=33): ",)
+        key = input(f"{CYAN}Subnet (default=33): {RESET}")
         subnet_str = input()
         subnet_id = 33
         try:
@@ -50,6 +57,7 @@ if __name__ == "__main__":
             ss58_hotkey = '5F4tQyWrhfGVcNhoqeiNsR6KjD4wMZ2kfhLj4oHYuyHbZAc3' # Open Tensor Foundation hotkey
         else:
             ss58_hotkey = '5G1awceKsZ4MKTCSkT7qqzhQ5Z3WjWfE5cifCm237Vz3fmN3' # Random validator hotkey
+        print(f'{CYAN}{DIVIDER}{RESET}')
         print(f"Checking subnet {subnet_id} for hotkey {ss58_hotkey}...")
         cal.get(ss58_hotkey, subnet_id)
         # Works
