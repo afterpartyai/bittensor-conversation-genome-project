@@ -16,7 +16,7 @@ except:
     print("{RED}scalecodec is not installed. Try: pip install xxx")
 import requests
 
-
+from substrateinterface import Keypair
 
 class CgpApiLib():
     api_root_url = "http://localhost:8000"
@@ -89,7 +89,7 @@ class CgpApiLib():
             print(f"{RED}Error: {message_data['errors']}{COLOR_END}")
             return
         message = message_data['data']['message']
-        signed_message = self.sign_message(message)
+        signed_message = self.sign_message({}, message)
 
         response_key = self.post_json_to_endpoint(key_url, signed_message)
         if not response_key:
@@ -107,7 +107,7 @@ class CgpApiLib():
         print(f"{YELLOW}    Place this json file in your validator execution directory.{COLOR_END}")
 
 
-    def sign_message(self, message):
+    def sign_message(self, validator_info, message):
         return {"signed":message + "SIGNED"}
 
 
@@ -116,7 +116,8 @@ class CgpApiLib():
 if __name__ == "__main__":
     cal = CgpApiLib()
     cmd = 'test'
-    cmd = 'testurl'
+    cmd = 'testapi'
+    cmd = 'testsign'
 
     if cmd == 'test':
         subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
@@ -136,8 +137,29 @@ if __name__ == "__main__":
             validator_info['account_id'] = cal.get_account_from_coldkey(validator_info['coldkey'])
             #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
             api_info = cal.get_api_key_from_coldkey(validator_info)
-    else:
+    elif cmd == 'testapi':
             validator_info = {}
             api_info = cal.get_api_key_from_coldkey(validator_info)
+    elif cmd == 'testsign':
+            message = "Shiver me timbers!"
+            validator_info = {}
+            name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
+            path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
+            wallet = bt.wallet(name=name, path=path)
+            try:
+                coldkey = wallet.get_coldkey()
+            except Exception as e:
+                print(f"{RED}Error loading coldkey: {e} {COLOR_END}")
+                exit(1)
+            signature = coldkey.sign(message.encode("utf-8")).hex()
+            keypair = Keypair(ss58_address=coldkey.ss58_address)
+            is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
+            if not is_valid:
+               print(f"{RED}Signature is not valid{COLOR_END}")
+               exit(1)
+            print(signature)
+
+            #signed_message = cal.sign_message(validator_info, message)
+            #print("signed_message", signed_message)
 
 
