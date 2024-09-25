@@ -99,7 +99,13 @@ class CgpApiLib():
             print(f"{RED}Keygen Error: {key_data['errors']}{COLOR_END}")
             return
         api_key_data = key_data['data']
-        print(api_key_data)
+        fname = "readyai_api_data.json"
+        f = open(fname, 'w')
+        f.write(json.dumps(api_key_data))
+        f.close()
+        print(f"{GREEN}ReadyAI key successfully generated and stored in file: {fname}{COLOR_END}")
+        print(f"{YELLOW}    Place this json file in your validator execution directory.{COLOR_END}")
+
 
     def sign_message(self, message):
         return {"signed":message + "SIGNED"}
