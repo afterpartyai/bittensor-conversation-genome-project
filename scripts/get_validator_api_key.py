@@ -31,6 +31,7 @@ class ReadyAiApiLib():
     api_root_url = "https://conversations.xyz"
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
+    network = 'finney'
     minimum_stake = 1.0
     verbose = False
 
@@ -40,7 +41,7 @@ class ReadyAiApiLib():
             self.api_root_url = "http://localhost:8000"
 
     def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=False):
-        subnet = bt.metagraph(netuid)
+        subnet = bt.metagraph(netuid, network=self.network)
         if not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
             if self.verbose or verbose:
@@ -179,11 +180,19 @@ class ReadyAiApiLib():
 
 if __name__ == "__main__":
     args = sys.argv[1:] + [''] * 10
+    network = args[0]
+    test_mode_num = args[1]
+    test_cold_key = args[2]
     test_mode = False
-    if args[0] == "1" or args[0] == "2":
-        print(f"{YELLOW}*** Test mode {args[0]} ***{COLOR_END}")
+    if test_mode_num == "1" or test_mode_num == "2":
+        print(f"{YELLOW}*** Test mode {test_mode_num} ***{COLOR_END}")
         test_mode = True
     raal = ReadyAiApiLib(test_mode)
+
+    if len(network) > 0 and network != '-':
+        print(f"{YELLOW}Set network to: {network}{COLOR_END}")
+        raal.network = network
+
 
     subnet_str = input(f"{CYAN}Subnet (default=33): {COLOR_END}")
     subnet_id = 33
@@ -192,7 +201,7 @@ if __name__ == "__main__":
     except:
         pass
 
-    if not test_mode or args[0] == "2":
+    if not test_mode or test_mode_num == "2":
         name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
         path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
         coldkey_object = raal.get_coldkey_object(name, path)
@@ -200,11 +209,12 @@ if __name__ == "__main__":
     else:
         raal.verbose = True
         coldkey_object = None
-        ss58_coldkey = args[1]
+        ss58_coldkey = test_cold_key
+
     print(f"{YELLOW}Checking subnet {subnet_id} for coldkey {ss58_coldkey}...{COLOR_END}")
     print(f'{YELLOW}{DIVIDER}{COLOR_END}')
 
-    if args[0] == "2":
+    if test_mode_num == "2":
         validator_info = {"test_mode":2}
     else:
         validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
