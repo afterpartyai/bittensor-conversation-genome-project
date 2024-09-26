@@ -324,7 +324,6 @@ class ValidatorLib:
         else:
             scores = torch.ones_like(transformed_scores) / neurons
 
-        #bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
