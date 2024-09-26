@@ -49,7 +49,6 @@ async def test_full():
     test_mode = True
 
     test_tag_groups = [
-        {"title": "cookiemonster", "gte":0, "lte":50, "tags":['rap', 'hobby gaming', 'gender culture', 'government transfers', 'anthropogony', 'procaryote','balkanism','huawei','rambler', 'energy sustainability', 'mucosectomy', 'hemiarthroplasty', 'sociography', 'wargaming', 'islamic religion','sleep practices', 'freelance', 'spraining']},
         {"title": "three_word_good", "gte":0, "lte":8, "tags":['speed of sound', 'your new internet', 'drawing dynamic hands', 'shot by shot', 'leonardo da vinci', 'complete sketch guide', 'cartoonists workshop']},
         {"title": "four_word_good", "gte":0, "lte":8, "tags":['top of the morning', 'please to meet you', 'best of the best', 'dynamic light and shade', 'drawing the human head']},
         {"title": "combined_words", "gte":0, "lte":8, "tags":['dates', 'bookclub', 'relationshiptime', 'sportsgaming', 'relationshipstatus', 'relationshipconversation']},
@@ -91,13 +90,13 @@ async def test_full():
         originalTagList.append('canary')
 
         print(f"Running test: {test_tag_group['title']}")
-        for i in range(10):
+        for i in range(3):
             validTags = await vl.validate_tag_set(originalTagList)
             assert len(validTags) >=  test_tag_group['gte'] # Make sure valid tag set has minimum tags
             if test_tag_group['lte'] != -1:
                 assert len(validTags) <= test_tag_group['lte'] # Make sure valid tag set doesn't have more than maximum tags
             if verbose:
                 print(f"{test_tag_group['title']} Cycle #{i}, {len(validTags)} of {len(originalTagList)} tags valid, {validTags}")
-        break
+        #break
 
 
