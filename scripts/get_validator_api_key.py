@@ -24,11 +24,11 @@ Keypair = None
 try:
     from substrateinterface import Keypair
 except:
-    print("{RED}substrateinterface is not installed. Try: pip install substrateinterface")
+    print(f"{RED}substrateinterface is not installed. Try: pip install substrateinterface{COLOR_END}")
 
 
 class ReadyAiApiLib():
-    api_root_url = "https://conversations.xyz"
+    api_root_url = "http://dan.soindrop.com"
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
     network = 'finney'
@@ -138,13 +138,15 @@ class ReadyAiApiLib():
     def get_api_key_from_coldkey(self, validator_info, coldkey_object):
         message_url = self.api_root_url + self.api_message_route
         key_url = self.api_root_url + self.api_key_route
+        print("KEY", message_url, key_url)
         # Get one-time-use message that will expire in 10 minutes
         response = self.post_json_to_endpoint(message_url, validator_info)
         if not response:
             return
         message_data = response.json()
+        print(message_data)
         if message_data['success'] != 1:
-            print(f"{RED}Error getting message: {message_data['errors']}{COLOR_END}")
+            print(f"{RED}Error getting message: {message_data['errors']} from {message_url}{COLOR_END}")
             return
         # If successfully generated message, sign message with coldkey
         message = message_data['data']['message']
@@ -155,7 +157,7 @@ class ReadyAiApiLib():
             return
         key_data = response_key.json()
         if key_data['success'] != 1:
-            print(f"{RED}Keygen Error: {key_data['errors']}{COLOR_END}")
+            print(f"{RED}Error from keygen endpoint: {key_data['errors']}{COLOR_END}")
             return
         api_key_data = key_data['data']
         fname = "readyai_api_data.json"
@@ -182,9 +184,11 @@ class ReadyAiApiLib():
         if self.test_mode and not coldkey_object:
             return {"signed":message + "SIGNED"}
 
+        message = "HELLOWORLD"
         signature = coldkey_object.sign(message.encode("utf-8")).hex()
         keypair = Keypair(ss58_address=coldkey_object.ss58_address)
         is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
+        print("MSG", message, signature)
         if not is_valid:
             print(f"{RED}Signature is not valid{COLOR_END}")
             exit(1)

@@ -8,6 +8,13 @@ import sqlite3
 
 from Utils import Utils
 
+CYAN = "\033[96m" # field color
+GREEN = "\033[92m" # indicating success
+RED = "\033[91m" # indicating error
+YELLOW = '\033[0;33m'
+COLOR_END = '\033[m'
+DIVIDER = '_' * 120
+
 # Test convo read endpoint:
 # curl -XPOST https://api.conversations.xyz/api/v1/conversation/reserve | python -m json.tool
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
@@ -174,6 +181,16 @@ def put_record_request(c_guid, data: dict):
         out['errors'].append([9893843, "Missing hotkey",])
     return out
 
+import hashlib
+import binascii
+
+def hashReadyAiMessage(password):
+    salt = "THIS IS MY SALT"
+    password = password.encode('utf-8')
+    salt = salt.encode('utf-8')
+    pwdhash = hashlib.pbkdf2_hmac('sha512', password, salt, 100000)
+    pwdhashAscii = binascii.hexlify(pwdhash)
+    return (pwdhashAscii).decode('ascii')
 
 @app.post("/api/v1/generate_message")
 def post_get_api_key_message(data: dict):
@@ -182,15 +199,15 @@ def post_get_api_key_message(data: dict):
         out['errors'].append([9893844, "Missing hotkey",])
     else:
         out['success'] = 1
-        out['data']['message'] = "Message seed: akldjslakjdlkajsldkjalskdjalskdj llka jsljdj lah uioeryo uq023 4h lsdfclasd f90 408roi hlkad lakk sdo"
+        basicMessage = u"This is it and more:"
+        out['data']['message'] = basicMessage #"Message seed: akldjslakjdlkajsldkjalskdjalskdj llka jsljdj lah uioeryo uq023 4h lsdfclasd f90 408roi hlkad lakk sdo"
     return out
-    if data:
-        db = Db("cgp_tags", "tags")
-        db.insert_into_table(c_guid, data)
-        out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
-    else:
-        out['errors'].append([9893843, "Missing hotkey",])
-    return out
+
+Keypair = None
+try:
+    from substrateinterface import Keypair
+except:
+    print("{RED}substrateinterface is not installed. Try: pip install substrateinterface")
 
 @app.post("/api/v1/generate_api_key")
 def post_get_api_generate_key(data: dict):
@@ -198,6 +215,23 @@ def post_get_api_generate_key(data: dict):
     if False:
         out['errors'].append([9893845, "Missing stuff",])
     else:
-        out['success'] = 1
-        out['data'] = {"api_key":239423}
+        ss58_address = "5EhPJEicfJRF6EZyq82YtwkFyg4SCTqeFAo7s5Nbw2zUFDFi"
+        #message = u"This is it and more:"
+        message = "HELLOWORLD"
+        signature = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
+        Keypair = None
+        try:
+            from substrateinterface import Keypair
+        except:
+            print(f"{RED}substrateinterface is not installed. Try: pip install substrateinterface{COLOR_END}")
+        if Keypair:
+            keypair = Keypair(ss58_address=ss58_address)
+            is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
+            if is_valid:
+                out['success'] = 1
+                out['data'] = {"api_key":239423}
+            else:
+                out['errors'].append([9893845, "Signature didn't verify",])
+        else:
+            out['errors'].append([9893846, "Keypair not installed",])
     return out
