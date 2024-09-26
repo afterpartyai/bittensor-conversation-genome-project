@@ -7,7 +7,7 @@ import math
 import os
 import numpy as np
 import torch
-
+import itertools
 
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
@@ -324,7 +324,6 @@ class ValidatorLib:
         else:
             scores = torch.ones_like(transformed_scores) / neurons
 
-        bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
@@ -355,5 +354,62 @@ class ValidatorLib:
         processed_tag_list = [element for element in validTags if element in cleanTagsStr]
 
         return processed_tag_list
+
+    async def assign_fixed_scores(self, final_scores):
+        num_responses = len(final_scores)
+        rank_scores = torch.zeros(num_responses)
+
+        if not final_scores:
+            return final_scores
+        
+        for item in final_scores:
+            score = item['final_miner_score']
+            if not isinstance(score, (float, int, np.floating)):
+                try:
+                    item['final_miner_score'] = float(0.0)
+                except ValueError:
+                    raise ValueError(f"Invalid final_miner_score: {score}. Must be convertible to float.")
+
+        # Sort the list by final_miner_score in descending order
+        final_scores.sort(key=lambda x: x['final_miner_score'], reverse=True)
+
+        # Assign fixed scores based on rank
+        for i, score in enumerate(final_scores):
+            if i == 0:
+                score['fixed_score'] = 1.0
+            elif i == 1:
+                score['fixed_score'] = 0.75
+            elif i == 2:
+                score['fixed_score'] = 0.5
+            else:
+                score['fixed_score'] = 0.0
+
+        # Handle ties
+        for score, group in itertools.groupby(final_scores, key=lambda x: x['final_miner_score']):
+            group_list = list(group)
+            if len(group_list) > 1:
+                available_scores = [score['fixed_score'] for score in group_list]
+                random.shuffle(available_scores)
+                for item, shuffled_score in zip(group_list, available_scores):
+                    item['fixed_score'] = shuffled_score
+        
+        for score in final_scores:
+            if score['final_miner_score'] == 0:
+                score['fixed_score'] = 0
+
+        try:
+            rank_scores = rank_scores.to('cuda')
+        except:
+            pass
+        # Convert to tensors
+        if  len(final_scores) != len(rank_scores):
+            bt.logging.error(f"ERROR: final scores length ({len(final_scores)})  doesn't match rank scores ({len(rank_scores)}). Aborting.")
+            return (None, None)
+
+        for idx, final_score in enumerate(final_scores):
+            rank_scores[idx] = final_scores[idx]['fixed_score']
+
+        return (final_scores, rank_scores)
+
 
 
