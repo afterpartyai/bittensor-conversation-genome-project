@@ -212,9 +212,7 @@ class Evaluator:
                 final_miner_score = await self.calculate_penalty(uid, adjusted_score, total_tag_count, len(unique_tags), min_score, max_score)
                 final_scores.append({"uid": idx+1, "uuid": uuid, "hotkey": hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
                 bt.logging.debug(f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
-        # Force to use cuda if available -- otherwise, causes device mismatch
-
-        #bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
+       
         # Force to use cuda if available -- otherwise, causes device mismatch
         try:
             rank_scores = rank_scores.to('cuda')
@@ -223,10 +221,8 @@ class Evaluator:
         # Convert to tensors
         if  len(final_scores) != len(rank_scores):
             bt.logging.error(f"ERROR: final scores length ({len(final_scores)})  doesn't match rank scores ({len(rank_scores)}). Aborting.")
-            return (None, None)
+            return (None)
 
-        #for idx, final_score in enumerate(final_scores):
-            #rank_scores[idx] = final_scores[idx]['final_miner_score']
         return final_scores
 
     async def calc_scores(self, full_convo_metadata, full_conversation_neighborhood, miner_result):

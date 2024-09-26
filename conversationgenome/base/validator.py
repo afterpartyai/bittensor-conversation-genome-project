@@ -347,7 +347,7 @@ class BaseValidatorNeuron(BaseNeuron):
         else: 
             bt.logging.error("Error 2378312: Error with Nonlinear transformation and Renormalization in update_scores. self.scores not updated")
 
-        #bt.logging.debug(f"Updated final scores: {self.scores}")
+        bt.logging.debug(f"Updated final scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
