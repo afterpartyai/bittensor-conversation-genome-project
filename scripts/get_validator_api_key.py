@@ -152,6 +152,8 @@ class ReadyAiApiLib():
         message = message_data['data']['message']
         print(f"Signing message...")
         signed_message = self.sign_message_with_coldkey(coldkey_object, message)
+        validator_info['message'] = message
+        validator_info['signed_message'] = signed_message
         print(f"Signed. Get API key...")
         response_key = self.post_json_to_endpoint(key_url, validator_info)
         if not response_key:
