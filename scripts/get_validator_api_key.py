@@ -185,17 +185,18 @@ class ReadyAiApiLib():
         return coldkey
 
     def sign_message_with_coldkey(self, coldkey_object, message):
+        # For testmode that isn't generating a key, include a fake signed key
         if self.test_mode and not coldkey_object:
             signed_message = {"signed":message + "SIGNED"}
             validator_info['signed'] = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
             validator_info['coldkey'] = "5EhPJEicfJRF6EZyq82YtwkFyg4SCTqeFAo7s5Nbw2zUFDFi"
             return signed_message
 
-        message = "HELLOWORLD"
         signature = coldkey_object.sign(message.encode("utf-8")).hex()
         keypair = Keypair(ss58_address=coldkey_object.ss58_address)
         is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
-        print("MSG", message, signature)
+        if self.verbose:
+            print("MSG", message, signature)
         if not is_valid:
             print(f"{RED}Signature is not valid{COLOR_END}")
             exit(1)
@@ -206,6 +207,8 @@ class ReadyAiApiLib():
 
 
 if __name__ == "__main__":
+    print(f"\n{CYAN}____ Generate ReadyAI Validator API key ____{COLOR_END}\n")
+    print(f"Follow prompts below to generate an API key for validator access to the ReadyAI Conversation Server. Once successfully generated, your API key will live in the .readyai_ai_data.json file in the top-level folder of the ReadyAI SN33 repository. For more details, please see the documentation in docs/generate-validator-api-key.md\n")
     subnet_id = 33
 
     args = sys.argv[1:] + [''] * 10
