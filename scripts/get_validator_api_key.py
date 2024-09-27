@@ -14,11 +14,6 @@ import requests
 import json
 import requests
 
-ss58_decode = None
-try:
-    from scalecodec.utils.ss58 import ss58_decode
-except:
-    print("{RED}scalecodec is not installed. Try: pip install scalecodec")
 
 Keypair = None
 try:
@@ -131,24 +126,33 @@ class ReadyAiApiLib():
         except requests.exceptions.RequestException as e:
             print(f"{RED}Error posting to {url}: {e}{COLOR_END}")
 
-    def get_api_key_from_coldkey(self, validator_info, coldkey_object):
+    def get_api_key_from_coldkey(self, validator_info, coldkey_object, verbose=True):
+        # Setup URL to get message from API that will be signed by coldkey
         message_url = self.api_root_url + self.api_message_route
+
+        # After message is signed, confirm with API and get API key
         key_url = self.api_root_url + self.api_key_route
-        print("KEY", message_url, key_url)
-        # Get one-time-use message that will expire in 10 minutes
+        if self.verbose or verbose:
+            print(f"URLs: message: {message_url} key:{key_url}")
+
+        # Get one-time-use message to sign that will expire in 10 minutes
         response = self.post_json_to_endpoint(message_url, validator_info)
         if not response:
             return
+
         message_data = response.json()
-        print(message_data)
+
+        if self.verbose or verbose:
+            print(f"Message returned from API: {message_data}")
         if message_data['success'] != 1:
             print(f"{RED}Error getting message: {message_data['errors']} from {message_url}{COLOR_END}")
             return
-        # If successfully generated message, sign message with coldkey
+
+        # If successfully obtained message, sign message with coldkey
         message = message_data['data']['message']
+        print(f"Signing message...")
         signed_message = self.sign_message_with_coldkey(coldkey_object, message)
-        validator_info['signed'] = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
-        validator_info['coldkey'] = "5EhPJEicfJRF6EZyq82YtwkFyg4SCTqeFAo7s5Nbw2zUFDFi"
+        print(f"Signed. Get API key...")
         response_key = self.post_json_to_endpoint(key_url, validator_info)
         if not response_key:
             return
@@ -157,7 +161,9 @@ class ReadyAiApiLib():
             print(f"{RED}Error from keygen endpoint: {key_data['errors']}{COLOR_END}")
             return
         api_key_data = key_data['data']
-        print("API KEY", api_key_data)
+        print(f"{YELLOW}Got API key, writing to file...{COLOR_END}")
+        if self.verbose or verbose:
+            print("API KEY", api_key_data)
         fname = "readyai_api_data.json"
         f = open(fname, 'w')
         f.write(json.dumps(api_key_data))
@@ -180,7 +186,10 @@ class ReadyAiApiLib():
 
     def sign_message_with_coldkey(self, coldkey_object, message):
         if self.test_mode and not coldkey_object:
-            return {"signed":message + "SIGNED"}
+            signed_message = {"signed":message + "SIGNED"}
+            validator_info['signed'] = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
+            validator_info['coldkey'] = "5EhPJEicfJRF6EZyq82YtwkFyg4SCTqeFAo7s5Nbw2zUFDFi"
+            return signed_message
 
         message = "HELLOWORLD"
         signature = coldkey_object.sign(message.encode("utf-8")).hex()
@@ -204,23 +213,28 @@ if __name__ == "__main__":
     test_mode_num = args[1]
     test_cold_key = args[2]
     test_mode = False
+
+    # test_mode_num 1 = Run with specified key without signing message (mock signed message)
+    # test_mode_num 2 = Sign message, but allow any key (doesn't check for validator stake, etc.)
     if test_mode_num == "1" or test_mode_num == "2":
         print(f"{YELLOW}*** Test mode {test_mode_num} ***{COLOR_END}")
         subnet_id = 138
         test_mode = True
     raal = ReadyAiApiLib(test_mode)
 
+    # No network specified or '-', run against finney mainnet
     if len(network) > 0 and network != '-':
         print(f"{YELLOW}Set network to: {network}{COLOR_END}")
         raal.network = network
 
-
+    # Get user input of subnet id
     subnet_str = input(f"{CYAN}Subnet (default={subnet_id}): {COLOR_END}")
     try:
         subnet_id = int(subnet_str)
     except:
         pass
 
+    # If actual run or test_mode_num == 2, prompt for wallet
     if not test_mode or test_mode_num == "2":
         name = input(f"{CYAN}Enter wallet name (default: Coldkey): {COLOR_END}") or "Coldkey"
         path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
