@@ -37,7 +37,7 @@ class ReadyAiApiLib():
 
     def __init__(self, test_mode=False):
         self.test_mode = test_mode
-        if test_mode:
+        if False and test_mode:
             self.api_root_url = "http://localhost:8000"
 
     def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=False):
@@ -151,8 +151,9 @@ class ReadyAiApiLib():
         # If successfully generated message, sign message with coldkey
         message = message_data['data']['message']
         signed_message = self.sign_message_with_coldkey(coldkey_object, message)
-
-        response_key = self.post_json_to_endpoint(key_url, signed_message)
+        validator_info['signed'] = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
+        validator_info['coldkey'] = "5EhPJEicfJRF6EZyq82YtwkFyg4SCTqeFAo7s5Nbw2zUFDFi"
+        response_key = self.post_json_to_endpoint(key_url, validator_info)
         if not response_key:
             return
         key_data = response_key.json()
@@ -160,6 +161,7 @@ class ReadyAiApiLib():
             print(f"{RED}Error from keygen endpoint: {key_data['errors']}{COLOR_END}")
             return
         api_key_data = key_data['data']
+        print("API KEY", api_key_data)
         fname = "readyai_api_data.json"
         f = open(fname, 'w')
         f.write(json.dumps(api_key_data))

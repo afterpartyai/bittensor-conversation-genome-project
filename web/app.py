@@ -207,7 +207,7 @@ Keypair = None
 try:
     from substrateinterface import Keypair
 except:
-    print("{RED}substrateinterface is not installed. Try: pip install substrateinterface")
+    print(f"{RED}substrateinterface is not installed. Try: pip install substrateinterface{COLOR_END}")
 
 @app.post("/api/v1/generate_api_key")
 def post_get_api_generate_key(data: dict):
@@ -219,11 +219,6 @@ def post_get_api_generate_key(data: dict):
         #message = u"This is it and more:"
         message = "HELLOWORLD"
         signature = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
-        Keypair = None
-        try:
-            from substrateinterface import Keypair
-        except:
-            print(f"{RED}substrateinterface is not installed. Try: pip install substrateinterface{COLOR_END}")
         if Keypair:
             keypair = Keypair(ss58_address=ss58_address)
             is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
