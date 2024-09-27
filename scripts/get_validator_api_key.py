@@ -79,11 +79,13 @@ class ReadyAiApiLib():
         # Find stakes across all hotkeys
         total_stake = 0.0
         stake = 0.0
+        max_stake = 0.0
         is_validator = False
         for idx, ck in enumerate(subnet.coldkeys):
             if ss58_coldkey == ck:
                 #self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
                 total_stake += float(subnet.total_stake[idx])
+                max_stake = max(max_stake, float(subnet.total_stake[idx]))
                 stake += float(subnet.stake[idx])
                 if bool(subnet.validator_permit[idx]):
                     is_validator = True
@@ -93,7 +95,7 @@ class ReadyAiApiLib():
             print(f"{RED}Coldkey {my_uid} is not a validator : {is_validator}. Aborting.{COLOR_END}")
             return
 
-        if total_stake < self.minimum_stake:
+        if max_stake < self.minimum_stake:
             print(f"{RED}Total state of {total_stake} is less than minimum stake of {self.minimum_stake}. Aborting.{COLOR_END}")
             return
 
@@ -111,12 +113,6 @@ class ReadyAiApiLib():
             except Exception as e:
                 pass
                 #print(f"{prop}: {e}")
-
-    def get_account_from_coldkey(self, ss58_coldkey):
-        if not ss58_decode:
-            print("{RED}scalecodec is not installed. Aborting.")
-            return
-        return ss58_decode(ss58_coldkey, valid_ss58_format=42)
 
     def post_json_to_endpoint(self, url, json_body):
         try:
@@ -244,10 +240,5 @@ if __name__ == "__main__":
         validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
 
     if validator_info:
-        # Coldkey confirmed as validator on subnet with require stake.
-        # TODO: Add testnet selector
-
-        #validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
-        #print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
         api_info = raal.get_api_key_from_coldkey(validator_info, coldkey_object)
 
