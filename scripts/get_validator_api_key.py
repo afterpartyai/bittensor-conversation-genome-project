@@ -254,7 +254,7 @@ if __name__ == "__main__":
     print(f'{YELLOW}{DIVIDER}{COLOR_END}')
 
     if test_mode_num == "2":
-        validator_info = {"test_mode":2, "coldkey": ss58_coldkey}
+        validator_info = {"test_mode":2, "coldkey": ss58_coldkey, "subnet_id": subnet_id,  "uid": 11,  "coldkey": ss58_coldkey,  "hotkey": "MOCKHOTKEY"}
     else:
         validator_info = raal.get_validator_info(ss58_coldkey, subnet_id)
 
