@@ -58,7 +58,7 @@ class ValidatorLib:
         self.read_api_key()
 
     def read_api_key(self):
-        fail_message = "WARNING: You have not generated a ReadyAI Conversation Server API key. Starting on October 4th, 2024, you will no longer be able to request conversations from the ReadyAI Conversation server without an API Key. For instructions on how to generate your key, read the documentation in docs/generate-validator-api-key.md"
+        fail_message = "WARNING: You have not generated a ReadyAI Conversation Server API key. Starting on October 7th, 2024, you will no longer be able to request conversations from the ReadyAI Conversation server without an API Key. For instructions on how to generate your key, read the documentation in docs/generate-validator-api-key.md"
         fname = "readyai_api_data.json"
         if not os.path.isfile(fname):
             bt.logging.warning(fail_message, "-- Missing file")
