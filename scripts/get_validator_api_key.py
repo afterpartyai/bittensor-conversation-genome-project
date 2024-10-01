@@ -91,7 +91,15 @@ class ReadyAiApiLib():
             print(f"{RED}Total state of {total_stake} is less than minimum stake of {self.minimum_stake}. Aborting.{COLOR_END}")
             return
 
-        validator_info = {"subnet_id": netuid, "uid":my_uid, "coldkey": ss58_coldkey, "hotkey":subnet.hotkeys[my_uid], "is_validator": is_validator, "stake":stake, "total_stake":total_stake}
+        validator_info = {
+            "subnet_id": netuid,
+            "uid":my_uid,
+            "coldkey": ss58_coldkey,
+            "hotkey":subnet.hotkeys[my_uid],
+            "is_validator": is_validator,
+            "stake":stake,
+            "total_stake":total_stake
+        }
         print(f"{GREEN}COLDKEY {ss58_coldkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
         return validator_info
 
@@ -170,9 +178,6 @@ class ReadyAiApiLib():
         print(f"\n\n{GREEN}ReadyAI key successfully generated and stored in file: {fname}{COLOR_END}")
         print(f"{YELLOW}    Place this json file in your validator execution directory.{COLOR_END}")
 
-
-    def sign_message(self, validator_info, message):
-        return {"signed":message + "SIGNED"}
 
     def get_coldkey_object(self, name, path):
         wallet = bt.wallet(name=name, path=path)
