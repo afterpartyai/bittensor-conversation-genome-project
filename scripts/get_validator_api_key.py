@@ -23,11 +23,11 @@ except:
 
 
 class ReadyAiApiLib():
-    api_root_url = "http://dan.soindrop.com"
+    api_root_url = "https://api.conversations.xyz"
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
     network = 'finney'
-    minimum_stake = 1.0
+    minimum_stake = 20000.0
     verbose = False
 
     def __init__(self, test_mode=False):
@@ -37,9 +37,6 @@ class ReadyAiApiLib():
 
     def get_validator_info(self, ss58_coldkey, netuid = 1, verbose=False):
         subnet = bt.metagraph(netuid, network=self.network)
-        #ss58_hotkey = "YOUR HOTKEY"
-        #my_hotkey_uid = subnet.hotkeys.index( ss58_hotkey )
-        #print(ss58_hotkey, subnet.coldkeys[my_hotkey_uid])
         if not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
             if self.verbose or verbose:
