@@ -234,7 +234,7 @@ if __name__ == "__main__":
         print(f"{YELLOW}Set network to: {network}{COLOR_END}")
         raal.network = network
         if network == 'test':
-            raal.minimum_stake = 5000.0
+            raal.minimum_stake = 10.0
             print(f"{YELLOW}Set test stake to: {raal.minimum_stake}{COLOR_END}")
 
     # Get user input of subnet id
