@@ -237,6 +237,8 @@ python3 -m neurons.miner --netuid 33 --wallet.name <wallet name> --wallet.hotkey
 
 ## Validating
 
+To run a validator, you will first need to generate a ReadyAI Conversation Server API Key. Please see the guide [here](docs/generate-validator-api-key.md). If you wish to validate via local datastore, please see the section below on [Validating with a Custom Conversation Server](#validating-with-a-custom-conversation-server)
+
 You can launch your validator on testnet using the following command.
 
 To run with pm2 please see instructions [here](#Running-a-Validator-with-PM2)
