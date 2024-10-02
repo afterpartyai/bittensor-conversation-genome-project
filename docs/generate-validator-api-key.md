@@ -25,10 +25,7 @@ Once you enter the above information, the script will check your wallet informat
 
 ```
 COLDKEY <coldkey address> is registered on subnet: COLDKEY:<coldkey address>, IS VALIDATOR:True, TOTAL STAKE:<validator stake>
-Signing message...
 Signature is valid
-Signed. Get API key...
-Got API key, writing to file...
 
 
 ReadyAI key successfully generated and stored in file: readyai_api_data.json

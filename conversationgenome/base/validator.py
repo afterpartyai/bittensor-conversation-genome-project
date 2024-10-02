@@ -146,7 +146,6 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Check that validator is registered on the network.
         self.sync()
-        self.save_state()
 
         bt.logging.info(f"Validator starting at block: {self.block}")
 
@@ -315,10 +314,6 @@ class BaseValidatorNeuron(BaseNeuron):
         # Zero out all hotkeys that have been replaced.
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
-                if uid >= len(self.scores):
-                    self.scores = torch.cat((self.scores, torch.zeros(uid - len(self.scores) + 1, device=self.scores.device)))
-                if uid >= len(self.ema_scores):
-                    self.ema_scores = torch.cat((self.ema_scores, torch.zeros(uid - len(self.ema_scores) + 1, device=self.ema_scores.device)))
                 self.scores[uid] = 0  # hotkey has been replaced
                 self.ema_scores[uid] = 0  # hotkey has been replaced
 
@@ -361,21 +356,8 @@ class BaseValidatorNeuron(BaseNeuron):
             self.first_sync = False
             return
         
-        # Ensure tensors are on the correct device
-        assert self.ema_scores.is_cuda and self.scores.is_cuda, "Tensors must be on GPU"
-        
-        # Check tensor dimensions
-        assert self.ema_scores.dim() > 0, "ema_scores tensor is empty"
-        assert self.scores.dim() > 0, "scores tensor is empty"
-        
-        # Check tensor sizes
-        assert self.ema_scores.size(0) > 0, "ema_scores tensor has no elements"
-        assert self.scores.size(0) > 0, "scores tensor has no elements"
-        
-
-        
         #check if self.scores and self.ema_scores are empty, if so, don't save
-        if (self.ema_scores.numel() == 0 or self.scores.numel() == 0 or torch.all(self.ema_scores == 0) or torch.all(self.scores == 0)):
+        if (torch.all(self.ema_scores ==0) or torch.all(self.scores==0) or self.ema_scores.numel()==0 or self.scores.numel()==0):
             bt.logging.info(f"EMA score and/or Score tensor is empty or all zeros. Skipping save state.")
             return
 
@@ -384,20 +366,15 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info(f"Saving validator state to {state_path}.")
 
         # Save the state of the validator to file.
-        try:
-            torch.save(
-                {
-                    "step": self.step,
-                    "scores": self.scores,
-                    "hotkeys": self.hotkeys,
-                    "ema_scores": self.ema_scores,
-                },
-                state_path,
-            )
-        except IndexError as e:
-            bt.logging.error(f"IndexError during state save: {e}")
-        except Exception as e:
-            bt.logging.error(f"Unexpected error during state save: {e}")
+        torch.save(
+            {
+                "step": self.step,
+                "scores": self.scores,
+                "hotkeys": self.hotkeys,
+                "ema_scores": self.ema_scores,
+            },
+            state_path,
+        )
         if os.path.isfile(state_path):
             bt.logging.info(f"Save state confirmed")
         else:
