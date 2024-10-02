@@ -7,9 +7,9 @@ from conversationgenome.api.ApiLib import ApiLib
 
 
 class ConvoLib:
-    async def get_conversation(self, hotkey):
+    async def get_conversation(self, hotkey, api_key=None):
         api = ApiLib()
-        convo = await api.reserveConversation(hotkey)
+        convo = await api.reserveConversation(hotkey, api_key=api_key)
         return convo
 
     async def put_conversation(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):

@@ -7,6 +7,7 @@ import math
 import os
 import numpy as np
 import torch
+import json
 
 
 from conversationgenome.utils.Utils import Utils
@@ -50,10 +51,31 @@ class ValidatorLib:
     hotkey = "v1234"
     verbose = False
     llml = None
+    readyai_api_key = None
 
     def __init__(self):
         super(ValidatorLib, self).__init__()
+        self.read_api_key()
 
+    def read_api_key(self):
+        fail_message = "WARNING: You have not generated a ReadyAI Conversation Server API key. Starting on October 7th, 2024, you will no longer be able to request conversations from the ReadyAI Conversation server without an API Key. For instructions on how to generate your key, read the documentation in docs/generate-validator-api-key.md"
+        fname = "readyai_api_data.json"
+        if not os.path.isfile(fname):
+            bt.logging.warning(fail_message, "-- Missing file")
+            return
+        try:
+            f = open(fname)
+            json_str = f.read()
+            f.close()
+        except Exception as e:
+            bt.logging.warning(fail_message, f"{e} -- Error reading file")
+            return
+        try:
+            data = json.loads(json_str)
+        except Exception as e:
+            bt.logging.warning(fail_message, f"{e} -- Error parsing file")
+            return
+        self.readyai_api_key = data['api_key']
 
     async def reserve_conversation(self, minConvWindows = 1, batch_num=None):
         import time
@@ -113,8 +135,10 @@ class ValidatorLib:
 
     async def getConvo(self):
         hotkey = self.hotkey
+        if not self.readyai_api_key:
+            self.read_api_key()
         cl = ConvoLib()
-        convo = await cl.get_conversation(hotkey)
+        convo = await cl.get_conversation(hotkey, api_key=self.readyai_api_key)
         return convo
 
     async def put_convo(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):

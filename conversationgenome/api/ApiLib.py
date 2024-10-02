@@ -18,7 +18,7 @@ except:
 class ApiLib:
     verbose = False
 
-    async def reserveConversation(self, hotkey):
+    async def reserveConversation(self, hotkey, api_key=None):
         # Call Convo server and reserve a conversation
         if c.get('env', 'SYSTEM_MODE') == 'test':
             path = 'facebook-chat-data.json'
@@ -40,6 +40,7 @@ class ApiLib:
             headers = {
                 "Accept": "application/json",
                 "Accept-Language": "en_US",
+                "Authorization": "Bearer %s" % (str(api_key)),
             }
             jsonData = { }
             postData = None
