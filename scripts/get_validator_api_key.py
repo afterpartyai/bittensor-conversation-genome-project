@@ -131,7 +131,7 @@ class ReadyAiApiLib():
         except requests.exceptions.RequestException as e:
             print(f"{RED}Error posting to {url}: {e}{COLOR_END}")
 
-    def get_api_key_from_coldkey(self, validator_info, coldkey_object, verbose=True):
+    def get_api_key_from_coldkey(self, validator_info, coldkey_object, verbose=False):
         # Setup URL to get message from API that will be signed by coldkey
         message_url = self.api_root_url + self.api_message_route
 
