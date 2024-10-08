@@ -23,8 +23,7 @@ except:
 
 
 class ReadyAiApiLib():
-    #api_root_url = "https://api.conversations.xyz"
-    api_root_url = "http://dan.soindrop.com"
+    api_root_url = "https://api.conversations.xyz"
     api_message_route = "/api/v1/generate_message"
     api_key_route = "/api/v1/generate_api_key"
     network = 'finney'
