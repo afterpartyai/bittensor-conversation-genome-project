@@ -58,36 +58,44 @@ class ReadyAiApiLib():
                         print(f"Not Validator {test_uid} : {test_coldkey} stake: {subnet.stake[test_uid]}")
                         found_non_validator = True
             return
+            my_uid = subnet.coldkeys.index( ss58_coldkey )
+
+            # Find stakes across all hotkeys
+            total_stake = 0.0
+            stake = 0.0
+            max_stake = 0.0
+            is_validator = False
+            for idx, ck in enumerate(subnet.coldkeys):
+                if ss58_coldkey == ck:
+                    #self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
+                    total_stake += float(subnet.total_stake[idx])
+                    max_stake = max(max_stake, float(subnet.total_stake[idx]))
+                    stake += float(subnet.stake[idx])
+                    if bool(subnet.validator_permit[idx]):
+                        is_validator = True
+                    #print("FOUND!", subnet.coldkeys[idx], subnet.hotkeys[idx], subnet.stake[idx], subnet.total_stake[idx], subnet.validator_permit[idx])
+
         else:
             if ss58_hotkey and not ss58_hotkey in subnet.hotkeys:
-                print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
+                print(f"{RED}Hotkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
                 return
+            my_uid = subnet.hotkeys.index( ss58_hotkey )
+            total_stake = float(subnet.total_stake[my_uid])
+            max_stake = float(subnet.total_stake[my_uid])
+            stake = float(subnet.stake[my_uid])
+            if bool(subnet.validator_permit[my_uid]):
+                is_validator = True
 
 
-        my_uid = subnet.coldkeys.index( ss58_coldkey )
-        print(f"Subnet UID for coldkey: {ss58_coldkey} : {my_uid}")
+
+        print(f"Subnet UID for wallet key -- coldkey: {ss58_coldkey} hotkey: {ss58_hotkey} : {my_uid}")
         if self.verbose or verbose:
             # Display properties for this uid
             self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
-        if not ss58_coldkey in subnet.coldkeys:
-            print(f"{RED}Coldkey {ss58_coldkey} is not registered in subnet list ({len(subnet.coldkeys)}). Aborting.{COLOR_END}")
+
+        if (ss58_coldkey and not ss58_coldkey in subnet.coldkeys) and (ss58_hotkey and not ss58_hotkey in subnet.hotkeys):
+            print(f"{RED}Key {ss58_coldkey} or {ss58_hotkey} is not registered in subnet list ({len(subnet.coldkeys)}). Aborting.{COLOR_END}")
             return
-
-
-        # Find stakes across all hotkeys
-        total_stake = 0.0
-        stake = 0.0
-        max_stake = 0.0
-        is_validator = False
-        for idx, ck in enumerate(subnet.coldkeys):
-            if ss58_coldkey == ck:
-                #self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
-                total_stake += float(subnet.total_stake[idx])
-                max_stake = max(max_stake, float(subnet.total_stake[idx]))
-                stake += float(subnet.stake[idx])
-                if bool(subnet.validator_permit[idx]):
-                    is_validator = True
-                #print("FOUND!", subnet.coldkeys[idx], subnet.hotkeys[idx], subnet.stake[idx], subnet.total_stake[idx], subnet.validator_permit[idx])
 
         if not is_validator:
             print(f"{RED}Coldkey {my_uid} is not a validator : {is_validator}. Aborting.{COLOR_END}")
@@ -97,16 +105,28 @@ class ReadyAiApiLib():
             print(f"{RED}Total state of {total_stake} is less than minimum stake of {self.minimum_stake}. Aborting.{COLOR_END}")
             return
 
+        lookup_coldkey = None
+        lookup_hotkey = None
+        if ss58_coldkey:
+            lookup_hotkey = subnet.hotkeys[my_uid]
+        else:
+            lookup_coldkey = subnet.hotkeys[my_uid]
         validator_info = {
             "subnet_id": netuid,
             "uid":my_uid,
             "coldkey": ss58_coldkey,
-            "hotkey":subnet.hotkeys[my_uid],
+            "hotkey": ss58_coldkey,
+            "lookup_coldkey": lookup_coldkey,
+            "lookup_hotkey": lookup_hotkey,
             "is_validator": is_validator,
             "stake":stake,
             "total_stake":total_stake
         }
-        print(f"{GREEN}COLDKEY {ss58_coldkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
+        if ss58_coldkey:
+            print(f"{GREEN}COLDKEY {ss58_coldkey} is registered on subnet{COLOR_END}: COLDKEY:{validator_info['coldkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
+        else:
+            print(f"{GREEN}HOTKEY {ss58_hotkey} is registered on subnet{COLOR_END}: HOTKEY:{validator_info['hotkey']}, IS VALIDATOR:{validator_info['is_validator']}, TOTAL STAKE:{validator_info['total_stake']}")
+
         return validator_info
 
     def list_wallets_properties(self, obj, uid=5, tensor_len=1024):
