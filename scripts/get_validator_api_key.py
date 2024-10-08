@@ -220,8 +220,8 @@ class ReadyAiApiLib():
             exit(1)
         return coldkey
 
-    def get_hotkey_object(self, name, path):
-        wallet = bt.wallet(name=name, path=path)
+    def get_hotkey_object(self, coldkey_name, hotkey_name, path):
+        wallet = bt.wallet(name=coldkey_name, hotkey=hotkey_name, path=path)
         try:
             hotkey = wallet.get_hotkey()
         except Exception as e:
@@ -301,18 +301,21 @@ if __name__ == "__main__":
     hotkey_object = None
     # If actual run or test_mode_num == 2, prompt for wallet
     if not test_mode or test_mode_num == "2":
-        if sign_with_coldkey:
-            defaultWallet = "Coldkey"
-        else:
-            defaultWallet = "Hotkey"
-
-        name = input(f"{CYAN}Enter wallet name (default: {defaultWallet}): {COLOR_END}") or defaultWallet
         path = input(f"{CYAN}Enter wallet path (default: ~/.bittensor/wallets/): {COLOR_END}") or "~/.bittensor/wallets/"
+
+        defaultWallet = "Coldkey"
+        coldkey_name = input(f"{CYAN}Enter wallet name (default: {defaultWallet}): {COLOR_END}") or defaultWallet
+
+        if not sign_with_coldkey:
+            defaultWallet = "default"
+            hotkey_name = input(f"{CYAN}Enter hotkey name (default: {defaultWallet}): {COLOR_END}") or defaultWallet
+
         if sign_with_coldkey:
-            coldkey_object = raal.get_coldkey_object(name, path)
+            coldkey_object = raal.get_coldkey_object(coldkey_name, path)
             ss58_coldkey = coldkey_object.ss58_address
         else:
-            hotkey_object = raal.get_hotkey_object(name, path)
+            hotkey_path = f"{path}"
+            hotkey_object = raal.get_hotkey_object(coldkey_name, hotkey_name, path)
             ss58_hotkey = hotkey_object.ss58_address
     else:
         raal.verbose = True
