@@ -379,5 +379,30 @@ class ValidatorLib:
         processed_tag_list = [element for element in validTags if element in cleanTagsStr]
 
         return processed_tag_list
+    
+    async def get_raw_weights(self, scores):
+        if scores is None or scores.numel() == 0 or torch.isnan(scores).any():
+            return None
+
+        #normalize scores into raw_weights
+        raw_weights = torch.nn.functional.normalize(scores, p=1, dim=0)
+
+        #order the UIDs for weight assignment
+        ordered_uids = np.argsort(-raw_weights.cpu().numpy()).astype(int)
+
+        #iterate through the ordered UIDS and assign weight based on 
+        for i, uid in enumerate(ordered_uids):
+            #weight = dist_func(i, num_uids)
+            x = (i - len(ordered_uids) / 2) / (len(ordered_uids) / 2)  # Adjusted to fit most data within 1.25 standard deviations
+            weight = np.exp(-x**2 / 2) / (np.sqrt(2 * np.pi))
+            if weight:
+                raw_weights[uid] = weight
+            else: 
+                bt.logging.error("Error in Weights calculation. Setting this UID to 0")
+                raw_weights[uid] = 0
+
+        raw_weights = torch.nn.functional.normalize(raw_weights, p=1, dim=0)
+
+        return raw_weights
 
 
