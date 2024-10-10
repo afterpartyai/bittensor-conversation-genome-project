@@ -396,7 +396,7 @@ class ValidatorLib:
 
         return y_scaled
     
-    async def get_raw_weights(self, scores):
+    def get_raw_weights(self, scores):
         if scores is None or scores.numel() == 0 or torch.isnan(scores).any():
             return None
 
@@ -405,8 +405,7 @@ class ValidatorLib:
         # Order the UIDs for weight assignment
         ordered_uids = torch.argsort(raw_weights, descending=True)
         zero_uids = (raw_weights == 0).nonzero(as_tuple=True)[0]
-        print(f"Zero UIDS: {zero_uids}")
-
+        
         # Determine if there are any ties in raw_weights
         unique_weights, counts = torch.unique(raw_weights, return_counts=True)
         ties = unique_weights[counts > 1]
