@@ -380,28 +380,70 @@ class ValidatorLib:
 
         return processed_tag_list
     
+    def transposed_cubic_distribution(self, i, num_uids):
+        # Calculate the range of x values
+        x_min, x_max = 0, num_uids
+        y_min, y_max = 0.001, 0.003
+
+        # Normalize i to the range [-1, 1] with the middle index at the inflection point
+        x_normalized = (2 * (num_uids - i - 1) / num_uids) - 1
+
+        # Apply the cubic function
+        y_normalized = x_normalized ** 3
+
+        # Scale y_normalized to the desired range [y_min, y_max]
+        y_scaled = y_min + (y_max - y_min) * (y_normalized + 1) / 2
+
+        return y_scaled
+    
     async def get_raw_weights(self, scores):
         if scores is None or scores.numel() == 0 or torch.isnan(scores).any():
             return None
 
-        #normalize scores into raw_weights
-        raw_weights = torch.nn.functional.normalize(scores, p=1, dim=0)
+        raw_weights = scores.clone()
 
-        #order the UIDs for weight assignment
-        ordered_uids = np.argsort(-raw_weights.cpu().numpy()).astype(int)
+        # Order the UIDs for weight assignment
+        ordered_uids = torch.argsort(raw_weights, descending=True)
+        zero_uids = (raw_weights == 0).nonzero(as_tuple=True)[0]
+        print(f"Zero UIDS: {zero_uids}")
 
-        #iterate through the ordered UIDS and assign weight based on 
-        for i, uid in enumerate(ordered_uids):
-            #weight = dist_func(i, num_uids)
-            x = (i - len(ordered_uids) / 2) / (len(ordered_uids) / 2)  # Adjusted to fit most data within 1.25 standard deviations
-            weight = np.exp(-x**2 / 2) / (np.sqrt(2 * np.pi))
+        # Determine if there are any ties in raw_weights
+        unique_weights, counts = torch.unique(raw_weights, return_counts=True)
+        ties = unique_weights[counts > 1]
+
+        # If there are ties, ranodmly shuffle the order of tied UIDs
+        for tie in ties:
+            if tie == 0:
+                continue
+            # Find the indices in raw_weights that have the tied value
+            tied_indices = (raw_weights == tie).nonzero(as_tuple=True)[0]
+            
+            # Find the positions of these tied indices within ordered_uids
+            positions_in_ordered_uids = torch.isin(ordered_uids, tied_indices).nonzero(as_tuple=True)[0]
+            
+            # Shuffle these positions amongst themselves
+            shuffled_positions = positions_in_ordered_uids[torch.randperm(positions_in_ordered_uids.size(0))]
+            
+            # Apply the shuffle to ordered_uids
+            ordered_uids[positions_in_ordered_uids] = ordered_uids[shuffled_positions]
+
+        #Calculate proper length for calculating weight values    
+        num_uids = len(ordered_uids) - len(zero_uids)
+        ordered_uids_no_zeros = ordered_uids[~torch.isin(ordered_uids, zero_uids)]
+
+        # calculate proper weight values for each non-zero uid
+        for i, uid in enumerate(ordered_uids_no_zeros):
+            weight = self.transposed_cubic_distribution(i, num_uids)
+            
+            # Assign the weight to the raw_weights tensor
             if weight:
                 raw_weights[uid] = weight
             else: 
                 bt.logging.error("Error in Weights calculation. Setting this UID to 0")
                 raw_weights[uid] = 0
 
-        raw_weights = torch.nn.functional.normalize(raw_weights, p=1, dim=0)
+        # Normalize the final raw_weights
+        raw_weights = torch.nn.functional.normalize(raw_weights, p=1, dim=0)       
 
         return raw_weights
 
