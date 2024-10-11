@@ -113,7 +113,7 @@ async def test_full():
         tied_indices = get_tied_indices(original_scores_list)
 
         #calculate raw weights using validatorLib function
-        raw_weights = await vl.get_raw_weights(original_scores_list)
+        raw_weights = vl.get_raw_weights(original_scores_list)
 
         if raw_weights is not None:
 
