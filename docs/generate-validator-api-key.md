@@ -2,13 +2,13 @@
 
 Validators are required to generate an API key to access the ReadyAI Conversation Server. This server serves full conversations, which validators tag to establish ground truth and divide into windows used to query miners as part of our novel *fractal data mining* process. To generate your key, please follow the below instructions. 
 
-## Retrieve your coldkey information
+## Retrieve your hotkey and coldkey information
 
-To retrieve your coldkey name, you can run `btcli wallet list` via the command line, which will display your bittensor coldkeys and hotkeys. Find the coldkey associated with your validator, and retrieve the local name of your coldkey.
+To retrieve your coldkey name, you can run `btcli wallet list` via the command line, which will display your bittensor coldkeys and hotkeys. Find the coldkey and hotkey associated with your validator, and retrieve the local names of these keys.
 
 ## Run the generation script
 
-Once you have your coldkey name, you can run the local script. Run this against mainnet with the below command from the top-level directory of this repository:
+Once you have your key names, you can run the local script. Run this against mainnet with the below command from the top-level directory of this repository:
 
 ```
 python scripts/get_validator_api_key.py
@@ -19,9 +19,9 @@ To run this on testnet, run the below command:
 python scripts/get_validator_api_key.py test
 ```
 
-You will then be prompted to enter the subnet netuid, which is 33 by default (enter 138 for testnet), followed by your coldkey wallet name, which you retrieved in the previous step. You'll then confirm the wallet path on your machine, and lastly enter the encryption password for this coldkey. 
+You will then be prompted to enter the subnet netuid, which is 33 by default (enter 138 for testnet), your wallet path, and your coldkey and hotkey names, both of which you retrieved in the previous step.
 
-Once you enter the above information, the script will check your wallet information against the subnet metagraph to confirm you are a validator, check that you possess the minimum validator stake, and then sign a transaction from your coldkey. If the signature is successful, you will see the following print: 
+Once you enter the above information, the script will check your wallet information against the subnet metagraph to confirm you are a validator, check that you possess the minimum validator stake, and then sign a transaction from your hotkey. If the signature is successful, you will see the following print: 
 
 ```
 COLDKEY <coldkey address> is registered on subnet: COLDKEY:<coldkey address>, IS VALIDATOR:True, TOTAL STAKE:<validator stake>

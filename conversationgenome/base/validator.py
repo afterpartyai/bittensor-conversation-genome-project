@@ -118,7 +118,8 @@ class BaseValidatorNeuron(BaseNeuron):
             self.forward()
             for _ in range(self.config.neuron.num_concurrent_forwards)
         ]
-        await asyncio.gather(*coroutines)
+        results = await asyncio.gather(*coroutines)
+        return results
 
     def run(self):
         """
@@ -151,15 +152,24 @@ class BaseValidatorNeuron(BaseNeuron):
                 bt.logging.info(f"step({self.step}) block({self.block})")
 
                 # Run multiple forwards concurrently.
-                self.loop.run_until_complete(self.concurrent_forward())
+                results = self.loop.run_until_complete(self.concurrent_forward())
 
                 # Check if we should exit.
                 if self.should_exit:
                     break
 
                 # Sync metagraph and potentially set weights.
-                print("________________________________SYNC to set weight")
-                self.sync()
+                success = True
+                for result in results:
+                    if not result:
+                        success = False
+                        break
+                if success:
+                    print("________________________________SYNC to set weight")
+                    self.sync()
+                else:
+                    bt.logging.error(f"Error occurred during validation. Skipping weight set.")
+
 
                 self.step += 1
 
@@ -359,7 +369,7 @@ class BaseValidatorNeuron(BaseNeuron):
             bt.logging.info(f"Ignore first sync so it doesn't save over last data.")
             self.first_sync = False
             return
-        
+
         #check if self.scores and self.ema_scores are empty, if so, don't save
         if (np.all(self.ema_scores == 0) or np.all(self.scores == 0) or self.ema_scores.size == 0 or self.scores.size == 0):
             bt.logging.info(f"EMA score and/or Score array is empty or all zeros. Skipping save state.")

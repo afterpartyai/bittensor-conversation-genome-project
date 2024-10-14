@@ -206,10 +206,12 @@ class Validator(BaseValidatorNeuron):
 
                         # Update the scores based on the rewards.
                         self.update_scores(rank_scores, miner_uids)
+                return True
             else:
                 bt.logging.error(f"No conversation received from endpoint")
         except Exception as e:
             bt.logging.error(f"ERROR 2294374 -- Top Level Validator Error: {e}")
+        return False
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
