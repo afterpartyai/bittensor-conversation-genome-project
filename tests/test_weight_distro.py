@@ -148,6 +148,18 @@ async def test_full():
                 plt.grid(True)
                 plt.savefig(os.path.join(folder_name, f"ordered_raw_weights_{test_score_group['title']}.png"))
                 plt.close()
+        else:
+            raw_weights = None
+            new_ranking = None
+
+
+            #Assert Statements
+            if original_scores_list is None or original_scores_list.numel() == 0:
+                raw_weights = None
+                new_ranking = None
+
+            if len(tied_indices) == 0:
+                assert torch.equal(original_ranking, new_ranking), "Original ranking and new ranking should be the same when there are no tied indices."
 
 
             #print(f"{test_score_group['title']}")
