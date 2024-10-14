@@ -24,6 +24,7 @@ import threading
 import bittensor as bt
 import random
 import os
+import numpy as np
 
 from typing import List
 from traceback import print_exception
@@ -405,7 +406,11 @@ class BaseValidatorNeuron(BaseNeuron):
             self.step = state["step"].item()  # Ensure it's a Python scalar
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
-            self.ema_scores = state["ema_scores"]
+            if "ema_scores" in state:
+                self.ema_scores = state["ema_scores"]
+            else: 
+                bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
+                self.ema_scores = np.zeros_like(self.scores)
         elif os.path.isfile(pt_path):
             # Load state from .pt file
             bt.logging.info(f"Loading validator state from {pt_path}.")
