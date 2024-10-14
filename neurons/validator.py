@@ -21,8 +21,6 @@ import os
 import hashlib
 import random
 
-import bittensor as bt
-
 from conversationgenome.base.validator import BaseValidatorNeuron
 
 import conversationgenome.utils
@@ -37,6 +35,8 @@ from conversationgenome.validator.ValidatorLib import ValidatorLib
 from conversationgenome.validator.evaluator import Evaluator
 
 from conversationgenome.protocol import CgSynapse
+
+import bittensor as bt
 
 class Validator(BaseValidatorNeuron):
     verbose = False

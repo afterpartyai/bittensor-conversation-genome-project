@@ -125,15 +125,15 @@ class Evaluator:
             bt.logging.info("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
 
         num_responses = len(miner_responses)
-        scores = torch.zeros(num_responses)
-        zero_score_mask = torch.ones(num_responses)
-        rank_scores = torch.zeros(num_responses)
+        scores = np.zeros(num_responses)
+        zero_score_mask = np.ones(num_responses)
+        rank_scores = np.zeros(num_responses)
         #bt.logging.info(f"DEVICE for rank_scores: {rank_scores.device}")
 
-        avg_ages = torch.zeros(num_responses)
-        avg_age_scores = torch.zeros(num_responses)
-        uniqueness_scores = torch.zeros(num_responses)
-        credit_author_scores = torch.zeros(num_responses)
+        avg_ages = np.zeros(num_responses)
+        avg_age_scores = np.zeros(num_responses)
+        uniqueness_scores = np.zeros(num_responses)
+        credit_author_scores = np.zeros(num_responses)
 
         max_avg_age = 0
 
@@ -215,10 +215,6 @@ class Evaluator:
 
         bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
         # Force to use cuda if available -- otherwise, causes device mismatch
-        try:
-            rank_scores = rank_scores.to('cuda')
-        except:
-            pass
         # Convert to tensors
         if  len(final_scores) != len(rank_scores):
             bt.logging.error(f"ERROR: final scores length ({len(final_scores)})  doesn't match rank scores ({len(rank_scores)}). Aborting.")

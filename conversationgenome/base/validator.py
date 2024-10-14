@@ -63,13 +63,9 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
-        self.scores = torch.zeros(
-            self.metagraph.n, dtype=torch.float32, device=self.device
-        )
+        self.scores = np.zeros(self.metagraph.n, dtype=np.float32)
 
-        self.ema_scores = torch.zeros(
-            self.metagraph.n, dtype=torch.float32, device=self.device
-        )
+        self.ema_scores = np.zeros(self.metagraph.n, dtype=np.float32)
         
         # Initialize the non-linear transformation power
         self.nonlinear_power = 3.0
@@ -234,29 +230,37 @@ class BaseValidatorNeuron(BaseNeuron):
         """
         msg = None
         # Check if self.scores contains any NaN values and log a warning if it does.
-        if torch.isnan(self.scores).any():
+        if np.isnan(self.scores).any():
             bt.logging.warning(
                 f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
         # if self.scores is empty or all zeros, return
-        if self.scores is None or torch.all(self.scores==0) or self.scores.numel()==0:
-            bt.logging.info(f"Score tensor is empty or all zeros. Skipping weight setting.")
+        if self.scores is None or np.all(self.scores == 0) or self.scores.size == 0:
+            bt.logging.info(f"Score array is empty or all zeros. Skipping weight setting.")
             return
 
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
-        raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
+        # Compute the norm of the scores
+        norm = np.linalg.norm(self.scores, ord=1, axis=0, keepdims=True)
+
+        # Check if the norm is zero or contains NaN values
+        if np.any(norm == 0) or np.isnan(norm).any():
+            norm = np.ones_like(norm)  # Avoid division by zero or NaN
+
+        # Compute raw_weights safely
+        raw_weights = self.scores / norm
 
         bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", self.metagraph.uids.to("cpu"))
+        bt.logging.debug("raw_weight_uids", str(self.metagraph.uids.tolist()))
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
             processed_weights,
         ) = bt.utils.weight_utils.process_weights_for_netuid(
-            uids=self.metagraph.uids.to("cpu"),
-            weights=raw_weights.to("cpu"),
+            uids=self.metagraph.uids,
+            weights=raw_weights,
             netuid=self.config.netuid,
             subtensor=self.subtensor,
             metagraph=self.metagraph,
@@ -321,30 +325,30 @@ class BaseValidatorNeuron(BaseNeuron):
         # If so, we need to add new hotkeys and moving averages.
         if len(self.hotkeys) < len(self.metagraph.hotkeys):
             # Update the size of the moving average scores.
-            new_moving_average = torch.zeros((self.metagraph.n)).to(
-                self.device
-            )
+            new_moving_average = np.zeros((self.metagraph.n))
+            new_scores = np.zeros((self.metagraph.n))
             min_len = min(len(self.hotkeys), len(self.scores))
-            new_moving_average[:min_len] = self.scores[:min_len]
-            self.scores = new_moving_average
+            new_scores[:min_len] = self.scores[:min_len]
+            new_moving_average = self.ema_scores[:min_len]
+            self.scores = new_scores
+            self.ema_scores = new_moving_average
 
         # Update the hotkeys.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
 
-    def update_scores(self, rewards: torch.FloatTensor, uids: List[int]):
+    def update_scores(self, rewards: np.ndarray, uids: List[int]):
         """
         Performs exponential moving average on the scores based on the rewards received from the miners,
         then normalizes, applies a non-linear transformation, and renormalizes the scores.
         """
-        self.ema_scores = self.ema_scores.to(self.scores.device)
 
         vl = ValidatorLib()
         updated_scores, updated_ema_scores = vl.update_scores(rewards, uids, self.ema_scores, self.scores, self.config.neuron.moving_average_alpha, self.device, self.metagraph.n, self.nonlinear_power)
 
-        if torch.numel(updated_scores) > 0 and torch.numel(updated_ema_scores) > 0 and not torch.isnan(updated_scores).any() and not torch.isnan(updated_ema_scores).any():
-            self.scores=updated_scores
-            self.ema_scores=updated_ema_scores
-        else: 
+        if updated_scores.size > 0 and updated_ema_scores.size > 0 and not np.isnan(updated_scores).any() and not np.isnan(updated_ema_scores).any():
+            self.scores = updated_scores
+            self.ema_scores = updated_ema_scores
+        else:
             bt.logging.error("Error 2378312: Error with Nonlinear transformation and Renormalization in update_scores. self.scores not updated")
 
         bt.logging.debug(f"Updated final scores: {self.scores}")
@@ -357,8 +361,8 @@ class BaseValidatorNeuron(BaseNeuron):
             return
         
         #check if self.scores and self.ema_scores are empty, if so, don't save
-        if (torch.all(self.ema_scores ==0) or torch.all(self.scores==0) or self.ema_scores.numel()==0 or self.scores.numel()==0):
-            bt.logging.info(f"EMA score and/or Score tensor is empty or all zeros. Skipping save state.")
+        if (np.all(self.ema_scores == 0) or np.all(self.scores == 0) or self.ema_scores.size == 0 or self.scores.size == 0):
+            bt.logging.info(f"EMA score and/or Score array is empty or all zeros. Skipping save state.")
             return
 
 
@@ -366,15 +370,14 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info(f"Saving validator state to {state_path}.")
 
         # Save the state of the validator to file.
-        torch.save(
-            {
-                "step": self.step,
-                "scores": self.scores,
-                "hotkeys": self.hotkeys,
-                "ema_scores": self.ema_scores,
-            },
-            state_path,
+        np.savez(
+            self.config.neuron.full_path + "/state.npz",
+            step=self.step,
+            scores=self.scores,
+            hotkeys=self.hotkeys,
+            ema_scores= self.ema_scores,
         )
+
         if os.path.isfile(state_path):
             bt.logging.info(f"Save state confirmed")
         else:
@@ -382,26 +385,37 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def load_state(self):
         """Loads the state of the validator from a file."""
-        state_path = self.config.neuron.full_path + "/state.pt"
-        bt.logging.info(f"Loading validator state from {state_path}.")
+        npz_path = self.config.neuron.full_path + "/state.npz"
+        pt_path = self.config.neuron.full_path + "/state.pt"
 
-        # Load the state of the validator from file.
-        if os.path.isfile(state_path):
-            state = torch.load(state_path)
-            self.step = state["step"]
+        if os.path.isfile(npz_path):
+            # Load state from .npz file
+            bt.logging.info(f"Loading validator state from {npz_path}.")
+            state = np.load(npz_path)
+            self.step = state["step"].item()  # Ensure it's a Python scalar
+            self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
+            self.ema_scores = state["ema_scores"]
+        elif os.path.isfile(pt_path):
+            # Load state from .pt file
+            bt.logging.info(f"Loading validator state from {pt_path}.")
+            state = torch.load(pt_path)
+            self.step = state["step"].numpy()
+            self.hotkeys = state["hotkeys"].numpy()
+            self.scores = state["scores"].numpy()  # Convert to NumPy array
+
             if "ema_scores" in state:
-                self.scores = state["scores"]
-                self.ema_scores = state["ema_scores"]
+                self.ema_scores = state["ema_scores"].numpy()  # Convert to NumPy array
             else:
                 bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
-                self.ema_scores = state["scores"]
-                # Initialize ema_scores with the same shape as scores
-                self.scores = torch.zeros_like(self.scores)
+                self.ema_scores = np.zeros_like(self.scores)
 
-            try:
-                bt.logging.debug(f"Loaded state file. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {torch.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
-            except Exception as e:
-                print("Log error", e)
+            # Save the state as a .npz file
+            self.save_state()
         else:
-            bt.logging.info(f"No state file found.")
+            bt.logging.info("No state file found.")
+
+        try:
+            bt.logging.debug(f"Loaded state. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {np.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
+        except Exception as e:
+            print("Log error", e)
