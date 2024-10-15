@@ -6,11 +6,6 @@ from traceback import print_exception
 import pprint
 
 verbose = False
-torch = None
-try:
-    import torch
-except:
-    bt.logging.info("torch not installed")
 
 
 import numpy as np

@@ -415,12 +415,12 @@ class BaseValidatorNeuron(BaseNeuron):
             # Load state from .pt file
             bt.logging.info(f"Loading validator state from {pt_path}.")
             state = torch.load(pt_path)
-            self.step = state["step"].numpy()
-            self.hotkeys = state["hotkeys"].numpy()
-            self.scores = state["scores"].numpy()  # Convert to NumPy array
+            self.step = int(state["step"])
+            self.hotkeys = np.array(state["hotkeys"])
+            self.scores = state["scores"].cpu().numpy()  # Convert to NumPy array
 
             if "ema_scores" in state:
-                self.ema_scores = state["ema_scores"].numpy()  # Convert to NumPy array
+                self.ema_scores = state["ema_scores"].cpu().numpy()   # Convert to NumPy array
             else:
                 bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
                 self.ema_scores = np.zeros_like(self.scores)

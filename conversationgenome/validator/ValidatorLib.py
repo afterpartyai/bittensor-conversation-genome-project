@@ -6,7 +6,6 @@ import asyncio
 import math
 import os
 import numpy as np
-import torch
 import json
 
 
@@ -321,17 +320,18 @@ class ValidatorLib:
 
 
         # Scatter rewards
-        scattered_rewards: np.ndarray = np.zeros_like(self.ema_scores)
+        scattered_rewards: np.ndarray = np.zeros_like(ema_scores)
         scattered_rewards[uids_array] = rewards
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update EMA scores
         alpha: float = moving_average_alpha
         #ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
-        self.ema_scores: np.ndarray = (
-            alpha * scattered_rewards + (1 - alpha) * self.ema_scores
+        ema_scores: np.ndarray = (
+            alpha * scattered_rewards + (1 - alpha) * ema_scores
         )
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        if self.verbose:
+            bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
 
         # Normalize EMA scores
         sum_scores = np.sum(ema_scores)
@@ -349,8 +349,10 @@ class ValidatorLib:
             scores = transformed_scores / sum_transformed
         else:
             scores = np.ones_like(transformed_scores) / neurons
+            
+        if self.verbose:
+            bt.logging.debug(f"Updated final scores: {scores}")
 
-        bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
