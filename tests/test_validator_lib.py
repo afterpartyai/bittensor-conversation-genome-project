@@ -119,6 +119,8 @@ async def test_full():
 
                 # Clean and validate tags for duplicates or whitespace matches
                 miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
+                miner_result['tags'].append("porkbelly")
+                miner_result['tags'].append("bullfrog ponds flooding")
                 print("TAGS", miner_result['original_tags'], "->", miner_result['tags'])
 
                 miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])

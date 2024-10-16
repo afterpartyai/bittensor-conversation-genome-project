@@ -75,6 +75,11 @@ class Evaluator:
             similarity_score = np.dot(neighborhood_vectors, individual_vectors) / (np.linalg.norm(neighborhood_vectors) * np.linalg.norm(individual_vectors))
         except:
             bt.logging.error("Error generating similarity_score. Setting to zero.")
+        if False and tag == "bullfrog ponds flooding":
+            print("TAG", tag)
+            print(individual_vectors, similarity_score)
+        else:
+            print("TAG score", tag, similarity_score)
 
         log_path = c.get('env', 'SCORING_DEBUG_LOG')
         if not Utils.empty(log_path):
