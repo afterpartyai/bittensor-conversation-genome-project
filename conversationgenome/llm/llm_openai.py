@@ -22,7 +22,7 @@ class llm_openai:
     verbose = False
     return_json = False
     model = "gpt-4o"
-    embeddings_model = "text-embedding-ada-002"
+    embeddings_model = "text-embedding-3-large"
     direct_call = 0
     root_url = "https://api.openai.com"
     # Test endpoint
@@ -52,7 +52,7 @@ class llm_openai:
             self.model = model
         if self.verbose:
             print(f"Using openai with model: {model}")
-        embeddings_model = c.get("env", "OPENAI_EMBEDDINGS_MODEL")
+        embeddings_model = c.get("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE")
         if embeddings_model:
             self.embeddings_model = embeddings_model
 
@@ -388,7 +388,7 @@ class llm_openai:
             print("Conv response", response)
         return response
 
-    async def get_vector_embeddings(self, text):
+    async def get_vector_embeddings(self, text, verbose=False):
         embedding = None
         text =  text.replace("\n"," ")
         if not self.direct_call:
@@ -410,9 +410,9 @@ class llm_openai:
                embedding = responseData[0]['embedding']
            else:
                print("ERROR getting embedding", response)
-        if self.verbose:
-            print("OpenAI embeddings USAGE", response.usage)
-            print("OpenAI embeddings generated", len(embedding))
+        if self.verbose or verbose:
+            #print("OpenAI embeddings USAGE", response.usage)
+            print("OpenAI embeddings generated %d with model %s " % (len(embedding), self.embeddings_model))
         return embedding
 
     async def get_vector_embeddings_set(self, tags):
