@@ -11,7 +11,7 @@ class llm_anthropic:
     verbose = False
     model = "claude-3-sonnet-20240229"
     direct_call = 0
-    embeddings_model = "text-embedding-ada-002"
+    embeddings_model = "text-embedding-3-large"
     client = None
     root_url = "https://api.anthropic.com"
     # Test endpoint
@@ -28,7 +28,7 @@ class llm_anthropic:
         if model:
             self.model = model
 
-        embeddings_model = c.get("env", "ANTHROPIC_OPENAI_EMBEDDINGS_MODEL")
+        embeddings_model = c.get("env", "ANTHROPIC_OPENAI_EMBEDDINGS_MODEL_OVERRIDE")
         if embeddings_model:
             self.embeddings_model = embeddings_model
 

@@ -238,7 +238,7 @@ class llm_openai:
 
     async def getEmbeddings(self, text):
        response = client.embeddings.create(
-           model="text-embedding-ada-002",
+           model="text-embedding-3-large",
            input = text.replace("\n"," ")
        )
        embedding = response.data[0].embedding
