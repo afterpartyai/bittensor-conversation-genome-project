@@ -205,7 +205,7 @@ async def test_full():
                 # Plot raw weights in descending order
                 ordered_raw_weights_final = raw_weights.clone()[new_ranking]
                 plt.figure(figsize=(10, 6))
-                plt.plot(range(len(ordered_raw_weights_final)), ordered_raw_weights_final.cpu().numpy(), marker='o', linestyle='-', color='b')
+                plt.plot(range(len(ordered_raw_weights_final)), ordered_raw_weights_final, marker='o', linestyle='-', color='b')
                 plt.xlabel('Index')
                 plt.ylabel('Weight Value')
                 plt.title(f"Raw Weights Descending {test_score_group['title']}")
