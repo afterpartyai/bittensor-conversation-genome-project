@@ -33,12 +33,6 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
-#logger = None
-#try:
-    #from loguru import logger
-#except:
-    #print("No loguru")
-
 
 
 def check_config(cls, config: "bt.Config"):
