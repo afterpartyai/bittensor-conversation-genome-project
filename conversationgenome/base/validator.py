@@ -377,7 +377,7 @@ class BaseValidatorNeuron(BaseNeuron):
             return
 
 
-        state_path = self.config.neuron.full_path + "/state.pt"
+        state_path = self.config.neuron.full_path + "/state.npz"
         bt.logging.info(f"Saving validator state to {state_path}.")
 
         # Save the state of the validator to file.
