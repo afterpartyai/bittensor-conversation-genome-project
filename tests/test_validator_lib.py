@@ -173,10 +173,15 @@ async def test_full():
                     
                     elif prompt_type == 1:
                         bt.logging.info(f"Test Validator Evaluating Miner Responses for Prompt Type 1")
+                        if idx==0:
+                            bt.logging.info(f"\nFULL CONVERSATION:\n{full_conversation}\n\n")
+                            bt.logging.info(f"\n PROMPT: \n{prompt}\n\n")
                         response = MockResponse()
                         response.axon.hotkey = "HK-"+str(idx)
                         response.axon.uuid = str(miner_result['uid'])
                         response.cgp_output = [miner_result]
+                        bt.logging.info(f"MINER {idx} RESPONSE VALUE: {miner_result['response']}\n\n")
+
 
                         await vl.put_convo(response.axon.hotkey, conversation_guid, {"prompt_type":prompt_type, "prompt": prompt, "response":response.cgp_output[0]}, type="miner", batch_num=batch_num, window=idx,)
                         mock_miner_responses.append(response)
