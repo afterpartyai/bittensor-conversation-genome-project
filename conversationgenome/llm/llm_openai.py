@@ -107,10 +107,40 @@ class llm_openai:
 
     async def conversation_to_metadata(self, convo, generateEmbeddings=False):
         (xml, participants) = Utils.generate_convo_xml(convo)
+        prompts_json = Utils.get(convo, 'prompts', [])
+        try:
+            # Convert JSON string to a list
+            if isinstance(prompts_json, str):
+                prompts = json.loads(prompts_json)
+            elif isinstance(prompts_json, list):
+                prompts = prompts_json
+            else: 
+                bt.logging.error("prompt filetype not recognized.")
+                prompts = None
+            
+            # Check if the list contains tuples
+            if isinstance(prompts, list) and all(isinstance(item, list) and len(item) == 2 for item in prompts):
+                # Convert each list item to a tuple
+                prompts = [tuple(item) for item in prompts]
+                
+                # Access the first tuple
+                prompt_type, prompt = prompts[0]
+            else:
+                print("Error: prompts is not a list of tuples or is empty.")
+                prompt_type, prompt = None, None  # or some default values
+        except json.JSONDecodeError:
+            print("Error: Failed to decode JSON string.")
+            prompts = []
+            prompt_type, prompt = None, None  # or some default values
+
+        prompt_type, prompt = prompts[0]
+
         tags = None
         out = {"tags":{}}
+        out["prompt_type"] = prompt_type
+        out["prompt"] = prompt
 
-        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
+        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants, prompt=prompt)
         if not response:
             print("No tagging response. Aborting")
             return None
@@ -118,27 +148,37 @@ class llm_openai:
             print(f"Tagging failed: {response}. Aborting")
             return response
         content = Utils.get(response, 'content')
-        if self.return_json:
-            tags = self.process_json_tag_return(response)
-        else:
-            if isinstance(content, str):
-                tags = content.split(",")
+
+        if prompt_type ==0:
+            if self.return_json:
+                tags = self.process_json_tag_return(response)
             else:
-                print("Error: Unexpected response format. Content type:", type(content))
-                return None
+                if isinstance(content, str):
+                    tags = content.split(",")
+                else:
+                    print("Error: Unexpected response format. Content type:", type(content))
+                    return None
 
-        tags = Utils.clean_tags(tags)
+            tags = Utils.clean_tags(tags)
 
-        if not Utils.empty(tags):
-            out['tags'] = tags
-            out['vectors'] = {}
-            if generateEmbeddings:
-                if self.verbose:
-                    print(f"------- Found tags: {tags}. Getting vectors for tags...")
-                out['vectors'] = await self.get_vector_embeddings_set(tags)
+            if not Utils.empty(tags):
+                out['tags'] = tags
+                out['vectors'] = {}
+                if generateEmbeddings:
+                    if self.verbose:
+                        print(f"------- Found tags: {tags}. Getting vectors for tags...")
+                    out['vectors'] = await self.get_vector_embeddings_set(tags)
+                out['success'] = 1
+            else:
+                print("No tags returned by OpenAI", response)
+
+        elif prompt_type == 1:
+            out['response']=response['content']
             out['success'] = 1
         else:
-            print("No tags returned by OpenAI", response)
+            bt.logging.error("Prompt type not recognized. Conversation to Metadata Returning Nonetype")
+            return None
+        
         return out
 
 
@@ -279,14 +319,16 @@ class llm_openai:
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
         direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"))
         if override_prompt:
-            prompt = override_prompt
+            prompt = override_prompt + "\n\n\n"
+
         else:
             prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
             prompt = prompt1 + "\n\n\n"
-            if convoXmlStr:
-                prompt += convoXmlStr
-            else:
-                prompt += self.getExampleFunctionConv()
+        
+        if convoXmlStr:
+            prompt += convoXmlStr
+        else:
+            prompt += self.getExampleFunctionConv()
 
         if not direct_call:
             try:
@@ -353,7 +395,7 @@ class llm_openai:
         #print(funcs['location'])
         return funcs
 
-    async def call_llm_tag_function(self, convoXmlStr=None, participants=None, call_type="csv"):
+    async def call_llm_tag_function(self, convoXmlStr=None, participants=None, call_type="csv", prompt = None):
         out = {}
         direct_call = c.get('env', "OPENAI_DIRECT_CALL")
         if not OpenAI and not direct_call:
@@ -373,7 +415,7 @@ class llm_openai:
         elif call_type == "json":
             out = await self.openai_prompt_call_json(convoXmlStr=convoXmlStr, participants=participants)
         else:
-            out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
+            out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants, override_prompt=prompt)
 
         return out
 

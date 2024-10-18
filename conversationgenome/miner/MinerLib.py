@@ -35,18 +35,40 @@ class MinerLib:
 
         if not dryrun:
             llml = LlmLib()
-            lines = copy.deepcopy(conversation_window)
+            lines = copy.deepcopy(conversation_window[1])
+            prompt_tuple = copy.deepcopy(conversation_window[0])
+            prompt_type = prompt_tuple[0]
+            prompt = prompt_tuple[1]
+            prompt_list = [[prompt_type, prompt]]
+
             # TODO: Disable embeddings generation on miner once all validators upgraded
-            generateEmbeddings = True
+            if prompt_type == 0:
+                generateEmbeddings = True
+            else:
+                generateEmbeddings = False
             if generateEmbeddings:
                 bt.logging.info(f"Miner: generating embeddings...")
 
-            result = await llml.conversation_to_metadata({"lines":lines}, generateEmbeddings=generateEmbeddings)
-            tags = Utils.get(result, 'tags')
-            out["tags"] = tags
-            out["vectors"] = Utils.get(result, 'vectors', {})
-            num_tags = len(Utils.get(out, 'tags', []))
-            bt.logging.info(f"Miner: Mined {num_tags} vectors and tags")
+            result = await llml.conversation_to_metadata({"lines":lines,"prompts":prompt_list}, generateEmbeddings=generateEmbeddings)
+
+            out['prompt_type'] = prompt_type
+            out['prompt'] = prompt
+
+            if prompt_type == 0:
+                tags = Utils.get(result, 'tags')
+                out["tags"] = tags
+                out["vectors"] = Utils.get(result, 'vectors', {})
+                num_tags = len(Utils.get(out, 'tags', []))
+                bt.logging.info(f"Miner: Mined {num_tags} vectors and tags")
+                if self.verbose:
+                    bt.logging.debug(f"MINED TAGS: {out['tags']}")
+            elif prompt_type == 1:
+                out["response"]= tags = Utils.get(result, 'response')
+                if self.verbose:
+                    bt.logging.debug(f"MINED RESPONSE: {out['response']}")
+            else:
+                bt.logging.error("Miner prompt type not recognized. do_mining returning Nonetype")
+                out = None
 
             if self.verbose:
                 bt.logging.debug(f"MINED TAGS: {out['tags']}")

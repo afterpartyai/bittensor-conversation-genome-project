@@ -1,0 +1,1760 @@
+
+[
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 123456789,
+    "participants": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "lines": [
+      [
+        0,
+        "I love Donald Trump and all of his policies"
+      ],
+      [
+        1,
+        "I don't like his policies and I don't think he would be a good president"
+      ]
+    ],
+    "errors": [],
+    "warnings": [],
+    "prompts": [
+      [
+        1,"Based on the context, which represents an online exchange between two parties, determine if second line of dialogue represents 0: agreement, 1: disagreement, 2: neutrality, or 3: Only return the numerical answer without any English commentary."
+      ]
+    ],
+    "api_version": 1.1
+  },
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 987654321,
+    "participants": [
+      "SPEAKER_01",
+      "SPEAKER_01"
+    ],
+    "lines": [
+      [
+        0,
+        "Climate change is the biggest threat to our planet"
+      ],
+      [
+        1,
+        "I agree, we need to take immediate action to combat it"
+      ]
+    ],
+    "errors": [],
+    "warnings": [],
+    "prompts": [
+      [
+        1,"Based on the context, which represents an online exchange between two parties, determine if second line of dialogue represents 0: agreement, 1: disagreement, 2: neutrality, or 3: Only return the numerical answer without any English commentary."
+      ]
+    ],
+    "api_version": 1.1
+  },
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 192837465,
+    "participants": [
+      "SPEAKER_02",
+      "SPEAKER_01"
+    ],
+    "lines": [
+      [
+        0,
+        "I think pineapple on pizza is delicious"
+      ],
+      [
+        1,
+        "I don't mind it, but it's not my favorite topping"
+      ]
+    ],
+    "errors": [],
+    "warnings": [],
+    "prompts": [
+      [
+        1,"Based on the context, which represents an online exchange between two parties, determine if second line of dialogue represents 0: agreement, 1: disagreement, 2: neutrality, or 3: Only return the numerical answer without any English commentary."
+      ]
+    ],
+    "api_version": 1.1
+  },
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 564738291,
+    "participants": [
+      "SPEAKER_03",
+      "SPEAKER_01"
+    ],
+    "lines": [
+      [
+        0,
+        "The new superhero movie was amazing!"
+      ],
+      [
+        1,
+        "I thought it was just okay, not as good as the previous ones"
+      ]
+    ],
+    "errors": [],
+    "warnings": [],
+      "prompts": [
+        [
+          1,"Based on the context, which represents an online exchange between two parties, determine if second line of dialogue represents 0: agreement, 1: disagreement, 2: neutrality, or 3: Only return the numerical answer without any English commentary."
+        ]
+      ],
+    "api_version": 1.1
+  },
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 102938475,
+    "participants": [
+      "SPEAKER_04",
+      "SPEAKER_01"
+    ],
+    "lines": [
+      [
+        0,
+        "Working from home is the best thing ever"
+      ],
+      [
+        1,
+        "I prefer the office environment, but I see the benefits of working from home"
+      ]
+    ],
+    "errors": [],
+    "warnings": [],
+        "prompts": [
+          [
+            1,"Based on the context, which represents an online exchange between two parties, determine if second line of dialogue represents 0: agreement, 1: disagreement, 2: neutrality, or 3: Only return the numerical answer without any English commentary."
+          ]
+        ],
+    "api_version": 1.1
+  },
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 675849302,
+    "participants": [
+      "SPEAKER_05",
+      "SPEAKER_01"
+    ],
+    "lines": [
+      [
+        0,
+        "Social media is ruining real-life communication"
+      ],
+      [
+        1,
+        "I think it depends on how you use it, it can also connect people"
+      ]
+    ],
+    "errors": [],
+    "warnings": [],
+        "prompts": [
+          [
+            1,"Based on the context, which represents an online exchange between two parties, determine if second line of dialogue represents 0: agreement, 1: disagreement, 2: neutrality, or 3: Only return the numerical answer without any English commentary."
+          ]
+        ],
+    "api_version": 1.1
+  },
+  {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 7226083882,
+    "participants": [
+        "SPEAKER_00"
+    ],
+    "lines": [
+        [
+        0,
+        " Accidents happen."
+        ],
+        [
+        0,
+        "Of course, it's easy enough to just say that and shrug it off, but when said accident results in a lot of broken glass everywhere, that's when it becomes a bit of an issue."
+        ],
+        [
+        0,
+        "And that's when SOS Glass Services can step in."
+        ],
+        [
+        0,
+        "Whether it's for your home, your office, your storefront, or any other residential or commercial property, these top-rated glazers can take care of the cleanup and repairs you need, so you can get back to business as usual in no time."
+        ],
+        [
+        0,
+        " Specializing in architectural glazing, SOS Glass Services fully licensed tradesmen can install and replace frameless glass for a variety of internal and external fixtures."
+        ],
+        [
+        0,
+        "These include windows, office partitions, and pool fencing."
+        ],
+        [
+        0,
+        "Their latest repair services also extend to aluminum doors, mirrors, shower screens, and other similar furnishings."
+        ],
+        [
+        0,
+        "So don't think that just because you don't have a broken window, you can't call SOS Glass Services."
+        ],
+        [
+        0,
+        " Any glass repair job is a job that requires attention, and they agree."
+        ],
+        [
+        0,
+        "That's why they can handle all of it."
+        ],
+        [
+        0,
+        "Of course, if you've got a disaster zone on your hands, you want to get that taken care of quickly."
+        ],
+        [
+        0,
+        "Because trying to get around when you have to keep your eyes peeled for broken glass is an exercise in frustration, not to mention a huge safety hazard."
+        ],
+        [
+        0,
+        "But you don't have to worry with SOS Glass Services on the case."
+        ],
+        [
+        0,
+        " Because the company's experienced glazers are capable of cutting glass on-site, they can provide you with emergency repairs in a timely fashion."
+        ],
+        [
+        0,
+        "In the event that they are unable to produce glass in the required dimensions, SOS Glass Services will take measures to remove any hazards from the site and ensure public safety until the replacements can be properly installed."
+        ],
+        [
+        0,
+        "But that's not all that they do."
+        ],
+        [
+        0,
+        " In addition to repairs, SOS Glass Services can supply residential and commercial properties with glass balustrades for balconies, staircases, landings, and terraces."
+        ],
+        [
+        0,
+        "The company offers its architectural glass in a number of finishes, all of which are designed to promote the longevity and durability of the product."
+        ],
+        [
+        0,
+        " Regardless of the job, all of SOS Glass Services' products and services are compliant with Australian safety standards, reflecting their devotion to your safety."
+        ],
+        [
+        0,
+        "SOS Glass Services is an Australian-owned business with over 25 years of experience in the glazing industry."
+        ],
+        [
+        0,
+        " the company continuously strives to provide customers with high-quality service at competitive prices."
+        ],
+        [
+        0,
+        "A satisfied client said,"
+        ],
+        [
+        0,
+        " They went out of their way to attend to the damage."
+        ],
+        [
+        0,
+        "Bob and his team were an absolute pleasure to work with, and they did an amazing job."
+        ],
+        [
+        0,
+        "Their prices were very reasonable, and the results were great."
+        ],
+        [
+        0,
+        "We would recommend them to anyone."
+        ],
+        [
+        0,
+        "If you want to get an idea of how reasonable SOS Glass Services prices are, give them a call."
+        ],
+        [
+        0,
+        "They'll give you a free no-obligation quote."
+        ],
+        [
+        0,
+        "That means you can go into your repairs with a good idea of how much it's going to cost you, rather than having your reality shattered by the invoice."
+        ],
+        [
+        0,
+        " Kind of like how that freak accident shattered your window."
+        ],
+        [
+        0,
+        "Just kidding."
+        ],
+        [
+        0,
+        "That's highly unlikely to happen, regardless of whether you get a quote or not."
+        ],
+        [
+        0,
+        "SOS Glass Services offers some of the lowest prices in Sydney, after all, so don't let your broken glass languish any longer."
+        ],
+        [
+        0,
+        "Repair it with confidence, knowing that you've got the best people for the job."
+        ],
+        [
+        0,
+        "Visit the link in the description to get started."
+        ]
+    ],
+    "errors": [
+        
+    ],
+    "warnings": [
+        
+    ],
+    "prompts": [
+      [
+        0,"Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary."
+      ]
+    ],
+    "api_version": 1.1
+    },
+    {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 7226083882,
+    "participants": [
+        "SPEAKER_00"
+    ],
+    "lines": [
+        [
+        0,
+        " Accidents happen."
+        ],
+        [
+        0,
+        "Of course, it's easy enough to just say that and shrug it off, but when said accident results in a lot of broken glass everywhere, that's when it becomes a bit of an issue."
+        ],
+        [
+        0,
+        "And that's when SOS Glass Services can step in."
+        ],
+        [
+        0,
+        "Whether it's for your home, your office, your storefront, or any other residential or commercial property, these top-rated glazers can take care of the cleanup and repairs you need, so you can get back to business as usual in no time."
+        ],
+        [
+        0,
+        " Specializing in architectural glazing, SOS Glass Services fully licensed tradesmen can install and replace frameless glass for a variety of internal and external fixtures."
+        ],
+        [
+        0,
+        "These include windows, office partitions, and pool fencing."
+        ],
+        [
+        0,
+        "Their latest repair services also extend to aluminum doors, mirrors, shower screens, and other similar furnishings."
+        ],
+        [
+        0,
+        "So don't think that just because you don't have a broken window, you can't call SOS Glass Services."
+        ],
+        [
+        0,
+        " Any glass repair job is a job that requires attention, and they agree."
+        ],
+        [
+        0,
+        "That's why they can handle all of it."
+        ],
+        [
+        0,
+        "Of course, if you've got a disaster zone on your hands, you want to get that taken care of quickly."
+        ],
+        [
+        0,
+        "Because trying to get around when you have to keep your eyes peeled for broken glass is an exercise in frustration, not to mention a huge safety hazard."
+        ],
+        [
+        0,
+        "But you don't have to worry with SOS Glass Services on the case."
+        ],
+        [
+        0,
+        " Because the company's experienced glazers are capable of cutting glass on-site, they can provide you with emergency repairs in a timely fashion."
+        ],
+        [
+        0,
+        "In the event that they are unable to produce glass in the required dimensions, SOS Glass Services will take measures to remove any hazards from the site and ensure public safety until the replacements can be properly installed."
+        ],
+        [
+        0,
+        "But that's not all that they do."
+        ],
+        [
+        0,
+        " In addition to repairs, SOS Glass Services can supply residential and commercial properties with glass balustrades for balconies, staircases, landings, and terraces."
+        ],
+        [
+        0,
+        "The company offers its architectural glass in a number of finishes, all of which are designed to promote the longevity and durability of the product."
+        ],
+        [
+        0,
+        " Regardless of the job, all of SOS Glass Services' products and services are compliant with Australian safety standards, reflecting their devotion to your safety."
+        ],
+        [
+        0,
+        "SOS Glass Services is an Australian-owned business with over 25 years of experience in the glazing industry."
+        ],
+        [
+        0,
+        " the company continuously strives to provide customers with high-quality service at competitive prices."
+        ],
+        [
+        0,
+        "A satisfied client said,"
+        ],
+        [
+        0,
+        " They went out of their way to attend to the damage."
+        ],
+        [
+        0,
+        "Bob and his team were an absolute pleasure to work with, and they did an amazing job."
+        ],
+        [
+        0,
+        "Their prices were very reasonable, and the results were great."
+        ],
+        [
+        0,
+        "We would recommend them to anyone."
+        ],
+        [
+        0,
+        "If you want to get an idea of how reasonable SOS Glass Services prices are, give them a call."
+        ],
+        [
+        0,
+        "They'll give you a free no-obligation quote."
+        ],
+        [
+        0,
+        "That means you can go into your repairs with a good idea of how much it's going to cost you, rather than having your reality shattered by the invoice."
+        ],
+        [
+        0,
+        " Kind of like how that freak accident shattered your window."
+        ],
+        [
+        0,
+        "Just kidding."
+        ],
+        [
+        0,
+        "That's highly unlikely to happen, regardless of whether you get a quote or not."
+        ],
+        [
+        0,
+        "SOS Glass Services offers some of the lowest prices in Sydney, after all, so don't let your broken glass languish any longer."
+        ],
+        [
+        0,
+        "Repair it with confidence, knowing that you've got the best people for the job."
+        ],
+        [
+        0,
+        "Visit the link in the description to get started."
+        ]
+    ],
+    "errors": [
+        
+    ],
+    "warnings": [
+        
+    ],
+    "prompts": [
+    [
+      0,"Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary."
+    ]
+    ],
+    "api_version": 1.1
+    },
+    {
+    "mode": "testnet",
+    "total": 35,
+    "guid": 7226083882,
+    "participants": [
+        "SPEAKER_00"
+    ],
+    "lines": [
+        [
+        0,
+        " Welcome to today's episode of the Mindset Mentor Podcast."
+        ],
+        [
+        0,
+        "I am your host, Rob Dial, and if you have not yet done so, hit that subscribe button so that you never, ever miss another episode."
+        ],
+        [
+        0,
+        "And if you want to join in on my motivational text message group, send me a text right now, 1-512-580-9305."
+        ],
+        [
+        0,
+        "Once again, 1-512-580-9305 and receive motivational text messages from me."
+        ],
+        [
+        0,
+        " Today, we're going to be talking about how to deepen your communication and your relationships with everyone that you know, whether that's someone that you're in a significant relationship with, someone that's in your family, someone that's your children, or maybe just any person that you happen to meet on the side of the road."
+        ],
+        [
+        0,
+        "And we've all heard it, the number one key"
+        ],
+        [
+        0,
+        " to any relationship to keeping them to being long lasting is communication."
+        ],
+        [
+        0,
+        "If you can communicate effectively with someone on your side and they can communicate effectively with you, you can basically work out anything that you have going on with somebody."
+        ],
+        [
+        0,
+        " And so that's what we're gonna talk about."
+        ],
+        [
+        0,
+        "This could be, once again, romantic relationships, this could be friendships, this could be people in your family, this could be your brother, sister, your parents, this could be children that you have deepening your relationship with them, any other breathing human."
+        ],
+        [
+        0,
+        "So if they can fog a glass."
+        ],
+        [
+        0,
+        " which means that they're breathing."
+        ],
+        [
+        0,
+        "This will deepen your communication skills with them."
+        ],
+        [
+        0,
+        "And notice that I say communication skills because communication is not a talent."
+        ],
+        [
+        0,
+        "A talent is something that you're born with."
+        ],
+        [
+        0,
+        "Communication as a skill is something that you learn, something that you improve at."
+        ],
+        [
+        0,
+        "So like if you go and learn how to play basketball,"
+        ],
+        [
+        0,
+        " Right."
+        ],
+        [
+        0,
+        "There are some talented people in basketball, just like there's some talented communicators, but the most effective communicators know that communication is a skill."
+        ],
+        [
+        0,
+        "It's something that you work at."
+        ],
+        [
+        0,
+        "It's something that you can improve at."
+        ],
+        [
+        0,
+        "And anybody, no matter what situation that you're in, whether you're an extreme extrovert or whether you're an extreme introvert, all of you can improve your communication skills."
+        ],
+        [
+        0,
+        "If you use this simple strategy to help you improve and it."
+        ],
+        [
+        0,
+        " takes practice."
+        ],
+        [
+        0,
+        "You just got to practice it."
+        ],
+        [
+        0,
+        "You go out and you try this and then you try it again, you try it again, and eventually you'll start to get better at all of these."
+        ],
+        [
+        0,
+        "And this came from a PhD."
+        ],
+        [
+        0,
+        "Her name is Carol Kumpler, and she effectively made this really, really simple acronym to help you understand how to get better at improving your communication skills with people."
+        ],
+        [
+        0,
+        " And that is going to be this."
+        ],
+        [
+        0,
+        "The acronym itself is LOVE, not L-O-V-E."
+        ],
+        [
+        0,
+        "It's L-U-V-E."
+        ],
+        [
+        0,
+        "L stands for listen."
+        ],
+        [
+        0,
+        "U stands for understand."
+        ],
+        [
+        0,
+        "And V stands for validate."
+        ],
+        [
+        0,
+        "We're going to go through each one of these and talk about listening."
+        ],
+        [
+        0,
+        "We're going to talk about understanding someone in actually communicating that understanding to them and then also validating them as well."
+        ],
+        [
+        0,
+        " which means that you have to actually go out and validate them, whether that's through non-verbals, whether that's through verbals."
+        ],
+        [
+        0,
+        "And we're going to talk about each one of these."
+        ],
+        [
+        0,
+        "The first one is listen."
+        ],
+        [
+        0,
+        "Now, listening is also a skill."
+        ],
+        [
+        0,
+        "And the first thing I want you to realize in listening is this."
+        ],
+        [
+        0,
+        "One of my favorite phrases is that you were born with one mouth and two ears, which means that you should listen twice as much as you speak."
+        ],
+        [
+        0,
+        "Take that into your being."
+        ],
+        [
+        0,
+        "Don't forget it."
+        ],
+        [
+        0,
+        " You should be listening twice as much as you're speaking."
+        ],
+        [
+        0,
+        "And when I say listen, I mean listen without the need to ever respond if necessary."
+        ],
+        [
+        0,
+        "Listening and then just giving space, just silence."
+        ],
+        [
+        0,
+        "The most value that you can give someone in a conversation is silence."
+        ],
+        [
+        0,
+        " We've all been in a conversation with someone before and they're a talker and they're talking and they're telling you about their life and they're telling you about all the things that's happened to them."
+        ],
+        [
+        0,
+        "And you barely say four and a half words."
+        ],
+        [
+        0,
+        "And at the end of the conversation, what did they say to you?"
+        ],
+        [
+        0,
+        "This was such a good conversation."
+        ],
+        [
+        0,
+        "Thank you so much."
+        ],
+        [
+        0,
+        "If you really want to make a deep connection with someone, you don't even have to talk very much."
+        ],
+        [
+        0,
+        "You just have to listen and you have to understand, you have to validate them."
+        ],
+        [
+        0,
+        "And so listening,"
+        ],
+        [
+        0,
+        " We've all had the people, like I said, you just got to give people space."
+        ],
+        [
+        0,
+        "And here's the important part of listening, listening without judgment."
+        ],
+        [
+        0,
+        "Now, this is hard for a lot of us."
+        ],
+        [
+        0,
+        "And the reason why is because we're born and we're, you know, programmed by everyone that we know and everyone that we've met and we've programmed through society."
+        ],
+        [
+        0,
+        "So we have these beliefs that are inside of us."
+        ],
+        [
+        0,
+        "And sometimes you're going to get into conversations with people who have different beliefs than you."
+        ],
+        [
+        0,
+        "And it's not about taking your belief"
+        ],
+        [
+        0,
+        " in pushing your belief onto them."
+        ],
+        [
+        0,
+        "It's about taking your belief, taking a step back, listening to them, and just allowing them to express."
+        ],
+        [
+        0,
+        "We can all agree right now, the number one thing that people need right now is more space to listen"
+        ],
+        [
+        0,
+        " and understand someone else's perspective right now, even if it doesn't line up with theirs, whether that's their religion is different than yours or your political standpoint is different than theirs."
+        ],
+        [
+        0,
+        "Whatever it is, is just listening to somebody without judgment and without trying to tell them exactly what to do."
+        ],
+        [
+        0,
+        "Now, as a guy, this is really hard."
+        ],
+        [
+        0,
+        "And for me, it's really hard being someone who's been a coach for a long time."
+        ],
+        [
+        0,
+        "And I've coached a lot of people to listen to somebody without the need to try to fix them."
+        ],
+        [
+        0,
+        " Now, most guys, we usually hear someone say, Oh, this is what happened."
+        ],
+        [
+        0,
+        "This is what happened."
+        ],
+        [
+        0,
+        "This would happen."
+        ],
+        [
+        0,
+        "Our immediate response is, Oh, I know the answer to that."
+        ],
+        [
+        0,
+        "I can, I can fix this."
+        ],
+        [
+        0,
+        "Let me go ahead and swoop down and save the day."
+        ],
+        [
+        0,
+        "But in reality, most of the time, people don't need your coaching."
+        ],
+        [
+        0,
+        "They don't need you to tell them what to do."
+        ],
+        [
+        0,
+        "They need you to just be a soundboard, just to allow them to just say what they need to say."
+        ],
+        [
+        0,
+        " to get on with their life and to allow them to process, because a lot of people process from speaking."
+        ],
+        [
+        0,
+        "And if you're giving your two cents for everything that they say, what's going to happen?"
+        ],
+        [
+        0,
+        "They're not going to have the space to speak as much as they need to, which means they're not going to process as much as they need to."
+        ],
+        [
+        0,
+        "So you need to listen without judgment."
+        ],
+        [
+        0,
+        "Listening is a skill."
+        ],
+        [
+        0,
+        "One of the biggest things that I can tell you that just helps is, and this is something that my very first mentor told me,"
+        ],
+        [
+        0,
+        " When someone stops speaking, don't respond for three seconds."
+        ],
+        [
+        0,
+        "So like if someone stops in your head, you go, one Mississippi, two Mississippi, three Mississippi, and then you can respond."
+        ],
+        [
+        0,
+        "Here's the reason why is because most people don't respond for three seconds."
+        ],
+        [
+        0,
+        "They don't respond for three seconds."
+        ],
+        [
+        0,
+        " will only give you the surface level information unless you allow them the space to give you more."
+        ],
+        [
+        0,
+        "And what's really interesting is that if somebody stops speaking and you wait three seconds, you usually can't even get to three Mississippi before they start speaking again."
+        ],
+        [
+        0,
+        " And so what happens is when they start speaking again, usually they're telling you more about their story that they hadn't before."
+        ],
+        [
+        0,
+        "And that a lot of times they don't tell anybody because very rarely nowadays do people listen without immediately trying to give their two cents."
+        ],
+        [
+        0,
+        " And so that means listening to them, not worrying about what we're going to say back to them, but just to allow them to speak."
+        ],
+        [
+        0,
+        "Just be a wall that's just there for them to just, you know, a wall's not going to give you any response."
+        ],
+        [
+        0,
+        "A wall's not going to tell you what to do."
+        ],
+        [
+        0,
+        "A wall's not going to give you their two cents."
+        ],
+        [
+        0,
+        "Just listen and give three seconds."
+        ],
+        [
+        0,
+        "And the challenge that I have for you is take this today into some conversation that you have."
+        ],
+        [
+        0,
+        "How long can you go without responding?"
+        ],
+        [
+        0,
+        " Think about that."
+        ],
+        [
+        0,
+        "A lot of us are really not used to silence."
+        ],
+        [
+        0,
+        "We don't do well with silence."
+        ],
+        [
+        0,
+        "And so what happens is that we try to jump in so that there's not enough, there's not any silence in between our words."
+        ],
+        [
+        0,
+        "And so the challenge that I'm gonna have for you is this, try to go today for at least three seconds before you respond to somebody."
+        ],
+        [
+        0,
+        "And then if you can, go longer and then just give them space."
+        ],
+        [
+        0,
+        "And if you need to, you can say stuff like,"
+        ],
+        [
+        0,
+        " That's pretty interesting."
+        ],
+        [
+        0,
+        "Oh, and what else?"
+        ],
+        [
+        0,
+        "And allow them to go deeper into what it is."
+        ],
+        [
+        0,
+        "So that's the first thing is listening."
+        ],
+        [
+        0,
+        "The second part of the skill is understanding the person."
+        ],
+        [
+        0,
+        " Hey everyone, I want to tell you about this amazing online community that I'm a part of."
+        ],
+        [
+        0,
+        "It's the ultimate knowledge hub from The Hustle and it's called Trends."
+        ],
+        [
+        0,
+        "Trends will give you a network and information that you need to succeed."
+        ],
+        [
+        0,
+        "Trends gives me access to a community of industry leaders in virtually every single field where I'm able to capitalize and learn on emerging opportunities."
+        ],
+        [
+        0,
+        " And every single week they have live lectures."
+        ],
+        [
+        0,
+        "They have experts who come in, they teach growth strategies, they teach SEO."
+        ],
+        [
+        0,
+        "One that was really good is how to send the perfect cold email."
+        ],
+        [
+        0,
+        "And Trends has exclusive research with intriguing topics to help inspire."
+        ],
+        [
+        0,
+        "Stuff like 30 companies defining the future of media and pop culture or data on thousands of successful Kickstarter campaigns."
+        ],
+        [
+        0,
+        "And I've been following the hustle for years now and they put out some incredible content around business."
+        ],
+        [
+        0,
+        " and I'm enjoying the Trends community so much, I wanted to share it with you."
+        ],
+        [
+        0,
+        "Right now, you can get your first two weeks for just $1."
+        ],
+        [
+        0,
+        "All you have to do is go to trends.co slash dial to start your $1 two-week trial."
+        ],
+        [
+        0,
+        "That's T-R-E-N-D-S dot C-O slash D-I-A-L for your $1 two-week trial, trends.co slash dial."
+        ],
+        [
+        0,
+        "Understanding comes through verbally and also comes through non-verbally."
+        ],
+        [
+        0,
+        "So how does it work verbally?"
+        ],
+        [
+        0,
+        " Uh-huh."
+        ],
+        [
+        0,
+        "Yeah."
+        ],
+        [
+        0,
+        "Okay."
+        ],
+        [
+        0,
+        "Say words like that."
+        ],
+        [
+        0,
+        " Uh-huh."
+        ],
+        [
+        0,
+        "Okay."
+        ],
+        [
+        0,
+        "Uh-huh."
+        ],
+        [
+        0,
+        "Yeah."
+        ],
+        [
+        0,
+        "And what else?"
+        ],
+        [
+        0,
+        "Oh, I see."
+        ],
+        [
+        0,
+        "That's the verbal side of it."
+        ],
+        [
+        0,
+        "The biggest side of understanding and using that is the non-verbals."
+        ],
+        [
+        0,
+        "And there's a big difference between the way that men communicate and the way that women communicate."
+        ],
+        [
+        0,
+        "And when I was younger and I was in my first company that I had, I had a manager that was above me."
+        ],
+        [
+        0,
+        "I owned a franchise with the company and I controlled a certain county."
+        ],
+        [
+        0,
+        "It was Broward County down in Fort Lauderdale."
+        ],
+        [
+        0,
+        " And I had a manager who ran all of South Florida that was above me."
+        ],
+        [
+        0,
+        "And his name was Jeff."
+        ],
+        [
+        0,
+        "And Jeff was the number one developer of women in our company, as far as women that would move up the ranks and become managers and were successful in our company."
+        ],
+        [
+        0,
+        "And I remember sitting down with him and"
+        ],
+        [
+        0,
+        " I was, let's see, this was 2010, so I was 24 years old and I was trying to get better at effectively communicating with women because I was really good at managing men, but because I'm a guy and that made sense to me, but I was really bad at managing women."
+        ],
+        [
+        0,
+        "So I was like, how can I get better at managing women?"
+        ],
+        [
+        0,
+        "So I sat down and I had a conversation with him and he's like, number one, read the book, Men Are From Mars, Women Are From Venus."
+        ],
+        [
+        0,
+        "It'll open your eyes to how different they are."
+        ],
+        [
+        0,
+        "Number two, watch women communicate and start reading about it."
+        ],
+        [
+        0,
+        " And so I would watch women, not creepily, like I wouldn't just look around a corner and be watching women communicate at dinner, but I would watch them communicate and see what they did."
+        ],
+        [
+        0,
+        "And they've been doing studies on children, little boys and little girls, and seeing the difference in the way they communicate."
+        ],
+        [
+        0,
+        "And there's one that really jumps out to me."
+        ],
+        [
+        0,
+        " is they would take children and put them into a classroom and they're four years old."
+        ],
+        [
+        0,
+        "They put them into a classroom and it's super interesting is they would have, you know, the, the mirrored walls where they could see through, but the children didn't know that there was someone that was actually viewing them."
+        ],
+        [
+        0,
+        "And what happened was little boys would have, would communicate shoulder to shoulder."
+        ],
+        [
+        0,
+        "So if you're looking at me on this video on YouTube or social media, you know, there's me right here."
+        ],
+        [
+        0,
+        " If it was another little boy, usually a little boy is gonna also be facing the same direction that I'm facing."
+        ],
+        [
+        0,
+        "And they think this goes back to our hunter-gatherer days, where men got used to communicating without being face-to-face."
+        ],
+        [
+        0,
+        "And the reason why was because men were usually the hunters."
+        ],
+        [
+        0,
+        "They would usually go out and they would hunt something."
+        ],
+        [
+        0,
+        "And so if we're looking the same direction, we're seeing the same thing."
+        ],
+        [
+        0,
+        "But then also men got used to being back-to-back."
+        ],
+        [
+        0,
+        "So if I'm back-to-back and there's a guy behind me, I can still effectively communicate with him."
+        ],
+        [
+        0,
+        " And so they got used to not seeing each other, not giving verbal cues or not giving verbal cues, but not giving actual nonverbal cues."
+        ],
+        [
+        0,
+        "And so men aren't usually as good at nonverbal cues as women are."
+        ],
+        [
+        0,
+        "And so let me explain how this works."
+        ],
+        [
+        0,
+        "So they would watch little boys because, you know, I can be back to back."
+        ],
+        [
+        0,
+        "That means that myself and my friend that is hunting with me."
+        ],
+        [
+        0,
+        " we can see 360 degrees."
+        ],
+        [
+        0,
+        "We can also know if there's anything that's attacking us from anywhere from 360 degrees."
+        ],
+        [
+        0,
+        "So it's the safest when you're going out and hunting to not be looking the exact same direction sometimes, not be facing each other, absolutely, but to be facing different directions."
+        ],
+        [
+        0,
+        " And so sometimes women are like, he doesn't listen to me."
+        ],
+        [
+        0,
+        "Like how many times have you women ever thought that or said that, or had a friend say that to you?"
+        ],
+        [
+        0,
+        "Or men, how many times have you heard that from a woman?"
+        ],
+        [
+        0,
+        "The reason why is because we effectively communicate differently."
+        ],
+        [
+        0,
+        "And so one of the things that they found is that little boys will usually talk to each other, but not have to actually look at each other."
+        ],
+        [
+        0,
+        "Little girls, what they would do, even at four years old,"
+        ],
+        [
+        0,
+        " They would place them inside of their chairs and they would have a desk in front of them and little girls would turn their bodies to square up shoulders with each other."
+        ],
+        [
+        0,
+        "So sometimes if someone feels like they're not being listened to, it's not that you're not listening to them."
+        ],
+        [
+        0,
+        "It's that they're not getting the nonverbal cues from you that you are listening."
+        ],
+        [
+        0,
+        "The head nods."
+        ],
+        [
+        0,
+        " the squaring up of the shoulders, not looking somewhere else, but looking them deep in their eyes."
+        ],
+        [
+        0,
+        "And so if you want to effectively sit and listen to somebody, whether it's a male or whether it's a female, square up your shoulders with them, give them head nods, look them in the eyes."
+        ],
+        [
+        0,
+        "And those are the non-verbals that need to be taken care of."
+        ],
+        [
+        0,
+        "The verbals would be saying like stuff."
+        ],
+        [
+        0,
+        "Like I said, yeah."
+        ],
+        [
+        0,
+        "Uh-huh."
+        ],
+        [
+        0,
+        "Oh, wow."
+        ],
+        [
+        0,
+        "Tell me more about that."
+        ],
+        [
+        0,
+        "That's interesting."
+        ],
+        [
+        0,
+        " What else?"
+        ],
+        [
+        0,
+        "Well, how do you feel about that?"
+        ],
+        [
+        0,
+        "And you're basically reflecting back to them is what you're doing."
+        ],
+        [
+        0,
+        "You're reflecting back to them, making them know that they're understood."
+        ],
+        [
+        0,
+        "So they could say something to you in a way to reflect is to say back to them what they just said to you."
+        ],
+        [
+        0,
+        " So that's the you side."
+        ],
+        [
+        0,
+        "So we've got listening, we've got understanding, and now we've got validating, which is taking your beliefs out of it, like I said a few minutes ago, and validating who they are, the way they feel, the actions that they took, even if deep down inside, you don't fully 100% agree with them."
+        ],
+        [
+        0,
+        " Because ultimately you're not going to agree with some people in your life."
+        ],
+        [
+        0,
+        "You're not going to agree with a lot of people in your life, but your job is not to try to change somebody because you, it's, it should just let them be validated."
+        ],
+        [
+        0,
+        "Just make them feel understood."
+        ],
+        [
+        0,
+        "Because I'll tell you this, everybody that you will ever come across is doing the best that they can with the tools and the knowledge that they currently have."
+        ],
+        [
+        0,
+        "Everybody, because if they could have done better, they would have done better."
+        ],
+        [
+        0,
+        " So what you need to do is validate that person knowing it's another being that's trying their best."
+        ],
+        [
+        0,
+        "And you say stuff like, I completely understand."
+        ],
+        [
+        0,
+        "Tell me more about that."
+        ],
+        [
+        0,
+        "I see where you're coming from."
+        ],
+        [
+        0,
+        "Also, what do you do?"
+        ],
+        [
+        0,
+        "You ask questions to go deeper into it."
+        ],
+        [
+        0,
+        "One of the biggest skills that I teach people and I've learned as a coach is that my job"
+        ],
+        [
+        0,
+        " as a coach and coaching people is not to give someone the answers."
+        ],
+        [
+        0,
+        "My job is to ask them questions so that they can come up with their own answers."
+        ],
+        [
+        0,
+        "So if I'm sitting in a coaching session with somebody, I might know the answer to their question within the first 30 seconds and I can tell them the answer."
+        ],
+        [
+        0,
+        " Or I can ask them questions to allow them to try to get to that same place."
+        ],
+        [
+        0,
+        "And most of the time people usually do."
+        ],
+        [
+        0,
+        "So if I know that the answer is X, Y, Z, instead of saying, Hey, the answer is X, Y, Z, this is what you should do."
+        ],
+        [
+        0,
+        "I asked them questions so that they can get to X, Y, Z. And here's the reason why is because if I asked them a question and they have to think about it."
+        ],
+        [
+        0,
+        " to come up with the answer, they're making new neurological connections in their brain, which actually means that their recall rate, their rate of remembering what it is that we're talking about, is 10 times higher than if I tell them."
+        ],
+        [
+        0,
+        " So let me say this again, someone's rate of remembering something that is the answer that they need is 10 times higher if they come up with the answer, if I ask them questions versus me actually just giving them the answer."
+        ],
+        [
+        0,
+        "And the reason why is because they're actually making new neurological connections inside of their brain."
+        ],
+        [
+        0,
+        " So they're 10 times more likely to remember it."
+        ],
+        [
+        0,
+        "And here's the thing."
+        ],
+        [
+        0,
+        "They're way more likely to actually take action on the answer that they came up with versus the answer that you give them because they think it's their idea."
+        ],
+        [
+        0,
+        "Why?"
+        ],
+        [
+        0,
+        "Because they came up with it."
+        ],
+        [
+        0,
+        " So if you feel like, oh, I need to tell my children, for instance, let's just take the relationship with you and a child."
+        ],
+        [
+        0,
+        "I need to tell them what's right or wrong."
+        ],
+        [
+        0,
+        "Oh, they did this wrong."
+        ],
+        [
+        0,
+        "I need to tell them what they should do."
+        ],
+        [
+        0,
+        "Okay."
+        ],
+        [
+        0,
+        "You could do that."
+        ],
+        [
+        0,
+        "Or you can realize that deep down inside, we all have this massive amount of intelligence inside of us."
+        ],
+        [
+        0,
+        "Even your children have the intelligence to know what's right or wrong."
+        ],
+        [
+        0,
+        "And you say, okay, well, you know, you hit that little boy."
+        ],
+        [
+        0,
+        "You should never have hit that little boy."
+        ],
+        [
+        0,
+        "Do you understand me?"
+        ],
+        [
+        0,
+        "Don't ever hit that little boy again."
+        ],
+        [
+        0,
+        " Well, now they're being told what to do, but what if you were to sit there and say, okay, do you feel like hitting that boy was the right thing to do in that moment?"
+        ],
+        [
+        0,
+        "You don't."
+        ],
+        [
+        0,
+        "Okay."
+        ],
+        [
+        0,
+        "I understand."
+        ],
+        [
+        0,
+        "Yeah."
+        ],
+        [
+        0,
+        "You know, they might start crying."
+        ],
+        [
+        0,
+        "I understand you're in, you felt emotional and that's okay."
+        ],
+        [
+        0,
+        "It's not bad to feel emotional."
+        ],
+        [
+        0,
+        "So you don't feel like it was the right thing to do."
+        ],
+        [
+        0,
+        "Okay."
+        ],
+        [
+        0,
+        "What do you think the right thing in that situation would have been to do?"
+        ],
+        [
+        0,
+        "Oh, to go tell a teacher instead."
+        ],
+        [
+        0,
+        "Okay."
+        ],
+        [
+        0,
+        "Do you feel like you would have gotten in less trouble if you would have told a teacher or not hit the little boy?"
+        ],
+        [
+        0,
+        " You would have?"
+        ],
+        [
+        0,
+        "Okay, so next time, what do you think the best thing is to do?"
+        ],
+        [
+        0,
+        "To tell the teacher?"
+        ],
+        [
+        0,
+        "Okay, I think that's a really good idea."
+        ],
+        [
+        0,
+        "I'm really glad you came up with that."
+        ],
+        [
+        0,
+        "And number one, that child is more likely to remember it."
+        ],
+        [
+        0,
+        "And number two, they're more likely to do it because they feel like it was their idea."
+        ],
+        [
+        0,
+        " And that's the key to the validation side to communicating."
+        ],
+        [
+        0,
+        "So all too often we feel like I have to fix this person."
+        ],
+        [
+        0,
+        "I have to tell them what it is that they're supposed to do."
+        ],
+        [
+        0,
+        "But in reality, the answer is to allow them to come up with the answer through some of your questions."
+        ],
+        [
+        0,
+        "And so."
+        ],
+        [
+        0,
+        " The point of understanding and validating is that we all just want to be understood."
+        ],
+        [
+        0,
+        "We all just want to be validated."
+        ],
+        [
+        0,
+        "There's so many places in this world where we're not validated."
+        ],
+        [
+        0,
+        "We feel like we're not enough."
+        ],
+        [
+        0,
+        "We see photoshopped people on Instagram and we feel like our bodies aren't good enough."
+        ],
+        [
+        0,
+        " We make a mistake and we see that other people seem like they're not making mistakes and we feel not validated again."
+        ],
+        [
+        0,
+        "But the way to really change somebody is to make them feel like they've been listened to, to make them feel like they're understood, and to validate them and allow them to change."
+        ],
+        [
+        0,
+        "Because here's the thing, we don't want someone to go through pain and suffering."
+        ],
+        [
+        0,
+        "We don't want someone to be hurt, for instance."
+        ],
+        [
+        0,
+        " But our job is not to take the pain away from someone."
+        ],
+        [
+        0,
+        "Our job is to help them suffer less."
+        ],
+        [
+        0,
+        "Whatever we can do to help them suffer less."
+        ],
+        [
+        0,
+        "And so pain is going to happen in this world."
+        ],
+        [
+        0,
+        "That's guaranteed."
+        ],
+        [
+        0,
+        "You're going to go through some painful stuff."
+        ],
+        [
+        0,
+        "Everyone that you know and love is going to go through some painful stuff."
+        ],
+        [
+        0,
+        "Pain is an event."
+        ],
+        [
+        0,
+        "It's something attached to an event."
+        ],
+        [
+        0,
+        "But if something happens in two years down the road, I'm still suffering from that."
+        ],
+        [
+        0,
+        " That's my fault because I'm carrying that with me."
+        ],
+        [
+        0,
+        "I want to try to suffer less from something that happens to me, whatever pain it is that happens to me."
+        ],
+        [
+        0,
+        "And I want to help other people suffer less."
+        ],
+        [
+        0,
+        "And the way that we do that is to help somebody grow."
+        ],
+        [
+        0,
+        "Pain allows people to grow."
+        ],
+        [
+        0,
+        "We all know it."
+        ],
+        [
+        0,
+        "The hardest things that I've been through in my entire life, they were not fun to go through, but I wouldn't change them for the world because it made me who I am."
+        ],
+        [
+        0,
+        "I grew through the process of having pain."
+        ],
+        [
+        0,
+        " The people that you're dealing with and listening to and talking to, they're going to go through some painful stuff."
+        ],
+        [
+        0,
+        " But that pain, your job is not to take away the pain because that pain is going to help them grow."
+        ],
+        [
+        0,
+        "Your job is to help them suffer less and help them grow through the situation."
+        ],
+        [
+        0,
+        "So how do you effectively communicate with people?"
+        ],
+        [
+        0,
+        "L-U-V."
+        ],
+        [
+        0,
+        "You listen to them, you understand and show that you understand verbally and non-verbally, and you validate them and help them come up with the answers to their problems and their situations so that they can improve and get better."
+        ],
+        [
+        0,
+        " without giving them the actual answers so that they are more likely to change themselves."
+        ],
+        [
+        0,
+        "Nobody wants to be told what to do."
+        ],
+        [
+        0,
+        " A two-year-old doesn't want to be told what to do, but we all want to feel like we're our own sovereign being that's completely in control of our own lives."
+        ],
+        [
+        0,
+        "And if we help someone come up with the answers that they can use to help them improve, they're more likely to act on it, which means that they're more likely to change, which means that they're more likely to grow."
+        ],
+        [
+        0,
+        "So if you want to deepen your connection with someone, listen to them, understand them, validate them, and your job is to help them grow."
+        ],
+        [
+        0,
+        " So that's what I got for you for today's episode."
+        ],
+        [
+        0,
+        "If you love this episode, please share it with someone that you know, and someone that you love."
+        ],
+        [
+        0,
+        "Please tag me on your Instagram."
+        ],
+        [
+        0,
+        "If you want to share this out to everyone that you know and love in your Instagram stories, tag me in it, Rob Dial Jr."
+        ],
+        [
+        0,
+        "R-O-B-D-I-A-L-J-R."
+        ],
+        [
+        0,
+        "And I'm going to leave you the same way I leave you every single episode."
+        ],
+        [
+        0,
+        "Make it your mission to make someone else's day better."
+        ],
+        [
+        0,
+        "I appreciate you, and I hope that you have an amazing day."
+        ]
+    ],
+    "warnings": [
+        
+    ],
+    "prompts": [
+      [
+        0,"Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary."
+      ]
+    ],
+    "api_version": 1.1
+    }
+]

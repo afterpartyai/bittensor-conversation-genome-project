@@ -6,7 +6,6 @@ import asyncio
 import math
 import os
 import numpy as np
-import torch
 import json
 
 
@@ -102,33 +101,59 @@ class ValidatorLib:
             if not full_conversation_metadata:
                 bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
                 validatorHotkey = "HK-FAIL"
+                #depending on prompt type, maybe we kill the line below?
                 await self.put_convo("NO-TAGS", conversation_guid, {"tags":[], "vectors":[]}, type="validator", batch_num=batch_num)
 
                 return None
-            full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
-            full_conversation_vectors = Utils.get(full_conversation_metadata, "vectors", [])
-            bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
 
-            log_path = c.get('env', 'SCORING_DEBUG_LOG')
-            if not Utils.empty(log_path):
-                Utils.append_log(log_path, f"Validator found full convo tags {full_conversation_tags} in FullConvo")
+            prompt_type = full_conversation_metadata["prompt_type"]
+            prompt = full_conversation_metadata["prompt"]
 
-            # Make sure there are enough tags to make processing worthwhile
-            minValidTags = self.validateMinimumTags(full_conversation_tags)
-            if minValidTags:
-                # Break the full conversation up into overlapping conversation windows
-                convoWindows = self.getConvoWindows(full_conversation)
-                if len(convoWindows) > minConvWindows:
-                    out = (full_conversation, full_conversation_metadata, convoWindows)
+            if prompt_type==0:
+                    
+                full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
+                full_conversation_vectors = Utils.get(full_conversation_metadata, "vectors", [])
+                bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
+
+                log_path = c.get('env', 'SCORING_DEBUG_LOG')
+                if not Utils.empty(log_path):
+                    Utils.append_log(log_path, f"Validator found full convo tags {full_conversation_tags} in FullConvo")
+
+                # Make sure there are enough tags to make processing worthwhile
+                minValidTags = self.validateMinimumTags(full_conversation_tags)
+                if minValidTags:
+                    # Break the full conversation up into overlapping conversation windows
+                    convoWindows = self.getConvoWindows(full_conversation)
+                    convoWindows = [((prompt_type, prompt), window) for window in convoWindows]
+                    
+                    if len(convoWindows) > minConvWindows:
+                        out = (full_conversation, full_conversation_metadata, convoWindows, prompt_type, prompt)
+                    else:
+                        bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
+                        out = None
                 else:
-                    bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
+                    bt.logging.info("Not enough valid tags for conversation. Passing.")
                     out = None
+                #await self.end_log_wandb(conversation_guid)
+                #return None
+                return out
+            elif prompt_type == 1:
+
+                response_content = full_conversation_metadata["response"]
+
+                log_path = c.get('env', 'SCORING_DEBUG_LOG')
+                if not Utils.empty(log_path):
+                    Utils.append_log(log_path, f"Validator Response Content {response_content}")
+                    
+                source_task = [((prompt_type, prompt), full_conversation['lines'])]
+
+                out = (full_conversation, full_conversation_metadata, source_task, prompt_type, prompt)
+                return out
+            
             else:
-                bt.logging.info("Not enough valid tags for conversation. Passing.")
-                out = None
-            #await self.end_log_wandb(conversation_guid)
-            #return None
-            return out
+                bt.logging.error("Prompt type not recognized in reserve_conversation. Returning Nonetype")
+                return None
+
         else:
             bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
         return None
@@ -179,14 +204,30 @@ class ValidatorLib:
         if not Utils.get(result, 'success'):
             bt.logging.error(f"ERROR:2873226354. Conversation metadata failed: {result}. Aborting.")
             return None
+        
+        prompt_type = result['prompt_type']
+        prompt = result['prompt']
 
-        tags = result['tags']
-        vectors = Utils.get(result, 'vectors', {})
-        data = {
-            "participantProfiles": convo['participants'],
-            "tags": tags,
-            "vectors": vectors,
-        }
+        if prompt_type == 0:
+            tags = result['tags']
+            vectors = Utils.get(result, 'vectors', {})
+            data = {
+                "prompt_type": prompt_type,
+                "prompt": prompt,
+                "participantProfiles": convo['participants'],
+                "tags": tags,
+                "vectors": vectors,
+            }
+        elif prompt_type ==1:
+            response = result['response']
+            data = {
+                "prompt_type": prompt_type,
+                "prompt": prompt,
+                "response": response
+            }
+        else:
+            bt.logging.error("Prompt Type Not recognized in Generate_full_convo_metadata(). Returning Nonetype")
+            data=None
         return data
 
     async def get_vector_embeddings_set(self, tags):
@@ -309,46 +350,51 @@ class ValidatorLib:
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
         # NaN handling and UID tensor preparation (unchanged)
-        if torch.isnan(rewards).any():
+        if np.isnan(rewards).any():
             if self.verbose:
                 bt.logging.warning(f"NaN values detected in rewards: {rewards}")
-            rewards = torch.nan_to_num(rewards, 0)
+            rewards = np.nan_to_num(rewards, 0)
 
-        if isinstance(uids, torch.Tensor):
-            uids_tensor = uids.clone().detach()
+        if isinstance(uids, np.ndarray):
+            uids_array = np.copy(uids)
         else:
-            uids_tensor = torch.tensor(uids, dtype=torch.long, device=device)
+            uids_array = np.array(uids, dtype=np.int64)
 
-        uids_tensor = uids_tensor.to(scores.device)
-        rewards = rewards.to(scores.device)
 
         # Scatter rewards
-        scattered_rewards: torch.FloatTensor = ema_scores.scatter(
-            0, uids_tensor, rewards
-        ).to(device)
+        scattered_rewards: np.ndarray = np.zeros_like(ema_scores)
+        scattered_rewards[uids_array] = rewards
+        bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update EMA scores
         alpha: float = moving_average_alpha
-        ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+        #ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+        ema_scores: np.ndarray = (
+            alpha * scattered_rewards + (1 - alpha) * ema_scores
+        )
+        if self.verbose:
+            bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
 
         # Normalize EMA scores
-        sum_scores = torch.sum(ema_scores)
+        sum_scores = np.sum(ema_scores)
         if sum_scores > 0:
             normalized_scores = ema_scores / sum_scores
         else:
-            normalized_scores = torch.ones_like(ema_scores) / neurons
+            normalized_scores = np.ones_like(ema_scores) / neurons
 
         # Apply non-linear transformation
-        transformed_scores = torch.pow(normalized_scores, nonlinear_power)
+        transformed_scores = np.power(normalized_scores, nonlinear_power)
 
         # Renormalize
-        sum_transformed = torch.sum(transformed_scores)
+        sum_transformed = np.sum(transformed_scores)
         if sum_transformed > 0:
             scores = transformed_scores / sum_transformed
         else:
-            scores = torch.ones_like(transformed_scores) / neurons
+            scores = np.ones_like(transformed_scores) / neurons
+            
+        if self.verbose:
+            bt.logging.debug(f"Updated final scores: {scores}")
 
-        bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):

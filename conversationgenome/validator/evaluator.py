@@ -114,7 +114,21 @@ class Evaluator:
         return final_score
 
 
-    async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
+    async def evaluate(self, full_convo_metadata=None, miner_responses=None, prompt_type=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
+        if prompt_type == 0:
+            bt.logging.info("In Evaluator Class. Evaluating prompt type 0")
+            (final_scores, rank_scores) = await self.evaluate_prompt_0(full_convo_metadata,miner_responses,prompt_type)
+        elif prompt_type == 1:
+            bt.logging.info("In Evaluator Class. Evaluating prompt type 1")
+            (final_scores, rank_scores) = await self.evaluate_prompt_1(full_convo_metadata,miner_responses,prompt_type)
+        else: 
+            bt.logging.info("In Evaluator Class. Prompt Type Not recognized. Returning Nonetype")
+            final_scores = None
+            rank_scores = None
+        return (final_scores, rank_scores)
+        
+
+    async def evaluate_prompt_0(self, full_convo_metadata=None, miner_responses=None, prompt_type=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
         if verbose == None:
             verbose = self.verbose
         final_scores = []
@@ -227,6 +241,41 @@ class Evaluator:
         for idx, final_score in enumerate(final_scores):
             rank_scores[idx] = final_scores[idx]['final_miner_score']
         return (final_scores, rank_scores)
+
+    async def evaluate_prompt_1(self, full_convo_metadata=None, miner_responses=None, prompt_type=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
+        if verbose == None:
+            verbose = self.verbose
+        final_scores = []
+        rank_scores = []
+        validator_response = full_convo_metadata['response']
+        for idx, response in enumerate(miner_responses):
+            try:
+                miner_response = response.cgp_output
+            except:
+                miner_response = response
+            uuid = "uuid-"+str(idx)
+            hotkey = "hk-uuid"
+            try:
+                uuid = response.axon.uuid
+                hotkey = response.axon.hotkey
+            except:
+                pass
+            if not miner_response:
+                if verbose:
+                    bt.logging.error(f"BAD RESPONSE EVAL: miner index: {idx} HOTKEY: {response.axon.hotkey}")
+                final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
+                rank_scores[idx] = 0.0
+            else:
+                miner_single_answer = miner_response[0]['response']
+                if miner_single_answer == validator_response:
+                    final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":1.0, "final_miner_score":1.0})
+                    rank_scores_idx = 1.0
+                else:
+                    final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
+                    rank_scores_idx = 0.0
+        
+        return (final_scores, rank_scores)
+
 
     async def calc_scores(self, full_convo_metadata, full_conversation_neighborhood, miner_result):
         full_convo_tags = full_convo_metadata['tags']
