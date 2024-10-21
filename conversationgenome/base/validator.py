@@ -257,7 +257,7 @@ class BaseValidatorNeuron(BaseNeuron):
         
         raw_weights = vl.get_raw_weights(self.scores)
 
-        if raw_weights is None or raw_weights.numel() == 0:
+        if raw_weights is None or raw_weights.size == 0:
             bt.logging.error("Error Generating raw weights. Returning without setting weights")
             return
         
