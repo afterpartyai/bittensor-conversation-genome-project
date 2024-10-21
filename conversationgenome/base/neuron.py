@@ -25,16 +25,8 @@ from abc import ABC, abstractmethod
 # Sync calls set weights and also resyncs the metagraph.
 from conversationgenome.utils.config import check_config, add_args, config
 from conversationgenome.utils.misc import ttl_get_block
-#from conversationgenome import __spec_version__ as spec_version
+from conversationgenome import __spec_version__ as load_spec_version
 from conversationgenome.mock.mock import MockSubtensor, MockMetagraph
-
-__version__ = "0.1.1"
-version_split = __version__.split(".")
-spec_version = (
-    (1000 * int(version_split[0]))
-    + (10 * int(version_split[1]))
-    + (1 * int(version_split[2]))
-)
 
 
 class BaseNeuron(ABC):
@@ -61,7 +53,9 @@ class BaseNeuron(ABC):
     subtensor: "bt.subtensor"
     wallet: "bt.wallet"
     metagraph: "bt.metagraph"
-    spec_version: int = spec_version
+    spec_version=0
+    if load_spec_version:
+        spec_version: int = load_spec_version
 
     @property
     def block(self):
@@ -74,7 +68,7 @@ class BaseNeuron(ABC):
         self.check_config(self.config)
 
         # Set up logging with the provided configuration and directory.
-        bt.logging(config=self.config, logging_dir=self.config.full_path)
+        bt.logging.set_config(config=self.config.logging)
 
         # If a gpu is required, set the device to cuda:N (e.g. cuda:0)
         self.device = self.config.neuron.device
