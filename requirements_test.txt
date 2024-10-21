@@ -1,0 +1,15 @@
+# Core dependencies
+python-dotenv==1.0.1
+bittensor==7.4.0
+torch==2.1.1
+openai==1.30.3
+loguru==0.7.0
+wandb==0.18.1
+
+#Dependencies for testing
+pytest
+pytest-asyncio
+
+# Dependencies for compatibility
+pydantic==2.7.1
+typing-extensions==4.8.0
