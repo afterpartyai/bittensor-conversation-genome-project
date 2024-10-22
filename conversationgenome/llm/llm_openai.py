@@ -388,18 +388,20 @@ class llm_openai:
             print("Conv response", response)
         return response
 
-    async def get_vector_embeddings(self, text, verbose=False):
+    async def get_vector_embeddings(self, text, verbose=False, dimensions=1536):
         embedding = None
         text =  text.replace("\n"," ")
         if not self.direct_call:
            response = client.embeddings.create(
                model=self.embeddings_model,
+               dimensions=dimensions,
                input = text
            )
            embedding = response.data[0].embedding
         else:
            data = {
                "input": text,
+               "dimensions": dimensions,
                "model": self.embeddings_model,
            }
            url_path = "/v1/embeddings"
@@ -412,7 +414,7 @@ class llm_openai:
                print("ERROR getting embedding", response)
         if self.verbose or verbose:
             #print("OpenAI embeddings USAGE", response.usage)
-            print("OpenAI embeddings generated %d with model %s " % (len(embedding), self.embeddings_model))
+            print("OpenAI embeddings generated %d vectors with model %s " % (len(embedding), self.embeddings_model))
         return embedding
 
     async def get_vector_embeddings_set(self, tags):
