@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright © 2024 Afterparty, Inc.
+# Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
@@ -16,421 +16,220 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import copy
-import torch
-import asyncio
-import argparse
-import threading
-import bittensor as bt
-import random
+import time
 import os
-import numpy as np
+import hashlib
+import random
 
-from typing import List
-from traceback import print_exception
+import bittensor as bt
 
-from conversationgenome.base.neuron import BaseNeuron
-from conversationgenome.mock.mock import MockDendrite
-from conversationgenome.utils.config import add_validator_args
+from conversationgenome.base.validator import BaseValidatorNeuron
+
+import conversationgenome.utils
+import conversationgenome.validator
+
+from conversationgenome.ConfigLib import c
+from conversationgenome.utils.Utils import Utils
+
+from conversationgenome.analytics.WandbLib import WandbLib
+
 from conversationgenome.validator.ValidatorLib import ValidatorLib
+from conversationgenome.validator.evaluator import Evaluator
 
+from conversationgenome.protocol import CgSynapse
 
-class BaseValidatorNeuron(BaseNeuron):
+class Validator(BaseValidatorNeuron):
+    verbose = False
     """
-    Base class for Bittensor validators. Your validator should inherit from this class.
+    Keeping a moving average of the scores of the miners and using them to set weights at the end of each epoch. Additionally, the scores are reset for new hotkeys at the end of each epoch.
     """
-
-    neuron_type: str = "ValidatorNeuron"
-
-    first_sync = True
-
-    @classmethod
-    def add_args(cls, parser: argparse.ArgumentParser):
-        super().add_args(parser)
-        add_validator_args(cls, parser)
 
     def __init__(self, config=None):
-        super().__init__(config=config)
+        super(Validator, self).__init__(config=config)
+        c.set("system", "netuid", self.config.netuid)
 
-        # Save a copy of the hotkeys to local memory.
-        self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
+        bt.logging.info("load_state()")
+        self.load_state()
 
-        # Dendrite lets us send messages to other nodes (axons) in the network.
-        if self.config.mock:
-            self.dendrite = MockDendrite(wallet=self.wallet)
-        else:
-            self.dendrite = bt.dendrite(wallet=self.wallet)
-        bt.logging.info(f"Dendrite: {self.dendrite}")
-
-        # Set up initial scoring weights for validation
-        bt.logging.info("Building validation weights.")
-        self.scores = np.zeros(self.metagraph.n, dtype=np.float32)
-
-        self.ema_scores = np.zeros(self.metagraph.n, dtype=np.float32)
-        
-        # Initialize the non-linear transformation power
-        self.nonlinear_power = 3.0
-
-        # Init sync with the network. Updates the metagraph.
-        self.sync()
-
-        # Serve axon to enable external connections.
-        if not self.config.neuron.axon_off:
-            self.serve_axon()
-        else:
-            bt.logging.warning("axon off, not serving ip to chain.")
-
-        # Create asyncio event loop to manage async tasks.
-        self.loop = asyncio.get_event_loop()
-
-        # Instantiate runners
-        self.should_exit: bool = False
-        self.is_running: bool = False
-        self.thread: threading.Thread = None
-        self.lock = asyncio.Lock()
-
-    def serve_axon(self):
-        """Serve axon to enable external connections."""
-
-        bt.logging.info("serving ip to chain...")
+    async def forward(self, test_mode=False):
         try:
-            self.axon = bt.axon(wallet=self.wallet, config=self.config)
+            wl = WandbLib()
 
-            try:
-                self.subtensor.serve_axon(
-                    netuid=self.config.netuid,
-                    axon=self.axon,
-                )
-                bt.logging.info(
-                    f"Running validator {self.axon} on network: {self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
-                )
-            except Exception as e:
-                bt.logging.error(f"Failed to serve Axon with exception: {e}")
-                pass
+            miners_per_window = c.get("validator", "miners_per_window", 3)
+            miner_sample_size = min(self.config.neuron.sample_size, self.metagraph.n.item())
+            bt.logging.debug(f"miner_sample_size: {miner_sample_size}, {self.config.neuron.sample_size}, {self.metagraph.n.item()}")
+            batch_num = random.randint(100000, 9999999)
 
-        except Exception as e:
-            bt.logging.error(
-                f"Failed to create Axon initialize with exception: {e}"
-            )
-            pass
+            # Get hotkeys to watch for debugging
+            hot_keys = c.get("env", "HIGHLIGHT_HOTKEYS", "")
+            hot_key_watchlist = hot_keys.split(",")
 
-    async def concurrent_forward(self):
-        coroutines = [
-            self.forward()
-            for _ in range(self.config.neuron.num_concurrent_forwards)
-        ]
-        results = await asyncio.gather(*coroutines)
-        return results
+            # Instance of validator and eval library
+            vl = ValidatorLib()
+            el = Evaluator()
 
-    def run(self):
-        """
-        Initiates and manages the main loop for the miner on the Bittensor network. The main loop handles graceful shutdown on keyboard interrupts and logs unforeseen errors.
+            # Reserve a conversation from the conversation API
+            result = await vl.reserve_conversation(batch_num=batch_num)
 
-        This function performs the following primary tasks:
-        1. Check for registration on the Bittensor network.
-        2. Continuously forwards queries to the miners on the network, rewarding their responses and updating the scores accordingly.
-        3. Periodically resynchronizes with the chain; updating the metagraph with the latest network state and setting weights.
+            if result:
+                (full_conversation, full_conversation_metadata, conversation_windows) = result
+                if test_mode:
+                    # In test_mode, to expand the miner scores, remove half of the full convo tags.
+                    # This "generates" more unique tags found for the miners
+                    half = int(len(full_conversation_metadata['tags'])/2)
+                    #full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
 
-        The essence of the validator's operations is in the forward function, which is called every step. The forward function is responsible for querying the network and scoring the responses.
+                conversation_guid = Utils.get(full_conversation, "guid")
+                #print("full_conversation", full_conversation)
+                bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
 
-        Note:
-            - The function leverages the global configurations set during the initialization of the miner.
-            - The miner's axon serves as its interface to the Bittensor network, handling incoming and outgoing requests.
+                llm_type = "openai"
+                model = "gpt-4o"
+                llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+                if llm_type_override:
+                    llm_type = llm_type_override
+                    model = c.get("env", "OPENAI_MODEL")
 
-        Raises:
-            KeyboardInterrupt: If the miner is stopped by a manual interruption.
-            Exception: For unforeseen errors during the miner's operation, which are logged for diagnosis.
-        """
+                full_convo_tags = Utils.get(full_conversation_metadata, "tags", [])
+                full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
+                full_conversation_tag_count = len(full_convo_tags)
+                lines = Utils.get(full_conversation, "lines", [])
+                participants = Utils.get(full_conversation, "participants")
+                miners_per_window = c.get("validator", "miners_per_window", 3)
+                min_lines = c.get("convo_window", "min_lines", 5)
+                max_lines = c.get("convo_window", "max_lines", 10)
+                overlap_lines = c.get("convo_window", "overlap_lines", 2)
+                validatorHotkey = "FINDHOTKEY-"
+                try:
+                    validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
+                except:
+                    pass
 
-        # Check that validator is registered on the network.
-        self.sync()
-
-        bt.logging.info(f"Validator starting at block: {self.block}")
-
-        # This loop maintains the validator's operations until intentionally stopped.
-        try:
-            while True:
-                bt.logging.info(f"step({self.step}) block({self.block})")
-
-                # Run multiple forwards concurrently.
-                results = self.loop.run_until_complete(self.concurrent_forward())
-
-                # Check if we should exit.
-                if self.should_exit:
-                    break
-
-                # Sync metagraph and potentially set weights.
-                success = True
-                for result in results:
-                    if not result:
-                        success = False
-                        break
-                if success:
-                    print("________________________________SYNC to set weight")
-                    self.sync()
-                else:
-                    bt.logging.error(f"Error occurred during validation. Skipping weight set.")
+                await vl.put_convo(validatorHotkey, conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
+                try:
+                    wl.log({
+                       "llm_type": llm_type,
+                       "model": model,
+                       "conversation_guid": conversation_guid,
+                       "full_convo_tag_count": full_conversation_tag_count,
+                       "num_lines": len(lines),
+                       "num_participants": len(participants),
+                       "num_convo_windows": len(conversation_windows),
+                       "convo_windows_min_lines": min_lines,
+                       "convo_windows_max_lines": max_lines,
+                       "convo_windows_overlap_lines": overlap_lines,
+                       "netuid": self.config.netuid
+                    })
+                except:
+                    pass
 
 
-                self.step += 1
+                # Loop through conversation windows. Send each window to multiple miners
+                bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
+                for window_idx, conversation_window in enumerate(conversation_windows):
+                    miner_uids = conversationgenome.utils.uids.get_random_uids(
+                        self,
+                        k= miner_sample_size
+                    )
+                    if self.verbose:
+                        print("miner_uid pool", miner_uids)
+                    if len(miner_uids) == 0:
+                        bt.logging.error("No miners found.")
+                        time.sleep(30)
+                        return
+                    bt.logging.info("miner_uid pool", miner_uids)
+                    # Create a synapse to distribute to miners
+                    bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
+                    window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
 
-        # If someone intentionally stops the validator, it'll safely terminate operations.
-        except KeyboardInterrupt:
-            self.axon.stop()
-            bt.logging.success("Validator killed by keyboard interrupt.")
-            exit()
+                    synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
 
-        # In case of unforeseen errors, the validator will log the error and continue operations.
-        except Exception as err:
-            bt.logging.error("Error during validation", str(err))
-            bt.logging.debug(
-                print_exception(type(err), err, err.__traceback__)
-            )
+                    rewards = None
 
-    def run_in_background_thread(self):
-        """
-        Starts the validator's operations in a background thread upon entering the context.
-        This method facilitates the use of the validator in a 'with' statement.
-        """
-        if not self.is_running:
-            bt.logging.debug("Starting validator in background thread.")
-            self.should_exit = False
-            self.thread = threading.Thread(target=self.run, daemon=True)
-            self.thread.start()
-            self.is_running = True
-            bt.logging.debug("Started")
+                    responses = self.dendrite.query(
+                        axons=[self.metagraph.axons[uid] for uid in miner_uids],
+                        synapse=synapse,
+                        deserialize=False,
+                    )
+                    if self.verbose:
+                        print("RAW RESPONSES", len(responses))
 
-    def stop_run_thread(self):
-        """
-        Stops the validator's operations that are running in the background thread.
-        """
-        if self.is_running:
-            bt.logging.debug("Stopping validator in background thread.")
-            self.should_exit = True
-            self.thread.join(5)
-            self.is_running = False
-            bt.logging.debug("Stopped")
+                    for window_idx, response in enumerate(responses):
+                        if not response.cgp_output:
+                            #bt.logging.error(f"BAD RESPONSE: hotkey: {response.axon.hotkey} output: {response.cgp_output}")
+                            bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey}")
+                            if response.axon.hotkey in hot_key_watchlist:
+                                print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
+                            continue
+                        try:
+                            miner_response = response.cgp_output
+                        except:
+                            miner_response = response
+                        miner_result = miner_response[0]
+                        miner_result['original_tags'] = miner_result['tags']
 
-    def __enter__(self):
-        self.run_in_background_thread()
-        return self
+                        # Clean and validate tags for duplicates or whitespace matches
+                        miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        """
-        Stops the validator's background operations upon exiting the context.
-        This method facilitates the use of the validator in a 'with' statement.
+                        miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
+                        #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
+                        bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} original tags: {len(miner_result['original_tags'])}")
+                        if response.axon.hotkey in hot_key_watchlist:
+                            print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
+                        log_path = c.get('env', 'SCORING_DEBUG_LOG')
+                        if not Utils.empty(log_path):
+                            Utils.append_log(log_path, f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
+                        await vl.put_convo(response.axon.hotkey, conversation_guid, miner_result, type="miner",  batch_num=batch_num, window=window_idx)
 
-        Args:
-            exc_type: The type of the exception that caused the context to be exited.
-                      None if the context was exited without an exception.
-            exc_value: The instance of the exception that caused the context to be exited.
-                       None if the context was exited without an exception.
-            traceback: A traceback object encoding the stack trace.
-                       None if the context was exited without an exception.
-        """
-        if self.is_running:
-            bt.logging.debug("Stopping validator in background thread.")
-            self.should_exit = True
-            self.thread.join(5)
-            self.is_running = False
-            bt.logging.debug("Stopped")
-
-    def set_weights(self):
-        """
-        Sets the validator weights to the metagraph hotkeys based on the scores it has received from the miners. The weights determine the trust and incentive level the validator assigns to miner nodes on the network.
-        """
-        msg = None
-        # Check if self.scores contains any NaN values and log a warning if it does.
-        if np.isnan(self.scores).any():
-            bt.logging.warning(
-                f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
-            )
-
-        # if self.scores is empty or all zeros, return
-        if self.scores is None or np.all(self.scores == 0) or self.scores.size == 0:
-            bt.logging.info(f"Score array is empty or all zeros. Skipping weight setting.")
-            return
-
-        # Calculate the average reward for each uid across non-zero values.
-        # Replace any NaN values with 0.
-        # Compute the norm of the scores
-        norm = np.linalg.norm(self.scores, ord=1, axis=0, keepdims=True)
-
-        # Check if the norm is zero or contains NaN values
-        if np.any(norm == 0) or np.isnan(norm).any():
-            norm = np.ones_like(norm)  # Avoid division by zero or NaN
-
-        # Compute raw_weights safely
-        raw_weights = self.scores / norm
-
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", str(self.metagraph.uids.tolist()))
-        # Process the raw weights to final_weights via subtensor limitations.
-        (
-            processed_weight_uids,
-            processed_weights,
-        ) = bt.utils.weight_utils.process_weights_for_netuid(
-            uids=self.metagraph.uids,
-            weights=raw_weights,
-            netuid=self.config.netuid,
-            subtensor=self.subtensor,
-            metagraph=self.metagraph,
-        )
-        bt.logging.debug("processed_weights", processed_weights)
-        bt.logging.debug("processed_weight_uids", processed_weight_uids)
-
-        # Convert to uint16 weights and uids.
-        (
-            uint_uids,
-            uint_weights,
-        ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
-            uids=processed_weight_uids, weights=processed_weights
-        )
-        bt.logging.debug("uint_weights", uint_weights)
-        bt.logging.debug("uint_uids", uint_uids)
-
-        # Set the weights on chain via our subtensor connection.
-        print("---Set the weights on chain", self.wallet, self.config.netuid, uint_uids, uint_weights, self.spec_version)
-        result = None
-        try:
-            result, msg = self.subtensor.set_weights(
-                wallet=self.wallet,
-                netuid=self.config.netuid,
-                uids=uint_uids,
-                weights=uint_weights,
-                wait_for_finalization=False,
-                wait_for_inclusion=False,
-                version_key=self.spec_version,
-            )
-        except:
-            print("ERROR")
-        if result is True:
-            bt.logging.info("set_weights on chain successfully!")
-        else:
-            bt.logging.error("set_weights failed", msg)
-
-    def resync_metagraph(self):
-        """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        bt.logging.info("resync_metagraph()")
-
-        # Copies state of metagraph before syncing.
-        previous_metagraph = copy.deepcopy(self.metagraph)
-
-        # Sync the metagraph.
-        self.metagraph.sync(subtensor=self.subtensor)
-
-        # Check if the metagraph axon info has changed.
-        if previous_metagraph.axons == self.metagraph.axons:
-            return
-
-        bt.logging.info(
-            "Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages"
-        )
-        # Zero out all hotkeys that have been replaced.
-        for uid, hotkey in enumerate(self.hotkeys):
-            if uid in self.metagraph.hotkeys and hotkey != self.metagraph.hotkeys[uid]:
-                self.scores[uid] = 0  # hotkey has been replaced
-                self.ema_scores[uid] = 0  # hotkey has been replaced
-
-        # Check to see if the metagraph has changed size.
-        # If so, we need to add new hotkeys and moving averages.
-        if len(self.hotkeys) < len(self.metagraph.hotkeys):
-            # Update the size of the moving average scores.
-            new_moving_average = np.zeros((self.metagraph.n))
-            new_scores = np.zeros((self.metagraph.n))
-            min_len = min(len(self.hotkeys), len(self.scores))
-            new_scores[:min_len] = self.scores[:min_len]
-            new_moving_average = self.ema_scores[:min_len]
-            self.scores = new_scores
-            self.ema_scores = new_moving_average
-
-        # Update the hotkeys.
-        self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
-
-    def update_scores(self, rewards: np.ndarray, uids: List[int]):
-        """
-        Performs exponential moving average on the scores based on the rewards received from the miners,
-        then normalizes, applies a non-linear transformation, and renormalizes the scores.
-        """
-
-        vl = ValidatorLib()
-        updated_scores, updated_ema_scores = vl.update_scores(rewards, uids, self.ema_scores, self.scores, self.config.neuron.moving_average_alpha, self.device, self.metagraph.n, self.nonlinear_power)
-
-        if updated_scores.size > 0 and updated_ema_scores.size > 0 and not np.isnan(updated_scores).any() and not np.isnan(updated_ema_scores).any():
-            self.scores = updated_scores
-            self.ema_scores = updated_ema_scores
-        else:
-            bt.logging.error("Error 2378312: Error with Nonlinear transformation and Renormalization in update_scores. self.scores not updated")
-
-        bt.logging.debug(f"Updated final scores: {self.scores}")
-
-    def save_state(self):
-        """Saves the state of the validator to a file."""
-        if self.first_sync:
-            bt.logging.info(f"Ignore first sync so it doesn't save over last data.")
-            self.first_sync = False
-            return
-
-        #check if self.scores and self.ema_scores are empty, if so, don't save
-        if (np.all(self.ema_scores == 0) or np.all(self.scores == 0) or self.ema_scores.size == 0 or self.scores.size == 0):
-            bt.logging.info(f"EMA score and/or Score array is empty or all zeros. Skipping save state.")
-            return
+                    (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
 
 
-        state_path = self.config.neuron.full_path + "/state.npz"
-        bt.logging.info(f"Saving validator state to {state_path}.")
+                    if final_scores:
+                        for idx, score in enumerate(final_scores):
+                            if self.verbose:
+                                bt.logging.info(f"score {score}")
 
-        # Save the state of the validator to file.
-        np.savez(
-            self.config.neuron.full_path + "/state.npz",
-            step=self.step,
-            scores=self.scores,
-            hotkeys=self.hotkeys,
-            ema_scores= self.ema_scores,
-        )
+                            uid=-1
+                            try:
+                                uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
+                            except Exception as e:
+                                print(f"ERROR 1162494 -- WandB logging error: {e}")
+                            wl.log({
+                                "conversation_guid."+uid: conversation_guid,
+                                "window_id."+uid: window_idx,
+                                "hotkey."+uid: Utils.get(score, "hotkey"),
+                                "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                                "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                            })
+                            if self.verbose:
+                                print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
 
-        if os.path.isfile(state_path):
-            bt.logging.info(f"Save state confirmed")
-        else:
-            bt.logging.info(f"Save state failed.")
-
-    def load_state(self):
-        """Loads the state of the validator from a file."""
-        npz_path = self.config.neuron.full_path + "/state.npz"
-        pt_path = self.config.neuron.full_path + "/state.pt"
-
-        if os.path.isfile(npz_path):
-            # Load state from .npz file
-            bt.logging.info(f"Loading validator state from {npz_path}.")
-            state = np.load(npz_path)
-            self.step = state["step"].item()  # Ensure it's a Python scalar
-            self.scores = state["scores"]
-            self.hotkeys = state["hotkeys"]
-            if "ema_scores" in state:
-                self.ema_scores = state["ema_scores"]
-            else: 
-                bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
-                self.ema_scores = np.zeros_like(self.scores)
-        elif os.path.isfile(pt_path):
-            # Load state from .pt file
-            bt.logging.info(f"Loading validator state from {pt_path}.")
-            state = torch.load(pt_path)
-            self.step = int(state["step"])
-            self.hotkeys = np.array(state["hotkeys"])
-            self.scores = state["scores"].cpu().numpy()  # Convert to NumPy array
-
-            if "ema_scores" in state:
-                self.ema_scores = state["ema_scores"].cpu().numpy()   # Convert to NumPy array
+                        # Update the scores based on the rewards.
+                        self.update_scores(rank_scores, miner_uids)
+                return True
             else:
-                bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
-                self.ema_scores = np.zeros_like(self.scores)
-
-            # Save the state as a .npz file
-            self.save_state()
-        else:
-            bt.logging.info("No state file found.")
-
-        try:
-            bt.logging.debug(f"Loaded state. Step: {self.step} Num scores: {len(self.scores)} Sum scores: {np.sum(self.scores)} Num hotkeys: {len(self.hotkeys)}")
+                bt.logging.error(f"No conversation received from endpoint")
         except Exception as e:
-            print("Log error", e)
+            bt.logging.error(f"ERROR 2294374 -- Top Level Validator Error: {e}")
+        return False
+
+# The main function parses the configuration and runs the validator.
+if __name__ == "__main__":
+
+    wl = WandbLib()
+
+    try:
+        with Validator() as validator:
+            try:
+                wl.init_wandb(validator.config)
+            except Exception as e:
+                print(f"ERROR 2294375 -- WandB init error: {e}")
+
+            while True:
+                bt.logging.info("CGP Validator running...", time.time())
+                time.sleep(5)
+    except KeyboardInterrupt:
+        bt.logging.info("Keyboard interrupt detected. Exiting validator.")
+    finally:
+        print("Done. Writing final to wandb.")
+        wl.end_log_wandb()

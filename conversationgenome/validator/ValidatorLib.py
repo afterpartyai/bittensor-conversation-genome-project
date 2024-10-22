@@ -6,6 +6,7 @@ import asyncio
 import math
 import os
 import numpy as np
+import torch
 import json
 
 
@@ -308,51 +309,46 @@ class ValidatorLib:
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
         # NaN handling and UID tensor preparation (unchanged)
-        if np.isnan(rewards).any():
+        if torch.isnan(rewards).any():
             if self.verbose:
                 bt.logging.warning(f"NaN values detected in rewards: {rewards}")
-            rewards = np.nan_to_num(rewards, 0)
+            rewards = torch.nan_to_num(rewards, 0)
 
-        if isinstance(uids, np.ndarray):
-            uids_array = np.copy(uids)
+        if isinstance(uids, torch.Tensor):
+            uids_tensor = uids.clone().detach()
         else:
-            uids_array = np.array(uids, dtype=np.int64)
+            uids_tensor = torch.tensor(uids, dtype=torch.long, device=device)
 
+        uids_tensor = uids_tensor.to(scores.device)
+        rewards = rewards.to(scores.device)
 
         # Scatter rewards
-        scattered_rewards: np.ndarray = np.zeros_like(ema_scores)
-        scattered_rewards[uids_array] = rewards
-        bt.logging.debug(f"Scattered rewards: {rewards}")
+        scattered_rewards: torch.FloatTensor = ema_scores.scatter(
+            0, uids_tensor, rewards
+        ).to(device)
 
         # Update EMA scores
         alpha: float = moving_average_alpha
-        #ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
-        ema_scores: np.ndarray = (
-            alpha * scattered_rewards + (1 - alpha) * ema_scores
-        )
-        if self.verbose:
-            bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
+        ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
 
         # Normalize EMA scores
-        sum_scores = np.sum(ema_scores)
+        sum_scores = torch.sum(ema_scores)
         if sum_scores > 0:
             normalized_scores = ema_scores / sum_scores
         else:
-            normalized_scores = np.ones_like(ema_scores) / neurons
+            normalized_scores = torch.ones_like(ema_scores) / neurons
 
         # Apply non-linear transformation
-        transformed_scores = np.power(normalized_scores, nonlinear_power)
+        transformed_scores = torch.pow(normalized_scores, nonlinear_power)
 
         # Renormalize
-        sum_transformed = np.sum(transformed_scores)
+        sum_transformed = torch.sum(transformed_scores)
         if sum_transformed > 0:
             scores = transformed_scores / sum_transformed
         else:
-            scores = np.ones_like(transformed_scores) / neurons
-            
-        if self.verbose:
-            bt.logging.debug(f"Updated final scores: {scores}")
+            scores = torch.ones_like(transformed_scores) / neurons
 
+        bt.logging.debug(f"Updated final scores: {scores}")
         return scores, ema_scores
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):

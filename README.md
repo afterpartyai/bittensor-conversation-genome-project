@@ -134,17 +134,7 @@ Please ensure you only have one `LLM_TYPE_OVERRIDE` config parameter uncommented
 
 ### Running the Tests
 
-Once you have finalized your configuration, let's run the test validator suite, so you can watch the process at work. First, set up a fresh virtual environment for running your tests, and install the test requirements. 
-
-Please note that these requirements differ from the production requirements. We recommend creating a separate virtual environment for running tests.
-
-```console
-python3 -m venv test_venv
-source test_venv/bin/activate
-pip install -r requirements_test.txt
-```
-
-Once these requirements finish installing, you can run the tests with the following command. 
+Once you have finalized your configuration, let's run the test validator suite, so you can watch the process at work:
 
 ```console
 python -m pytest -s --disable-warnings  tests/test_validator_lib.py
