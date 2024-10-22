@@ -23,8 +23,6 @@ verbose = False
 
 from conversationgenome.mock.MockBt import MockBt
 
-from conversationgenome.utils.logging import setup_events_logger
-
 bt = None
 try:
     import bittensor as bt
@@ -33,14 +31,17 @@ except:
         print("bittensor not installed")
     bt = MockBt()
 
+logger = None
+try:
+    from loguru import logger
+except:
+    print("No loguru")
+
 
 
 def check_config(cls, config: "bt.Config"):
     r"""Checks/validates the config namespace object."""
     bt.logging.check_config(config)
-    print("\n\n\n-------------\n\n\n")
-    print(f"Logging path: {config.logging.logging_dir}")
-    print("\n\n\n-------------\n\n\n")
 
     full_path = os.path.expanduser(
         "{}/{}/{}/netuid{}/{}".format(
@@ -58,10 +59,17 @@ def check_config(cls, config: "bt.Config"):
 
     if not config.neuron.dont_save_events:
         # Add custom event logger for the events.
-        events_logger = setup_events_logger(
-            config.neuron.full_path, config.neuron.events_retention_size
+        logger.level("EVENTS", no=38, icon="📝")
+        logger.add(
+            os.path.join(config.neuron.full_path, "events.log"),
+            rotation=config.neuron.events_retention_size,
+            serialize=True,
+            enqueue=True,
+            backtrace=False,
+            diagnose=False,
+            level="EVENTS",
+            format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
         )
-        bt.logging.register_primary_logger(events_logger.name)
 
 
 def add_args(cls, parser):
@@ -96,7 +104,7 @@ def add_args(cls, parser):
         "--neuron.events_retention_size",
         type=str,
         help="Events retention size.",
-        default=2 * 1024 * 1024 * 1024,
+        default="2 GB",
     )
 
     parser.add_argument(
