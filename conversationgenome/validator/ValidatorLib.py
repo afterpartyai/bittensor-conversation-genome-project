@@ -398,6 +398,7 @@ class ValidatorLib:
     
     def get_raw_weights(self, scores):
         if scores is None or scores.numel() == 0 or torch.isnan(scores).any():
+            bt.logging.error("Nan detected in Weights. Returning None.")
             return None
 
         raw_weights = scores.clone()
@@ -431,15 +432,16 @@ class ValidatorLib:
         ordered_uids_no_zeros = ordered_uids[~torch.isin(ordered_uids, zero_uids)]
 
         # calculate proper weight values for each non-zero uid
-        for i, uid in enumerate(ordered_uids_no_zeros):
-            weight = self.transposed_cubic_distribution(i, num_uids)
-            
-            # Assign the weight to the raw_weights tensor
-            if weight:
-                raw_weights[uid] = weight
-            else: 
-                bt.logging.error("Error in Weights calculation. Setting this UID to 0")
-                raw_weights[uid] = 0
+        if num_uids >0:
+            for i, uid in enumerate(ordered_uids_no_zeros):
+                weight = self.transposed_cubic_distribution(i, num_uids)
+                
+                # Assign the weight to the raw_weights tensor
+                if weight:
+                    raw_weights[uid] = weight
+                else: 
+                    bt.logging.error("Error in Weights calculation. Setting this UID to 0")
+                    raw_weights[uid] = 0
 
         # Normalize the final raw_weights
         raw_weights = torch.nn.functional.normalize(raw_weights, p=1, dim=0)       
