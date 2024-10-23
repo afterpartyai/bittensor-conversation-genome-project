@@ -18,7 +18,7 @@ class llm_groq:
     verbose = False
     model = "llama3-8b-8192"
     direct_call = 0
-    embeddings_model = "text-embedding-ada-002"
+    embeddings_model = "text-embedding-3-large"
     client = None
     root_url = "https://api.groq.com/openai"
     # Test endpoint
@@ -38,7 +38,7 @@ class llm_groq:
         if model:
             self.model = model
 
-        embeddings_model = c.get("env", "GROQ_OPENAI_EMBEDDINGS_MODEL")
+        embeddings_model = c.get("env", "GROQ_OPENAI_EMBEDDINGS_MODEL_OVERRIDE")
         if embeddings_model:
             self.embeddings_model = embeddings_model
 
