@@ -328,7 +328,7 @@ class BaseValidatorNeuron(BaseNeuron):
         )
         # Zero out all hotkeys that have been replaced.
         for uid, hotkey in enumerate(self.hotkeys):
-            if uid in self.metagraph.hotkeys and hotkey != self.metagraph.hotkeys[uid]:
+            if  hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
                 self.ema_scores[uid] = 0  # hotkey has been replaced
 
