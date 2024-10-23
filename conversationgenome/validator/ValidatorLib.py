@@ -307,46 +307,59 @@ class ValidatorLib:
 
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
-        # NaN handling and UID tensor preparation (unchanged)
+        
+        eps = 1e-12  # Match PyTorch's epsilon
+        
+        if isinstance(uids, np.ndarray):
+            uids_array = np.copy(uids)
+        else:
+            uids_array = np.array(uids, dtype=np.int64)
+        
+        # Ensure float32 dtype for consistency with PyTorch
+        rewards = np.array(rewards, dtype=np.float32)
+        ema_scores = np.array(ema_scores, dtype=np.float32)
+        
+        # NaN handling
         if np.isnan(rewards).any():
             if self.verbose:
                 bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             rewards = np.nan_to_num(rewards, 0)
 
+        # UID handling
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
             uids_array = np.array(uids, dtype=np.int64)
 
-
-        # Scatter rewards
-        scattered_rewards: np.ndarray = np.zeros_like(ema_scores)
+        # Scatter rewards (matching PyTorch scatter behavior)
+        scattered_rewards = np.copy(ema_scores)
         scattered_rewards[uids_array] = rewards
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update EMA scores
         alpha: float = moving_average_alpha
-        #ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
-        ema_scores: np.ndarray = (
-            alpha * scattered_rewards + (1 - alpha) * ema_scores
-        )
+        ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+        
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
 
-        # Normalize EMA scores
+        # Normalize EMA scores with epsilon
         sum_scores = np.sum(ema_scores)
-        if sum_scores > 0:
-            normalized_scores = ema_scores / sum_scores
+        if sum_scores > eps:
+            normalized_scores = ema_scores / (sum_scores + eps)
         else:
             normalized_scores = np.ones_like(ema_scores) / neurons
 
-        # Apply non-linear transformation
+        # Apply non-linear transformation with stability
+        normalized_scores = normalized_scores.clip(min=eps)  # Prevent underflow
+
         transformed_scores = np.power(normalized_scores, nonlinear_power)
 
-        # Renormalize
+
+        # Renormalize with epsilon
         sum_transformed = np.sum(transformed_scores)
-        if sum_transformed > 0:
-            scores = transformed_scores / sum_transformed
+        if sum_transformed > eps:
+            scores = transformed_scores / (sum_transformed + eps)
         else:
             scores = np.ones_like(transformed_scores) / neurons
             
