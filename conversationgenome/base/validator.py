@@ -328,7 +328,7 @@ class BaseValidatorNeuron(BaseNeuron):
         )
         # Zero out all hotkeys that have been replaced.
         for uid, hotkey in enumerate(self.hotkeys):
-            if uid in self.metagraph.hotkeys and hotkey != self.metagraph.hotkeys[uid]:
+            if  hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
                 self.ema_scores[uid] = 0  # hotkey has been replaced
 
@@ -377,7 +377,7 @@ class BaseValidatorNeuron(BaseNeuron):
             return
 
 
-        state_path = self.config.neuron.full_path + "/state.npz"
+        state_path = self.config.neuron.full_path + "/state_new.npz"
         bt.logging.info(f"Saving validator state to {state_path}.")
 
         # Save the state of the validator to file.
@@ -396,7 +396,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def load_state(self):
         """Loads the state of the validator from a file."""
-        npz_path = self.config.neuron.full_path + "/state.npz"
+        npz_path = self.config.neuron.full_path + "/state_new.npz"
         pt_path = self.config.neuron.full_path + "/state.pt"
 
         if os.path.isfile(npz_path):
