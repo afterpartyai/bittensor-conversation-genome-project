@@ -46,7 +46,7 @@ class ApiLib:
             postData = None
             cert = None
             selectedConvo = {}
-            read_host_url = c.get('env', 'CGP_API_READ_HOST', 'http://api.conversations.xyz')
+            read_host_url = c.get('env', 'CGP_API_READ_HOST', 'https://api.conversations.xyz')
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
             http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
