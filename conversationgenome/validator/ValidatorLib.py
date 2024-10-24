@@ -396,5 +396,72 @@ class ValidatorLib:
         processed_tag_list = [element for element in validTags if element in cleanTagsStr]
 
         return processed_tag_list
+    
+    def transposed_cubic_distribution(self, i, num_uids):
+        # Calculate the range of x values
+        y_min, y_max = 0.001, 0.003
+
+        # Normalize i to the range [-1, 1] with the middle index at the inflection point
+        x_normalized = (2 * (num_uids - i - 1) / num_uids) - 1
+
+        # Apply the cubic function
+        y_normalized = x_normalized ** 3
+
+        # Scale y_normalized to the desired range [y_min, y_max]
+        y_scaled = y_min + (y_max - y_min) * (y_normalized + 1) / 2
+
+        return y_scaled
+    
+    def get_raw_weights(self, scores):
+        if scores is None or scores.size == 0 or np.isnan(scores).any():
+            bt.logging.error("Nan detected in Weights. Returning None.")
+            return None
+
+
+        raw_weights = np.copy(scores)
+
+        # Order the UIDs for weight assignment
+        ordered_uids = np.argsort(raw_weights)[::-1]
+        zero_uids = np.where(raw_weights == 0)[0]
+        
+        # Determine if there are any ties in raw_weights
+        unique_weights, counts = np.unique(raw_weights, return_counts=True)
+        ties = unique_weights[counts > 1]
+
+        # If there are ties, randomly shuffle the order of tied UIDs
+        for tie in ties:
+            if tie == 0:
+                continue
+            # Find the indices in raw_weights that have the tied value
+            tied_indices = np.nonzero(raw_weights == tie)[0]
+            
+            # Find the positions of these tied indices within ordered_uids
+            positions_in_ordered_uids = np.nonzero(np.isin(ordered_uids, tied_indices))[0]
+            
+            # Shuffle these positions amongst themselves
+            shuffled_positions = np.random.permutation(positions_in_ordered_uids)
+            
+            # Apply the shuffle to ordered_uids
+            ordered_uids[positions_in_ordered_uids] = ordered_uids[shuffled_positions]
+
+        #Calculate proper length for calculating weight values    
+        num_uids = len(ordered_uids) - len(zero_uids)
+        ordered_uids_no_zeros = ordered_uids[~np.isin(ordered_uids, zero_uids)]
+        # calculate proper weight values for each non-zero uid
+        if num_uids > 0:
+            for i, uid in enumerate(ordered_uids_no_zeros):
+                weight = self.transposed_cubic_distribution(i, num_uids)
+                
+                # Assign the weight to the raw_weights tensor
+                if weight:
+                    raw_weights[uid] = weight
+                else: 
+                    bt.logging.error("Error in Weights calculation. Setting this UID to 0")
+                    raw_weights[uid] = 0
+
+            # Normalize the final raw_weights
+            raw_weights = raw_weights / np.sum(np.abs(raw_weights))
+
+        return raw_weights
 
 
