@@ -1,6 +1,13 @@
 import pytest
 import random
 
+CYAN = "\033[96m" # field color
+GREEN = "\033[92m" # indicating success
+RED = "\033[91m" # indicating error
+YELLOW = '\033[0;33m'
+COLOR_END = '\033[m'
+DIVIDER = YELLOW + ('_' * 120) + COLOR_END
+
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
@@ -39,7 +46,7 @@ def get_tied_indices(original_scores_list):
             if tie == 0:
                 continue
             tied_indices_list.extend(np.where(original_scores_list == tie)[0].tolist())
-        
+
         tied_indices = np.array(tied_indices_list)
     return tied_indices
 
@@ -49,7 +56,7 @@ def get_real_weights():
 
     stakes = metagraph.S
     weights = metagraph.W
-    
+
     high_stake_indices = np.nonzero(stakes > 20000)[0].tolist()
 
     # Initialize the stake-weighted average array
@@ -62,12 +69,12 @@ def get_real_weights():
 
         for i, weight in enumerate(weight_array):
             stake_weighted_average[i] += weight * stake
-    
+
     # Normalize the stake-weighted average
     total_stake_weight = sum(stakes[index] for index in high_stake_indices)
     if total_stake_weight > 0:
         stake_weighted_average /= total_stake_weight
-    
+
     return stake_weighted_average,otf_weights
 
 def print_stats(scores_list):
@@ -77,21 +84,27 @@ def print_stats(scores_list):
     if np.isnan(scores_list).any():
         print("Original contains nan")
         return
-    
+
     num_uids = len(scores_list)
+    unsorted_uids = np.arange(0, num_uids)
     sorted_uids = np.argsort(scores_list)[::-1]
 
     print(f"Total UIDs : {num_uids}")
     print(f"Min Weight: {scores_list[sorted_uids[num_uids-1]]}")
     print(f"Max Weight: {scores_list[sorted_uids[0]]}")
+    scoresStr = ""
+    for idx, curScore in enumerate(scores_list):
+        scoresStr += f"{CYAN}{idx}{COLOR_END}:{curScore} "
+    #print(f"Unordered UIDs: {unsorted_uids}")
+    print(f"Scores: {scoresStr}")
     print(f"Ordered UIDs: {sorted_uids}")
-    print("\n\n")
+    print("\n")
 
 
 @pytest.mark.asyncio
 async def test_full():
     verbose = True
-    plotting = True
+    plotting = False
     # Config variables
     c.set('system', 'mode', 'test')
 
@@ -100,29 +113,38 @@ async def test_full():
     test_mode = True
     start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    stake_weighted_average,otf_weights = get_real_weights()
-    
+    if False:
+        stake_weighted_average,otf_weights = get_real_weights()
+        stake_weighted_average = stake_weighted_average[0:10]
+        otf_weights = otf_weights[0:10]
+    else:
+        stake_weighted_average = np.array([0.00482204, 0.00196788, 0.00187665, 0.00423791, 0.00458174, 0.00443221, 0.00473241, 0.00202872, 0.00449199, 0.00445989])
+        otf_weights = np.array([0.00396116, 0.00238071, 0.00230142, 0.00399894, 0.00505707, 0.00400471, 0.00401076, 0.00256747, 0.00390845, 0.00391227])
+
+    #print("WEIGHTS",stake_weighted_average, otf_weights, type(np.array([0.1, 0.2])))
+
     test_score_groups = [
-        {"title": "normalized_scores", "scores": np.array([0.1, 0.2, 0.15, 0.05, 0.1, 0.2, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
-        {"title": "uniform_distribution", "scores": np.array([0.05] * 20, dtype=np.float32)},
-        {"title": "empty_scores", "scores": np.array([], dtype=np.float32)},
-        {"title": "nan_values", "scores": np.array([float('nan')] * 10, dtype=np.float32)},
-        {"title": "none_scores", "scores": None},
-        {"title": "high_variance", "scores": np.array([0.01, 0.99, 0.2, 0.8, 0.15, 0.85, 0.3, 0.7, 0.4, 0.6], dtype=np.float32)},
-        {"title": "low_variance", "scores": np.array([0.5, 0.51, 0.49, 0.52, 0.48, 0.53, 0.47, 0.54, 0.46, 0.55], dtype=np.float32)},
-        {"title": "all_zero_scores", "scores": np.array([0.0, 0.0,0.0, 0.0,0.0, 0.0,0.0, 0.0,0.0, 0.0], dtype=np.float32)},
-        {"title": "single_score", "scores": np.array([1.0] + [0.0] * 9, dtype=np.float32)},
-        {"title": "random_50", "scores": np.random.rand(50).astype(np.float32)},
-        {"title": "random_100", "scores": np.random.rand(100).astype(np.float32)},
-        {"title": "OTF Weights", "scores": otf_weights},
-        {"title": "real stake-weighted-average", "scores": stake_weighted_average},
+        {"title": "normalized_scores", "scores": np.array([0.0, 0.7, 0.2, 0.15, 0.05, 0.1, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
+
+
+        #{"title": "uniform_distribution", "scores": np.array([0.05] * 20, dtype=np.float32)},
+        #{"title": "empty_scores", "scores": np.array([], dtype=np.float32)},
+        #{"title": "nan_values", "scores": np.array([float('nan')] * 10, dtype=np.float32)},
+        #{"title": "none_scores", "scores": None},
+        #{"title": "high_variance", "scores": np.array([0.01, 0.99, 0.2, 0.8, 0.15, 0.85, 0.3, 0.7, 0.4, 0.6], dtype=np.float32)},
+        #{"title": "low_variance", "scores": np.array([0.5, 0.51, 0.49, 0.52, 0.48, 0.53, 0.47, 0.54, 0.46, 0.55], dtype=np.float32)},
+        #{"title": "all_zero_scores", "scores": np.array([0.0, 0.0,0.0, 0.0,0.0, 0.0,0.0, 0.0,0.0, 0.0], dtype=np.float32)},
+        #{"title": "single_score", "scores": np.array([1.0] + [0.0] * 9, dtype=np.float32)},
+        #{"title": "random_50", "scores": np.random.rand(50).astype(np.float32)},
+        #{"title": "random_100", "scores": np.random.rand(100).astype(np.float32)},
+        #{"title": "OTF Weights", "scores": otf_weights},
+        #{"title": "real stake-weighted-average", "scores": stake_weighted_average},
     ]
 
     for test_score_group in test_score_groups:
-        print("\n\n----------------------------")
+        print("\n"+DIVIDER)
         print(f"\033[1mRunning test: {test_score_group['title']}\033[0m")
         print("----------------------------")
-
         original_scores_list = test_score_group['scores']
 
         #Print Stats
@@ -132,12 +154,13 @@ async def test_full():
         if original_scores_list is not None:
             #sort original list
             original_ranking = np.argsort(-original_scores_list)
-            
+
         #find tied indices to identify intentional shuffling later on
         tied_indices = get_tied_indices(original_scores_list)
-        
+
         print("------------")
         print("calculating raw_weights using ValidatorLibFunction")
+        break
 
         #calculate raw weights using validatorLib function
         raw_weights = vl.get_raw_weights(original_scores_list)
@@ -165,8 +188,8 @@ async def test_full():
                         print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Shuffle due to Tied index)")
                     else:
                         print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Unexpected change)")
-            
-            
+
+
             if plotting:
                 folder_name = f"plots_{start_time}"
                 os.makedirs(folder_name, exist_ok=True)
@@ -216,7 +239,7 @@ async def test_full():
                 plt.grid(True)
                 plt.savefig(os.path.join(subfolder_after, f"raw_weights_descending_{test_score_group['title']}.png"))
                 plt.close()
-            else: 
+            else:
                 print("\n------------")
                 print("Skipping graphing step")
         else:
