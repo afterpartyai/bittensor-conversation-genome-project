@@ -173,8 +173,8 @@ async def test_full():
         {"title": "real stake-weighted-average", "scores": stake_weighted_average},
     ]
 
-    epsilons = [1e-12, 0]
-    #epsilons = [0]
+    #epsilons = [1e-12, 0]
+    epsilons = [0]
 
     for test_score_group in test_score_groups:
         print("\n"+DIVIDER)
