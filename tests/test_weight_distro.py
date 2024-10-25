@@ -208,7 +208,7 @@ async def test_full():
 
             uids = [1,2,3]
             rewards = np.array([0.5, 0.5, 0.5], dtype=np.float32)
-            scores = np.array([0.004455, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
+            scores = np.array([0.0, 0.004455, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
             ema_scores = np.array([0.1,0.2,0.3,0.4,0.5], dtype=np.float32)
             moving_average_alpha = 0.1
             neurons = 5
