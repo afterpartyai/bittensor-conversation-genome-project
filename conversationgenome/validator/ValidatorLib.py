@@ -317,7 +317,7 @@ class ValidatorLib:
             device=None,
             neurons=None,
             nonlinear_power=None,
-            verbose=False
+            verbose=True
         ):
           # Match PyTorch's epsilon
         if verbose or self.verbose:

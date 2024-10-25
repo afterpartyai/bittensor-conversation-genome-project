@@ -152,11 +152,13 @@ async def test_full():
         otf_weights = otf_weights[0:numWeights]
     uids = [i for i in range(1, len(otf_weights)+1)]
 
+    simulateValidators = True
+
     #print(f"stake_weighted_average {stake_weighted_average} ({len(stake_weighted_average)}) otf_weights: {otf_weights} ({len(otf_weights)})")
 
 
     test_score_groups = [
-        {"title": "normalized_scores", "scores": np.array([0.0, 0.7, 0.2, 0.15, 0.05, 0.1, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
+        {"title": "normalized_scores", "scores": np.array([0.1, 0.2, 0.15, 0.05, 0.1, 0.2, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
         {"title": "uniform_distribution", "scores": np.array([0.05] * 20, dtype=np.float32)},
         {"title": "empty_scores", "scores": np.array([], dtype=np.float32)},
         {"title": "nan_values", "scores": np.array([float('nan')] * 10, dtype=np.float32)},
@@ -170,14 +172,21 @@ async def test_full():
         {"title": "OTF Weights", "scores": otf_weights},
         {"title": "real stake-weighted-average", "scores": stake_weighted_average},
     ]
+
     epsilons = [1e-12, 0]
-    epsilons = [0]
+    #epsilons = [0]
 
     for test_score_group in test_score_groups:
         print("\n"+DIVIDER)
         print(f"{BOLD}Running test: {test_score_group['title']}{BOLD_END}")
         print("----------------------------")
         original_scores_list = test_score_group['scores']
+        # Simulate validators by making first and last scores 0
+        if simulateValidators and original_scores_list is not None:
+            original_scores_list[0] = 0.0
+            original_scores_list[2] = 0.0
+            original_scores_list[len(original_scores_list)-1] = 0.0
+
 
         #Print Stats
         print_stats(original_scores_list, title="Original Weight Scores")
@@ -222,9 +231,11 @@ async def test_full():
             uids = []
             rewards = np.array([], dtype=np.float32)
             # TODO: Why do the uids and rewards have to be 1 less than the length of the scores?
-            for i in range(len(originalScores)-1):
-                uids.append(i+1)
-                rewards = np.append(rewards, 0.2 + (0.05 * i % 1.0))
+            #for i in range(len(originalScores)-1):
+            for i in range(len(originalScores)):
+                if originalScores[i] > 0.0:
+                    uids.append(i)
+                    rewards = np.append(rewards, 0.2 + (0.05 * i % 1.0))
 
             moving_average_alpha = 0.1
             neurons = 5
