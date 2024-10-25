@@ -352,9 +352,9 @@ class ValidatorLib:
         scattered_rewards = np.copy(ema_scores)
         if verbose or self.verbose:
             print(f"  scattered_rewards1:{scattered_rewards}")
-        scatter_uids = np.array([], dtype=np.int64)
 
         # Only scatter rewards across the uids that have scores
+        scatter_uids = np.array([], dtype=np.int64)
         for uid_idx in uids_array:
             if scores[uid_idx] > 0.0:
                 scatter_uids = np.append(scatter_uids, uid_idx)
