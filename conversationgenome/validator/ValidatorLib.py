@@ -306,7 +306,8 @@ class ValidatorLib:
         await llml.test_tagging()
 
 
-    def update_scores(self,
+    def update_scores(
+            self,
             rewards=None,
             uids=None,
             ema_scores=None,
@@ -316,7 +317,7 @@ class ValidatorLib:
             device=None,
             neurons=None,
             nonlinear_power=None,
-            verbose=True
+            verbose=False
         ):
           # Match PyTorch's epsilon
         if verbose or self.verbose:
@@ -326,13 +327,15 @@ class ValidatorLib:
             uids_array = np.copy(uids)
         else:
             uids_array = np.array(uids, dtype=np.int64)
-        print(f"  uids_array value: {uids_array}")
+        if verbose or self.verbose:
+            print(f"  uids_array value: {uids_array}")
 
         # Ensure float32 dtype for consistency with PyTorch
         rewards = np.array(rewards, dtype=np.float32)
         ema_scores = np.array(ema_scores, dtype=np.float32)
-        print(f"  rewards value: {rewards}")
-        print(f"  ema_scores value: {ema_scores}")
+        if verbose or self.verbose:
+            print(f"  rewards value: {rewards}")
+            print(f"  ema_scores value: {ema_scores}")
 
         # NaN handling
         if np.isnan(rewards).any():

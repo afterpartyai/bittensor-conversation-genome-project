@@ -178,14 +178,12 @@ async def test_full():
         (tiedScoresDict, tied_indices) = get_tied_scores_indices(original_scores_list)
         print(f"Tied scores: {CYAN}{tiedScoresDict}{COLOR_END} | {len(tied_indices)} --> {tied_indices}")
 
-        #print("------------")
-        print("calculating raw_weights using ValidatorLibFunction")
 
         #calculate raw weights using validatorLib function
         raw_weights = vl.get_raw_weights(original_scores_list)
-        for raw_weight in raw_weights:
-            print(f"{raw_weight}")
-        print_stats(raw_weights, title="Raw Weight Scores")
+        #for raw_weight in raw_weights:
+        #    print(f"{raw_weight}")
+        print_stats(raw_weights, title="Calculating Raw Weight Scores from vl.get_raw_weights")
 
         if raw_weights is not None:
             #create new ranking
@@ -202,7 +200,7 @@ async def test_full():
                     continue
                 if original_uid != new_uid:
                     if original_uid in tied_indices:
-                        print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Shuffle due to Tied index)")
+                        print(f"Rank {rank}:  {original_uid} -> {new_uid} (original->new) (Shuffle due to Tied score)")
                     else:
                         print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Unexpected change)")
 
