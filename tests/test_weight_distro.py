@@ -6,6 +6,8 @@ GREEN = "\033[92m" # indicating success
 RED = "\033[91m" # indicating error
 YELLOW = '\033[0;33m'
 COLOR_END = '\033[m'
+BOLD = '\033[1m'
+BOLD_END = '\033[0m'
 DIVIDER = YELLOW + ('_' * 120) + COLOR_END
 
 
@@ -50,6 +52,22 @@ def get_tied_indices(original_scores_list):
         tied_indices = np.array(tied_indices_list)
     return tied_indices
 
+def get_tied_scores_indices(original_scores):
+    scores = {}
+    for idx, score in enumerate(original_scores):
+        if not score in scores:
+            scores[score] = []
+        scores[score].append(idx)
+    outScores = {}
+    outScoresList = []
+    for key, val in scores.items():
+        if len(val) < 2:
+            continue
+        outScores[key] = val
+        outScoresList += val
+    return (outScores, outScoresList)
+
+
 def get_real_weights():
     metagraph = bt.metagraph(33, lite = False)
     otf_weights = metagraph.W[63]
@@ -89,21 +107,22 @@ def print_stats(scores_list):
     unsorted_uids = np.arange(0, num_uids)
     sorted_uids = np.argsort(scores_list)[::-1]
 
-    print(f"Total UIDs : {num_uids}")
-    print(f"Min Weight: {scores_list[sorted_uids[num_uids-1]]}")
-    print(f"Max Weight: {scores_list[sorted_uids[0]]}")
+    out = ''
+    out += f"Total UIDs : {CYAN}{num_uids}{COLOR_END} | "
+    out += f"Min Weight: {CYAN}{scores_list[sorted_uids[num_uids-1]]}{COLOR_END} | "
+    out += f"Max Weight: {CYAN}{scores_list[sorted_uids[0]]}{COLOR_END} | "
     scoresStr = ""
     for idx, curScore in enumerate(scores_list):
         scoresStr += f"{CYAN}{idx}{COLOR_END}:{curScore} "
     #print(f"Unordered UIDs: {unsorted_uids}")
-    print(f"Scores: {scoresStr}")
-    print(f"Ordered UIDs: {sorted_uids}")
-    print("\n")
+    #out += f"Scores: {scoresStr} "
+    out += f"Ordered UIDs: {CYAN}{sorted_uids}{COLOR_END} "
+    print(out+"\n")
 
 
 @pytest.mark.asyncio
 async def test_full():
-    verbose = True
+    verbose = False
     plotting = False
     # Config variables
     c.set('system', 'mode', 'test')
@@ -143,29 +162,31 @@ async def test_full():
 
     for test_score_group in test_score_groups:
         print("\n"+DIVIDER)
-        print(f"\033[1mRunning test: {test_score_group['title']}\033[0m")
+        print(f"{BOLD}Running test: {test_score_group['title']}{BOLD_END}")
         print("----------------------------")
         original_scores_list = test_score_group['scores']
 
         #Print Stats
-        print("Printing Test Case stats")
+        print("Original Scores List")
         print_stats(original_scores_list)
 
         if original_scores_list is not None:
             #sort original list
             original_ranking = np.argsort(-original_scores_list)
 
-        #find tied indices to identify intentional shuffling later on
-        tied_indices = get_tied_indices(original_scores_list)
-
-        print("------------")
-        print("calculating raw_weights using ValidatorLibFunction")
+        # Get indices of tied scores to identify intentional shuffling later on
+        #tied_indices = get_tied_indices(original_scores_list)
+        (tiedScoresDict, tied_indices) = get_tied_scores_indices(original_scores_list)
+        print(f"Tied score indices: {CYAN}{tiedScoresDict}{COLOR_END}")
         break
+
+        #print("------------")
+        #print("calculating raw_weights using ValidatorLibFunction")
 
         #calculate raw weights using validatorLib function
         raw_weights = vl.get_raw_weights(original_scores_list)
-        print("\n------------")
-        print("Printing Result stats")
+        #print("\n------------")
+        print("Raw Weights Scors List")
         print_stats(raw_weights)
 
         if raw_weights is not None:
@@ -191,57 +212,11 @@ async def test_full():
 
 
             if plotting:
-                folder_name = f"plots_{start_time}"
-                os.makedirs(folder_name, exist_ok=True)
-
-                # Plot original scores list
-                plt.figure(figsize=(10, 6))
-                plt.plot(range(len(original_scores_list)), np.array(original_scores_list), marker='o', linestyle='-', color='g')
-                plt.xlabel('Index')
-                plt.ylabel('Score Value')
-                plt.title(f"Original Scores List {test_score_group['title']}")
-                plt.grid(True)
-                subfolder_before = os.path.join(folder_name, f"{test_score_group['title']}_before")
-                os.makedirs(subfolder_before, exist_ok=True)
-                plt.savefig(os.path.join(subfolder_before, f"original_scores_{test_score_group['title']}.png"))
-                plt.close()
-
-                # Plot original scores list in descending order
-                ordered_original_scores = np.array(original_scores_list)[original_ranking]
-                plt.figure(figsize=(10, 6))
-                plt.plot(range(len(ordered_original_scores)), ordered_original_scores, marker='o', linestyle='-', color='g')
-                plt.xlabel('Index')
-                plt.ylabel('Score Value')
-                plt.title(f"Original Scores List Descending {test_score_group['title']}")
-                plt.grid(True)
-                plt.savefig(os.path.join(subfolder_before, f"original_scores_descending_{test_score_group['title']}.png"))
-                plt.close()
-
-                # Plot raw weights
-                plt.figure(figsize=(10, 6))
-                plt.plot(range(len(raw_weights)), np.array(raw_weights), marker='o', linestyle='-', color='b')
-                plt.xlabel('Index')
-                plt.ylabel('Weight Value')
-                plt.title(f"Raw Weights {test_score_group['title']}")
-                plt.grid(True)
-                subfolder_after = os.path.join(folder_name, f"{test_score_group['title']}_after")
-                os.makedirs(subfolder_after, exist_ok=True)
-                plt.savefig(os.path.join(subfolder_after, f"raw_weights_{test_score_group['title']}.png"))
-                plt.close()
-
-                # Plot raw weights in descending order
-                ordered_raw_weights_final = np.copy(raw_weights)[new_ranking]
-                plt.figure(figsize=(10, 6))
-                plt.plot(range(len(ordered_raw_weights_final)), ordered_raw_weights_final, marker='o', linestyle='-', color='b')
-                plt.xlabel('Index')
-                plt.ylabel('Weight Value')
-                plt.title(f"Raw Weights Descending {test_score_group['title']}")
-                plt.grid(True)
-                plt.savefig(os.path.join(subfolder_after, f"raw_weights_descending_{test_score_group['title']}.png"))
-                plt.close()
+                self.plotScores(original_scores_list, raw_weights)
             else:
-                print("\n------------")
-                print("Skipping graphing step")
+                if verbose:
+                    print("\n------------")
+                    print("Skipping graphing step")
         else:
             raw_weights = None
             new_ranking = None
@@ -266,4 +241,54 @@ async def test_full():
                     assert np.array_equal(original_ranking, new_ranking), "Original ranking and new ranking should be the same when there are no tied indices."
 
             print("\n\n")
+
+    def plotScores(self, original_scores_list, raw_weights):
+        folder_name = f"plots_{start_time}"
+        os.makedirs(folder_name, exist_ok=True)
+
+        # Plot original scores list
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(original_scores_list)), np.array(original_scores_list), marker='o', linestyle='-', color='g')
+        plt.xlabel('Index')
+        plt.ylabel('Score Value')
+        plt.title(f"Original Scores List {test_score_group['title']}")
+        plt.grid(True)
+        subfolder_before = os.path.join(folder_name, f"{test_score_group['title']}_before")
+        os.makedirs(subfolder_before, exist_ok=True)
+        plt.savefig(os.path.join(subfolder_before, f"original_scores_{test_score_group['title']}.png"))
+        plt.close()
+
+        # Plot original scores list in descending order
+        ordered_original_scores = np.array(original_scores_list)[original_ranking]
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(ordered_original_scores)), ordered_original_scores, marker='o', linestyle='-', color='g')
+        plt.xlabel('Index')
+        plt.ylabel('Score Value')
+        plt.title(f"Original Scores List Descending {test_score_group['title']}")
+        plt.grid(True)
+        plt.savefig(os.path.join(subfolder_before, f"original_scores_descending_{test_score_group['title']}.png"))
+        plt.close()
+
+        # Plot raw weights
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(raw_weights)), np.array(raw_weights), marker='o', linestyle='-', color='b')
+        plt.xlabel('Index')
+        plt.ylabel('Weight Value')
+        plt.title(f"Raw Weights {test_score_group['title']}")
+        plt.grid(True)
+        subfolder_after = os.path.join(folder_name, f"{test_score_group['title']}_after")
+        os.makedirs(subfolder_after, exist_ok=True)
+        plt.savefig(os.path.join(subfolder_after, f"raw_weights_{test_score_group['title']}.png"))
+        plt.close()
+
+        # Plot raw weights in descending order
+        ordered_raw_weights_final = np.copy(raw_weights)[new_ranking]
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(ordered_raw_weights_final)), ordered_raw_weights_final, marker='o', linestyle='-', color='b')
+        plt.xlabel('Index')
+        plt.ylabel('Weight Value')
+        plt.title(f"Raw Weights Descending {test_score_group['title']}")
+        plt.grid(True)
+        plt.savefig(os.path.join(subfolder_after, f"raw_weights_descending_{test_score_group['title']}.png"))
+        plt.close()
 
