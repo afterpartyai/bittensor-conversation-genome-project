@@ -206,6 +206,15 @@ async def test_full():
                     else:
                         print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Unexpected change)")
 
+            uids = [1,2,3]
+            rewards = np.array([0.5, 0.5, 0.5], dtype=np.float32)
+            scores = np.array([0.004455, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
+            ema_scores = np.array([0.1,0.2,0.3,0.4,0.5], dtype=np.float32)
+            moving_average_alpha = 0.1
+            neurons = 5
+            nonlinear_power = 3
+            scores, ema_scores = vl.update_scores(rewards, uids, ema_scores, scores, moving_average_alpha, neurons=neurons, nonlinear_power=nonlinear_power)
+            print(f"Updated scores. scores:{scores} ema_scores: {ema_scores}")
 
             if plotting:
                 self.plotScores(original_scores_list, raw_weights)
