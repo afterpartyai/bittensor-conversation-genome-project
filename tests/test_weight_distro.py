@@ -204,10 +204,20 @@ async def test_full():
                     else:
                         print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Unexpected change)")
 
-            uids = [1,2,3]
-            rewards = np.array([0.5, 0.5, 0.5], dtype=np.float32)
-            originalScores = np.array([0.0, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
-            originalEma_scores = np.array([0.0,0.2,0.3,0.4,0.5], dtype=np.float32)
+            if False:
+                originalScores = np.array([0.0, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
+                originalEma_scores = np.array([0.0,0.2,0.3,0.4,0.5], dtype=np.float32)
+                uids = [1,2,3]
+                rewards = np.array([0.5, 0.5, 0.5], dtype=np.float32)
+            else:
+                originalScores = original_scores_list
+                originalEma_scores = original_scores_list
+                uids = []
+                rewards = np.array([], dtype=np.float32)
+                for i in range(len(originalScores)-1):
+                    uids.append(i+1)
+                    rewards = np.append(rewards, 0.2 + (0.05 * i % 1.0))
+
             moving_average_alpha = 0.1
             neurons = 5
             nonlinear_power = 3

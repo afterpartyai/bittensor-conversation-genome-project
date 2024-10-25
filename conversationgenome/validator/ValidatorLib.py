@@ -317,7 +317,7 @@ class ValidatorLib:
             device=None,
             neurons=None,
             nonlinear_power=None,
-            verbose=False
+            verbose=True
         ):
           # Match PyTorch's epsilon
         if verbose or self.verbose:
@@ -329,14 +329,14 @@ class ValidatorLib:
         else:
             uids_array = np.array(uids, dtype=np.int64)
         if verbose or self.verbose:
-            print(f"  uids_array value: {uids_array}")
+            print(f"  uids_array value: {uids_array} ({len(uids_array)})")
 
         # Ensure float32 dtype for consistency with PyTorch
         rewards = np.array(rewards, dtype=np.float32)
         ema_scores = np.array(ema_scores, dtype=np.float32)
         if verbose or self.verbose:
-            print(f"  rewards value: {rewards}")
-            print(f"  ema_scores value: {ema_scores}")
+            print(f"  rewards value: {rewards} ({len(rewards)})")
+            print(f"  ema_scores value: {ema_scores} ({len(ema_scores)})")
 
         # NaN handling
         if np.isnan(rewards).any():
