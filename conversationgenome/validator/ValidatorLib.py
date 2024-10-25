@@ -323,6 +323,7 @@ class ValidatorLib:
         if verbose or self.verbose:
             print(f"  Epsilon value: {eps}")
 
+        # _______ Data Typing _______
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
@@ -343,19 +344,21 @@ class ValidatorLib:
                 bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             rewards = np.nan_to_num(rewards, 0)
 
-        # UID handling duplicate code
-        #if isinstance(uids, np.ndarray):
-        #    uids_array = np.copy(uids)
-        #else:
-        #    uids_array = np.array(uids, dtype=np.int64)
+        # _______ Begin Score Update _______
 
-        # Scatter rewards (matching PyTorch scatter behavior)
-        scattered_rewards = np.copy(ema_scores)
-        scattered_rewards[uids_array] = rewards
-        msg = f"Scattered rewards: {rewards}"
-        bt.logging.debug(msg)
+        # Scatter rewards scores (matching PyTorch scatter behavior)
         if verbose or self.verbose:
-            print("  "+msg)
+            print(f"  Original ema scores:{ema_scores}")
+        scattered_rewards = np.copy(ema_scores)
+        if verbose or self.verbose:
+            print(f"  scattered_rewards1:{scattered_rewards}")
+        scattered_rewards[uids_array] = rewards
+        if verbose or self.verbose:
+            print(f"  scattered_rewards2:{scattered_rewards}")
+        bt.logging.debug(f"Scattered rewards: {rewards}")
+        if verbose or self.verbose:
+            print(f"  Original ema scores:{ema_scores}")
+            print(f"  Scattered rewards ema scores:{scattered_rewards}")
 
 
         # Update EMA scores
