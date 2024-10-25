@@ -7,9 +7,10 @@ import math
 import os
 import numpy as np
 import json
-
+import sys
 
 from conversationgenome.utils.Utils import Utils
+from conversationgenome.utils.uids import check_uid_availability
 from conversationgenome.ConfigLib import c
 
 from conversationgenome.miner.MinerLib import MinerLib
@@ -308,8 +309,6 @@ class ValidatorLib:
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
         
-        eps = 1e-12  # Match PyTorch's epsilon
-        
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
@@ -343,23 +342,21 @@ class ValidatorLib:
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
 
-        # Normalize EMA scores with epsilon
+        # Normalize EMA scores
         sum_scores = np.sum(ema_scores)
-        if sum_scores > eps:
-            normalized_scores = ema_scores / (sum_scores + eps)
+        if sum_scores > 0:
+            normalized_scores = ema_scores / sum_scores
         else:
             normalized_scores = np.ones_like(ema_scores) / neurons
 
-        # Apply non-linear transformation with stability
-        normalized_scores = normalized_scores.clip(min=eps)  # Prevent underflow
-
+        # Apply non-linear transformation
         transformed_scores = np.power(normalized_scores, nonlinear_power)
 
 
-        # Renormalize with epsilon
+        # Renormalize
         sum_transformed = np.sum(transformed_scores)
-        if sum_transformed > eps:
-            scores = transformed_scores / (sum_transformed + eps)
+        if sum_transformed > 0:
+            scores = transformed_scores / (sum_transformed)
         else:
             scores = np.ones_like(transformed_scores) / neurons
             
@@ -367,6 +364,7 @@ class ValidatorLib:
             bt.logging.debug(f"Updated final scores: {scores}")
 
         return scores, ema_scores
+
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
         llml = LlmLib()

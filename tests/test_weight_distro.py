@@ -103,7 +103,9 @@ async def test_full():
     stake_weighted_average,otf_weights = get_real_weights()
     
     test_score_groups = [
-        {"title": "normalized_scores", "scores": np.array([0.1, 0.2, 0.15, 0.05, 0.1, 0.2, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
+        {"title": "normalized_scores", "scores": np.array([0.6, 0.7, 0.16, 0.01, 0.1, 0.2, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
+        {"title": "normalized_scores some zeros1", "scores": np.array([0.0,0.0,0.0,0.0,0.1, 0.2, 0.15, 0.05, 0.1, 0.2, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
+        {"title": "normalized_scores some zeros2", "scores": np.array([0.0, 0.1,0.0, 0.2, 0.15, 0.0, 0.05, 0.1, 0.0, 0.2, 0.2, 0.0, 0.05, 0.0, 0.05, 0.0, 0.1], dtype=np.float32)},
         {"title": "uniform_distribution", "scores": np.array([0.05] * 20, dtype=np.float32)},
         {"title": "empty_scores", "scores": np.array([], dtype=np.float32)},
         {"title": "nan_values", "scores": np.array([float('nan')] * 10, dtype=np.float32)},
@@ -135,6 +137,7 @@ async def test_full():
             
         #find tied indices to identify intentional shuffling later on
         tied_indices = get_tied_indices(original_scores_list)
+        original_zero_indices = np.where(original_scores_list == 0)[0]
         
         print("------------")
         print("calculating raw_weights using ValidatorLibFunction")
@@ -151,6 +154,18 @@ async def test_full():
 
             #create new ranking
             new_ranking = np.argsort(-raw_weights)
+            new_zero_indices = np.where(raw_weights == 0)[0]
+
+            # Sort both lists and confirm that new_zero_indices == original_zero_indices
+            sorted_original_zero_indices = np.sort(original_zero_indices)
+            sorted_new_zero_indices = np.sort(new_zero_indices)
+
+            if np.array_equal(sorted_original_zero_indices, sorted_new_zero_indices):
+                print("Zero indices match between original and new weights.")
+            else:
+                print("Mismatch in zero indices between original and new weights.")
+                print(f"Original zero indices: {sorted_original_zero_indices}")
+                print(f"New zero indices: {sorted_new_zero_indices}")
 
             print("Comparing new ordered UIDS to original Ordered UIDs to confirm raw_weights were calculated properly.")
             print("If out of order indices are found, they will be either due to Tie-shuffling, or due to unexpected error. Print will specify below:")
