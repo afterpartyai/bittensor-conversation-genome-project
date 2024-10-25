@@ -307,7 +307,6 @@ class ValidatorLib:
 
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device=None, neurons=None, nonlinear_power=None, verbose=True):
-
         eps = 1e-12  # Match PyTorch's epsilon
         if verbose or self.verbose:
             print(f"Epsilon value: {eps}")
@@ -316,10 +315,13 @@ class ValidatorLib:
             uids_array = np.copy(uids)
         else:
             uids_array = np.array(uids, dtype=np.int64)
+        print(f"uids_array value: {uids_array}")
 
         # Ensure float32 dtype for consistency with PyTorch
         rewards = np.array(rewards, dtype=np.float32)
         ema_scores = np.array(ema_scores, dtype=np.float32)
+        print(f"rewards value: {rewards}")
+        print(f"ema_scores value: {ema_scores}")
 
         # NaN handling
         if np.isnan(rewards).any():
@@ -327,11 +329,11 @@ class ValidatorLib:
                 bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             rewards = np.nan_to_num(rewards, 0)
 
-        # UID handling
-        if isinstance(uids, np.ndarray):
-            uids_array = np.copy(uids)
-        else:
-            uids_array = np.array(uids, dtype=np.int64)
+        # UID handling duplicate code
+        #if isinstance(uids, np.ndarray):
+        #    uids_array = np.copy(uids)
+        #else:
+        #    uids_array = np.array(uids, dtype=np.int64)
 
         # Scatter rewards (matching PyTorch scatter behavior)
         scattered_rewards = np.copy(ema_scores)
