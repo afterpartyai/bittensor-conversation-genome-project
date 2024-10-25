@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import numpy as np
 import os
+import json
 import torch
 
 verbose = True
@@ -136,15 +137,23 @@ async def test_full():
     test_mode = True
     start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+    # For consistency, use hard-coded weights
     if False:
-        stake_weighted_average,otf_weights = get_real_weights()
-        stake_weighted_average = stake_weighted_average[0:10]
-        otf_weights = otf_weights[0:10]
+        (stake_weighted_average, otf_weights) = get_real_weights()
+        print(f"stake_weighted_average {stake_weighted_average} ({len(stake_weighted_average)}) otf_weights: {otf_weights} ({len(otf_weights)})")
     else:
         stake_weighted_average = np.array([0.00482204, 0.00196788, 0.00187665, 0.00423791, 0.00458174, 0.00443221, 0.00473241, 0.00202872, 0.00449199, 0.00445989])
         otf_weights = np.array([0.00396116, 0.00238071, 0.00230142, 0.00399894, 0.00505707, 0.00400471, 0.00401076, 0.00256747, 0.00390845, 0.00391227])
 
-    #print("WEIGHTS",stake_weighted_average, otf_weights, type(np.array([0.1, 0.2])))
+    # Truncate for more human readable
+    numWeights = 10
+    if numWeights:
+        stake_weighted_average = stake_weighted_average[0:numWeights]
+        otf_weights = otf_weights[0:numWeights]
+    uids = [i for i in range(1, len(otf_weights)+1)]
+
+    #print(f"stake_weighted_average {stake_weighted_average} ({len(stake_weighted_average)}) otf_weights: {otf_weights} ({len(otf_weights)})")
+
 
     test_score_groups = [
         {"title": "normalized_scores", "scores": np.array([0.0, 0.7, 0.2, 0.15, 0.05, 0.1, 0.2, 0.05, 0.05, 0.1], dtype=np.float32)},
@@ -208,19 +217,14 @@ async def test_full():
                     else:
                         print(f"Rank {rank}: Original UID {original_uid} -> New UID {new_uid} (Unexpected change)")
 
-            if False:
-                originalScores = np.array([0.0, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
-                originalEma_scores = np.array([0.0,0.2,0.3,0.4,0.5], dtype=np.float32)
-                uids = [1,2,3]
-                rewards = np.array([0.5, 0.5, 0.5], dtype=np.float32)
-            else:
-                originalScores = original_scores_list
-                originalEma_scores = original_scores_list
-                uids = []
-                rewards = np.array([], dtype=np.float32)
-                for i in range(len(originalScores)-1):
-                    uids.append(i+1)
-                    rewards = np.append(rewards, 0.2 + (0.05 * i % 1.0))
+            originalScores = original_scores_list
+            originalEma_scores = original_scores_list
+            uids = []
+            rewards = np.array([], dtype=np.float32)
+            # TODO: Why do the uids and rewards have to be 1 less than the length of the scores?
+            for i in range(len(originalScores)-1):
+                uids.append(i+1)
+                rewards = np.append(rewards, 0.2 + (0.05 * i % 1.0))
 
             moving_average_alpha = 0.1
             neurons = 5
