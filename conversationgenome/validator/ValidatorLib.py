@@ -308,16 +308,16 @@ class ValidatorLib:
 
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
-        
+
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
             uids_array = np.array(uids, dtype=np.int64)
-        
+
         # Ensure float32 dtype for consistency with PyTorch
         rewards = np.array(rewards, dtype=np.float32)
         ema_scores = np.array(ema_scores, dtype=np.float32)
-        
+
         # NaN handling
         if np.isnan(rewards).any():
             if self.verbose:
@@ -332,13 +332,19 @@ class ValidatorLib:
 
         # Scatter rewards (matching PyTorch scatter behavior)
         scattered_rewards = np.copy(ema_scores)
-        scattered_rewards[uids_array] = rewards
+
+        # Only scatter rewards across the uids that have scores
+        for uid_idx in uids_array:
+            if scores[uid_idx] > 0.0:
+                scatter_uids = np.append(scatter_uids, uid_idx)
+        scattered_rewards[scatter_uids] = rewards
+
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update EMA scores
         alpha: float = moving_average_alpha
         ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
-        
+
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
 
@@ -359,7 +365,7 @@ class ValidatorLib:
             scores = transformed_scores / (sum_transformed)
         else:
             scores = np.ones_like(transformed_scores) / neurons
-            
+
         if self.verbose:
             bt.logging.debug(f"Updated final scores: {scores}")
 
@@ -394,7 +400,7 @@ class ValidatorLib:
         processed_tag_list = [element for element in validTags if element in cleanTagsStr]
 
         return processed_tag_list
-    
+
     def transposed_cubic_distribution(self, i, num_uids):
         # Calculate the range of x values
         y_min, y_max = 0.001, 0.003
@@ -409,7 +415,7 @@ class ValidatorLib:
         y_scaled = y_min + (y_max - y_min) * (y_normalized + 1) / 2
 
         return y_scaled
-    
+
     def get_raw_weights(self, scores):
         if scores is None or scores.size == 0 or np.isnan(scores).any():
             bt.logging.error("Nan detected in Weights. Returning None.")
@@ -421,7 +427,7 @@ class ValidatorLib:
         # Order the UIDs for weight assignment
         ordered_uids = np.argsort(raw_weights)[::-1]
         zero_uids = np.where(raw_weights == 0)[0]
-        
+
         # Determine if there are any ties in raw_weights
         unique_weights, counts = np.unique(raw_weights, return_counts=True)
         ties = unique_weights[counts > 1]
@@ -432,28 +438,28 @@ class ValidatorLib:
                 continue
             # Find the indices in raw_weights that have the tied value
             tied_indices = np.nonzero(raw_weights == tie)[0]
-            
+
             # Find the positions of these tied indices within ordered_uids
             positions_in_ordered_uids = np.nonzero(np.isin(ordered_uids, tied_indices))[0]
-            
+
             # Shuffle these positions amongst themselves
             shuffled_positions = np.random.permutation(positions_in_ordered_uids)
-            
+
             # Apply the shuffle to ordered_uids
             ordered_uids[positions_in_ordered_uids] = ordered_uids[shuffled_positions]
 
-        #Calculate proper length for calculating weight values    
+        #Calculate proper length for calculating weight values
         num_uids = len(ordered_uids) - len(zero_uids)
         ordered_uids_no_zeros = ordered_uids[~np.isin(ordered_uids, zero_uids)]
         # calculate proper weight values for each non-zero uid
         if num_uids > 0:
             for i, uid in enumerate(ordered_uids_no_zeros):
                 weight = self.transposed_cubic_distribution(i, num_uids)
-                
+
                 # Assign the weight to the raw_weights tensor
                 if weight:
                     raw_weights[uid] = weight
-                else: 
+                else:
                     bt.logging.error("Error in Weights calculation. Setting this UID to 0")
                     raw_weights[uid] = 0
 
