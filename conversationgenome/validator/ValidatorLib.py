@@ -306,22 +306,33 @@ class ValidatorLib:
         await llml.test_tagging()
 
 
-    def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device=None, neurons=None, nonlinear_power=None, verbose=True):
-        eps = 1e-12  # Match PyTorch's epsilon
+    def update_scores(self,
+            rewards=None,
+            uids=None,
+            ema_scores=None,
+            scores=None,
+            moving_average_alpha=None,
+            eps=None,
+            device=None,
+            neurons=None,
+            nonlinear_power=None,
+            verbose=True
+        ):
+          # Match PyTorch's epsilon
         if verbose or self.verbose:
-            print(f"Epsilon value: {eps}")
+            print(f"  Epsilon value: {eps}")
 
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
             uids_array = np.array(uids, dtype=np.int64)
-        print(f"uids_array value: {uids_array}")
+        print(f"  uids_array value: {uids_array}")
 
         # Ensure float32 dtype for consistency with PyTorch
         rewards = np.array(rewards, dtype=np.float32)
         ema_scores = np.array(ema_scores, dtype=np.float32)
-        print(f"rewards value: {rewards}")
-        print(f"ema_scores value: {ema_scores}")
+        print(f"  rewards value: {rewards}")
+        print(f"  ema_scores value: {ema_scores}")
 
         # NaN handling
         if np.isnan(rewards).any():
@@ -338,11 +349,19 @@ class ValidatorLib:
         # Scatter rewards (matching PyTorch scatter behavior)
         scattered_rewards = np.copy(ema_scores)
         scattered_rewards[uids_array] = rewards
-        bt.logging.debug(f"Scattered rewards: {rewards}")
+        msg = f"Scattered rewards: {rewards}"
+        bt.logging.debug(msg)
+        if verbose or self.verbose:
+            print("  "+msg)
+
 
         # Update EMA scores
         alpha: float = moving_average_alpha
-        ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+        original_ema_scores = ema_scores
+        ema_scores = alpha * scattered_rewards + (1 - alpha) * original_ema_scores
+        if verbose or self.verbose:
+            print(f"  original ema scores: {original_ema_scores} updated ema scores:{ema_scores}")
+
 
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
@@ -354,10 +373,17 @@ class ValidatorLib:
         else:
             normalized_scores = np.ones_like(ema_scores) / neurons
 
+        if verbose or self.verbose:
+            print(f"  normalized ema scores: {normalized_scores}")
+
         # Apply non-linear transformation with stability
         normalized_scores = normalized_scores.clip(min=eps)  # Prevent underflow
+        if verbose or self.verbose:
+            print(f"  normalized non-linear ema scores: {normalized_scores}")
 
         transformed_scores = np.power(normalized_scores, nonlinear_power)
+        if verbose or self.verbose:
+            print(f"  transformed ema scores: {transformed_scores}")
 
 
         # Renormalize with epsilon
@@ -366,6 +392,8 @@ class ValidatorLib:
             scores = transformed_scores / (sum_transformed + eps)
         else:
             scores = np.ones_like(transformed_scores) / neurons
+        if verbose or self.verbose:
+            print(f"  Renormalized ema scores: {scores}")
 
         if self.verbose:
             bt.logging.debug(f"Updated final scores: {scores}")

@@ -209,13 +209,26 @@ async def test_full():
             uids = [1,2,3]
             rewards = np.array([0.5, 0.5, 0.5], dtype=np.float32)
             originalScores = np.array([0.0, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
-            originalEma_scores = np.array([0.1,0.2,0.3,0.4,0.5], dtype=np.float32)
+            originalEma_scores = np.array([0.0,0.2,0.3,0.4,0.5], dtype=np.float32)
             moving_average_alpha = 0.1
             neurons = 5
             nonlinear_power = 3
-            updatedScores, updatedEma_scores = vl.update_scores(rewards, uids, originalEma_scores, originalScores, moving_average_alpha, neurons=neurons, nonlinear_power=nonlinear_power)
-            print(f"Original scores.   scores:{originalScores} ({len(originalScores)}) |  ema_scores: {originalEma_scores} ({len(originalEma_scores)})")
-            print(f"Updated scores. scores:{updatedScores} ({len(updatedScores)}) | ema_scores: {updatedEma_scores}  ({len(updatedEma_scores)})")
+            epsilons = [1e-12, 0]
+            for epsilon in epsilons:
+                print(f"\n{GREEN}Updating scores with epsilon {epsilon}...{COLOR_END}")
+                updatedScores, updatedEma_scores = vl.update_scores(
+                    rewards=rewards,
+                    uids=uids,
+                    ema_scores=originalEma_scores,
+                    scores=originalScores,
+                    eps=epsilon,
+                    moving_average_alpha=moving_average_alpha,
+                    neurons=neurons,
+                    nonlinear_power=nonlinear_power
+                )
+                print(f"\n{GREEN}Done updating scores {epsilon}.{COLOR_END}")
+                print(f"Original scores.   scores:{originalScores} ({len(originalScores)}) |  ema_scores: {originalEma_scores} ({len(originalEma_scores)})")
+                print(f"Updated scores. scores:{updatedScores} ({len(updatedScores)}) | ema_scores: {updatedEma_scores}  ({len(updatedEma_scores)})")
 
             if plotting:
                 self.plotScores(original_scores_list, raw_weights)
