@@ -95,7 +95,7 @@ def get_real_weights():
 
     return stake_weighted_average,otf_weights
 
-def print_stats(scores_list):
+def print_stats(scores_list, title=None):
     if scores_list is None or scores_list.size == 0:
         print("Original List is None or length zero")
         return
@@ -107,8 +107,8 @@ def print_stats(scores_list):
     unsorted_uids = np.arange(0, num_uids)
     sorted_uids = np.argsort(scores_list)[::-1]
 
-    out = ''
-    out += f"Total UIDs : {CYAN}{num_uids}{COLOR_END} | "
+    out = f'{YELLOW}{title}{COLOR_END}'
+    out += f" Total UIDs : {CYAN}{num_uids}{COLOR_END} | "
     out += f"Min Weight: {CYAN}{scores_list[sorted_uids[num_uids-1]]}{COLOR_END} | "
     out += f"Max Weight: {CYAN}{scores_list[sorted_uids[0]]}{COLOR_END} | "
     scoresStr = ""
@@ -167,8 +167,7 @@ async def test_full():
         original_scores_list = test_score_group['scores']
 
         #Print Stats
-        print("Original Scores List")
-        print_stats(original_scores_list)
+        print_stats(original_scores_list, title="Original Weight Scores")
 
         if original_scores_list is not None:
             #sort original list
@@ -177,24 +176,21 @@ async def test_full():
         # Get indices of tied scores to identify intentional shuffling later on
         #tied_indices = get_tied_indices(original_scores_list)
         (tiedScoresDict, tied_indices) = get_tied_scores_indices(original_scores_list)
-        print(f"Tied score indices: {CYAN}{tiedScoresDict}{COLOR_END}")
-        break
+        print(f"Tied scores: {CYAN}{tiedScoresDict}{COLOR_END} | {len(tied_indices)} --> {tied_indices}")
 
         #print("------------")
-        #print("calculating raw_weights using ValidatorLibFunction")
+        print("calculating raw_weights using ValidatorLibFunction")
 
         #calculate raw weights using validatorLib function
         raw_weights = vl.get_raw_weights(original_scores_list)
-        #print("\n------------")
-        print("Raw Weights Scors List")
-        print_stats(raw_weights)
+        for raw_weight in raw_weights:
+            print(f"{raw_weight}")
+        print_stats(raw_weights, title="Raw Weight Scores")
 
         if raw_weights is not None:
-
-            print(f"Found Tied Indices: {tied_indices}")
-
             #create new ranking
             new_ranking = np.argsort(-raw_weights)
+            print(f"original_ranking = {original_ranking}, new_ranking={new_ranking} raw_weights={raw_weights}")
 
             print("Comparing new ordered UIDS to original Ordered UIDs to confirm raw_weights were calculated properly.")
             print("If out of order indices are found, they will be either due to Tie-shuffling, or due to unexpected error. Print will specify below:")
