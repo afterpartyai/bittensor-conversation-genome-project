@@ -25,6 +25,8 @@ import bittensor as bt
 import random
 import os
 import numpy as np
+import datetime
+import time
 
 from typing import List
 from traceback import print_exception
@@ -376,7 +378,7 @@ class BaseValidatorNeuron(BaseNeuron):
             return
 
 
-        state_path = self.config.neuron.full_path + "/state_new.npz"
+        state_path = self.config.neuron.full_path + "/state.npz"
         bt.logging.info(f"Saving validator state to {state_path}.")
 
         # Save the state of the validator to file.
@@ -395,10 +397,13 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def load_state(self):
         """Loads the state of the validator from a file."""
-        npz_path = self.config.neuron.full_path + "/state_new.npz"
+        npz_path = self.config.neuron.full_path + "/state.npz"
         pt_path = self.config.neuron.full_path + "/state.pt"
 
         if os.path.isfile(npz_path):
+            file_stats = os.stat(npz_path)
+            last_mod_dt = datetime.datetime.fromtimestamp(file_stats.st_mtime)
+            bt.logging.info(f"\n\nLoading state file. File last updated: {last_mod_dt.strftime('%Y-%m-%d %H:%M:%S')}")
             # Load state from .npz file
             bt.logging.info(f"Loading validator state from {npz_path}.")
             state = np.load(npz_path)
@@ -411,6 +416,9 @@ class BaseValidatorNeuron(BaseNeuron):
                 bt.logging.info("ema_scores not found in saved state. Initializing with default values.")
                 self.ema_scores = np.zeros_like(self.scores)
         elif os.path.isfile(pt_path):
+            file_stats = os.stat(pt_path)
+            last_mod_dt = datetime.datetime.fromtimestamp(file_stats.st_mtime)
+            bt.logging.info(f"\n\nLoading state file. File last updated: {last_mod_dt.strftime('%Y-%m-%d %H:%M:%S')}")
             # Load state from .pt file
             bt.logging.info(f"Loading validator state from {pt_path}.")
             state = torch.load(pt_path)
