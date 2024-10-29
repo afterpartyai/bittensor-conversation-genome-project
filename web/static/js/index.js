@@ -4,6 +4,25 @@ Utils.getRequest = (name, defaultVal) => {
   return urlParams.get(name) || defaultVal;
 }
 
+Utils.addComponent = (o) => {
+    console.log("COMPONENT LOADED", o);
+    $(o).appendTo("components");
+}
+var loadedComponents = {};
+Utils.loadComponents = (componentList) => {
+    let promises = [];
+    for(let idx in componentList) {
+        var componentName = componentList[idx];
+        if(!loadedComponents[componentName]) {
+            promises.push($.get('/static/components/'+componentName+'.html', Utils.addComponent));
+            loadedComponents[componentName] = true;
+        }
+    }
+    Promise.all(promises).then(values => {
+      console.log("All loaded");
+    });
+}
+
 let Api = {};
 Api.getTaskTypes = (callback) => {
     $.get("/", (o) => {
