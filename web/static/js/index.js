@@ -4,17 +4,18 @@ Utils.getRequest = (name, defaultVal) => {
   return urlParams.get(name) || defaultVal;
 }
 
-Utils.addComponent = (o) => {
-    console.log("COMPONENT LOADED", o);
-    $(o).appendTo("components");
+Utils.addComponent = (o, sel) => {
+    console.log("COMPONENT LOADED", o, sel);
+    sel = sel ? sel : "components";
+    $(o).appendTo(sel);
 }
 var loadedComponents = {};
-Utils.loadComponents = (componentList, callback) => {
+Utils.loadComponents = (componentList, callback, containerSel) => {
     let promises = [];
     for(let idx in componentList) {
         var componentName = componentList[idx];
         if(!loadedComponents[componentName]) {
-            promises.push($.get('/static/components/'+componentName+'.html', Utils.addComponent));
+            promises.push( $.get('/static/components/'+componentName+'.html', (o) => { Utils.addComponent(o, containerSel) } ) );
             loadedComponents[componentName] = true;
         }
     }
@@ -61,6 +62,10 @@ $(document).ready(function() {
     route = Utils.getRequest('route', 'home');
     if(route == 'home') {
         Utils.loadComponents(['tile','tile','tile'], renderHome);
+    } else if(route == 'adwords') {
+        Utils.loadComponents(['main_adwords'], () => {
+
+        }, '.tileContainer');
     }
 });
 
