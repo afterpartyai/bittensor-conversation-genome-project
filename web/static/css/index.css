@@ -21,6 +21,11 @@ html {
     flex-direction: column;
     gap: 20px;
 }
+
+main {
+    padding: 10px 30px;
+}
+
 .tileContainer {
     display: flex;
     flex-direction: row;
@@ -33,4 +38,16 @@ html {
     overflow: hidden;
     background: white;
     border-radius: 20px;
+}
+.tile:hover {
+    border: 1px solid #00EEEE;
+    box-sizing: border-box;
+    background-color: #00EEEE; /* hover highlight color */
+    transition: background-color 0.5s; /* smooth transition duration */
+}
+.tileHeading {
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
 }
