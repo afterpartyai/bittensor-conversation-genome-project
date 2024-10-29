@@ -9,7 +9,7 @@ Utils.addComponent = (o) => {
     $(o).appendTo("components");
 }
 var loadedComponents = {};
-Utils.loadComponents = (componentList) => {
+Utils.loadComponents = (componentList, callback) => {
     let promises = [];
     for(let idx in componentList) {
         var componentName = componentList[idx];
@@ -20,6 +20,7 @@ Utils.loadComponents = (componentList) => {
     }
     Promise.all(promises).then(values => {
       console.log("All loaded");
+      return callback();
     });
 }
 
@@ -59,7 +60,7 @@ function renderHome() {
 $(document).ready(function() {
     route = Utils.getRequest('route', 'home');
     if(route == 'home') {
-        renderHome();
+        Utils.loadComponents(['tile','tile','tile'], renderHome);
     }
 });
 
