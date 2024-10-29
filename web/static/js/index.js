@@ -66,6 +66,18 @@ $(document).ready(function() {
         Utils.loadComponents(['main_adwords'], () => {
 
         }, '.tileContainer');
+    } else if(route == 'public_data') {
+        Utils.loadComponents(['main_public_data'], () => {
+
+        }, '.tileContainer');
+    } else if(route == 'social_media') {
+        Utils.loadComponents(['main_social_media'], () => {
+
+        }, '.tileContainer');
+    } else if(route == 'survey') {
+        Utils.loadComponents(['main_survey'], () => {
+
+        }, '.tileContainer');
     }
 });
 
