@@ -1,0 +1,36 @@
+.mulish-300 {
+  font-family: "Mulish", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+
+html {
+  font-family: "Mulish", sans-serif;
+  background-color: #f7faff;
+}
+
+.frow {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.fcolumn {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.tileContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    padding: 20px;
+}
+.tile {
+    width: 400px;
+    height: 300px;
+    overflow: hidden;
+    background: white;
+    border-radius: 20px;
+}

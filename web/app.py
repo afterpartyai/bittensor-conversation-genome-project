@@ -31,6 +31,8 @@ DIVIDER = '_' * 120
 
 
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+
 
 app = FastAPI()
 
@@ -146,6 +148,9 @@ def get_account():
     print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
 
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 @app.get("/")
 def get_request():
     return {"message": "Forbidden"}
@@ -250,6 +255,15 @@ def post_get_api_generate_key(data: dict):
                 out['errors'].append([9893845, "Signature didn't verify",])
         else:
             out['errors'].append([9893846, "Keypair not installed",])
+    return out
+
+@app.get("/api/v1/queue")
+def get_api_get_queue_item():
+    out = {"success": 0, "errors":[], "data":{}}
+    taskType = "ad"
+
+
+    out['success'] = 1
     return out
 
 
