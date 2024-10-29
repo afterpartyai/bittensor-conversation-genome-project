@@ -261,6 +261,12 @@ def post_get_api_generate_key(data: dict):
 def get_api_get_queue_item():
     out = {"success": 0, "errors":[], "data":{}}
     taskType = "ad"
+    out['data'] = [
+        {"id": 1, "title": "Hello"},
+        {"id": 2, "title": "World"},
+        {"id": 3, "title": "From"},
+        {"id": 4, "title": "Below"},
+    ];
 
 
     out['success'] = 1
