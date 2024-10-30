@@ -110,3 +110,26 @@ tr {
 tr:not(:last-child) {
   border-bottom-width: 0;
 }
+
+.btn {
+  border: none;
+  border-radius: 10px; /* rounded corners */
+  background-color: blue; /* light gray background */
+  color: #eee; /* dark gray text */
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  max-width: 200px;
+}
+
+.btn:hover {
+  background-color: darkblue; /* slightly darker gray on hover */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* subtle shadow on hover */
+}
+
+.btn:active {
+  background-color: slateblue; /* darker gray on active */
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1); /* inset shadow on active */
+}

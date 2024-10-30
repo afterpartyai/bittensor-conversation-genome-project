@@ -96,7 +96,7 @@ $(document).ready(function() {
     if(route == 'home') {
         Utils.loadComponents(['tile','tile','tile'], Render.home);
     } else if(route == 'adwords') {
-        Utils.loadComponents(['main_adwords', 'adwords_row'], () => {
+        Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
             addComponentInstance('.tileContainer', 'main_adwords', {});
             Api.getQueueJobs('adwords', (o) => {
                 console.log("QUEUE", o);
@@ -118,3 +118,6 @@ $(document).ready(function() {
     }
 });
 
+function addJob(obj) {
+    $(loadedComponents["adwords_dialog_add_job"]).dialog({title:"Add Ad Context Job", width:600});
+}

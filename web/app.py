@@ -262,10 +262,10 @@ def get_api_get_queue_item():
     out = {"success": 0, "errors":[], "data":{}}
     taskType = "ad"
     out['data'] = [
-        {"id": 1, "title": "Hello"},
-        {"id": 2, "title": "World"},
-        {"id": 3, "title": "From"},
-        {"id": 4, "title": "Below"},
+        {"id": 1, "type":"Hugging Face", "title": "reddit_dataset_69", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_69"},
+        {"id": 2, "type":"Hugging Face", "title": "reddit_dataset_229", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_229"},
+        {"id": 3, "type":"Hugging Face", "title": "reddit_dataset_88", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_88"},
+        {"id": 4, "type":"Hugging Face", "title": "reddit_dataset_13", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_13"},
     ];
 
 
