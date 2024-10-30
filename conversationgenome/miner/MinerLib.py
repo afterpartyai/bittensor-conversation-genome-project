@@ -46,7 +46,7 @@ class MinerLib:
             out["tags"] = tags
             out["vectors"] = Utils.get(result, 'vectors', {})
             num_tags = len(Utils.get(out, 'tags', []))
-            bt.logging.info(f"Miner: Mined {num_tags} vectors and tags")
+            bt.logging.info(f"Miner: Mined {num_tags} tags")
 
             if self.verbose:
                 bt.logging.debug(f"MINED TAGS: {out['tags']}")
