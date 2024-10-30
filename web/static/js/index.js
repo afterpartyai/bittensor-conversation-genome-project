@@ -4,19 +4,25 @@ Utils.getRequest = (name, defaultVal) => {
   return urlParams.get(name) || defaultVal;
 }
 
-Utils.addComponent = (o, sel) => {
-    console.log("COMPONENT LOADED", o, sel);
+Utils.addComponent = (o, sel, componentName) => {
+    console.log("COMPONENT LOADED", o, sel, componentName);
     sel = sel ? sel : "components";
-    $(o).appendTo(sel);
+    loadedComponents[componentName] = $(o);
+
+    //$(o).appendTo(sel);
 }
 var loadedComponents = {};
 Utils.loadComponents = (componentList, callback, containerSel) => {
     let promises = [];
     for(let idx in componentList) {
-        var componentName = componentList[idx];
+        const componentName = componentList[idx];
         if(!loadedComponents[componentName]) {
-            promises.push( $.get('/static/components/'+componentName+'.html', (o) => { Utils.addComponent(o, containerSel) } ) );
+            console.log("componentName", componentName);
             loadedComponents[componentName] = true;
+            promises.push( $.get('/static/components/'+componentName+'.html', (o) => {
+                    console.log("componentName2", componentName);
+                Utils.addComponent(o, containerSel, componentName)
+            } ) );
         }
     }
     Promise.all(promises).then(values => {
@@ -38,7 +44,10 @@ Api.getQueueJobs = (type, callback) => {
 }
 
 function addComponentInstance(sel, componentName, item) {
-    let componentInstance = $('components .'+componentName).clone().removeClass("."+componentName);
+    console.log("Add instance", componentName, loadedComponents);
+    let componentInstance = loadedComponents[componentName].clone().removeClass("."+componentName)
+    //let componentInstance = $('components .'+componentName).clone().removeClass("."+componentName);
+    console.log("componentInstance", componentInstance, 'components .'+componentName)
     for(let key in item) {
         const val = item[key];
         if(key == 'image_url') {
@@ -77,8 +86,8 @@ Render.adwords = (data) => {
     const sel = ".main_adwords table tbody";
     for(idx in data) {
         let item = data[idx];
-        addComponentInstance(sel, 'adword_row', item);
         console.log("item", item);
+        addComponentInstance(sel, 'adwords_row', item);
     }
 }
 
