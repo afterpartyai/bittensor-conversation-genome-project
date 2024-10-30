@@ -37,7 +37,7 @@ class MinerLib:
             llml = LlmLib()
             lines = copy.deepcopy(conversation_window)
             # TODO: Disable embeddings generation on miner once all validators upgraded
-            generateEmbeddings = True
+            generateEmbeddings = False
             if generateEmbeddings:
                 bt.logging.info(f"Miner: generating embeddings...")
 
