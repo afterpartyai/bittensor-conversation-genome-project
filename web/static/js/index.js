@@ -17,10 +17,10 @@ Utils.loadComponents = (componentList, callback, containerSel) => {
     for(let idx in componentList) {
         const componentName = componentList[idx];
         if(!loadedComponents[componentName]) {
-            console.log("componentName", componentName);
+            console.log("Adding componentName: ", componentName);
             loadedComponents[componentName] = true;
             promises.push( $.get('/static/components/'+componentName+'.html', (o) => {
-                    console.log("componentName2", componentName);
+                    console.log("Loaded componentName: ", componentName);
                 Utils.addComponent(o, containerSel, componentName)
             } ) );
         }
@@ -44,10 +44,10 @@ Api.getQueueJobs = (type, callback) => {
 }
 
 function addComponentInstance(sel, componentName, item) {
-    console.log("Add instance", componentName, loadedComponents);
+    //console.log("Add instance", componentName, loadedComponents);
     let componentInstance = loadedComponents[componentName].clone().removeClass("."+componentName)
     //let componentInstance = $('components .'+componentName).clone().removeClass("."+componentName);
-    console.log("componentInstance", componentInstance, 'components .'+componentName)
+    //console.log("Add componentInstance:", componentInstance, " componentName:", componentName)
     for(let key in item) {
         const val = item[key];
         if(key == 'image_url') {
@@ -58,6 +58,7 @@ function addComponentInstance(sel, componentName, item) {
     }
     componentInstance.appendTo(sel);
 }
+
 let Render = {};
 Render.home = () => {
     const taskTypes = [
@@ -69,16 +70,7 @@ Render.home = () => {
     const sel = $("main .tileContainer");
     for(let idx in taskTypes) {
         let taskType = taskTypes[idx];
-        let tile = $('.protoTile').clone().removeClass("protoTile");
-        for(let key in taskType) {
-            const val = taskType[key];
-            if(key == 'image_url') {
-                tile.find("[data-field="+key+"]").attr('src', val);
-            } else {
-                tile.find("[data-field="+key+"]").text(val);
-            }
-        }
-        tile.appendTo('.tileContainer');
+        addComponentInstance('.tileContainer', 'tile', taskType);
     }
 }
 
@@ -94,7 +86,7 @@ Render.adwords = (data) => {
 $(document).ready(function() {
     route = Utils.getRequest('route', 'home');
     if(route == 'home') {
-        Utils.loadComponents(['tile','tile','tile'], Render.home);
+        Utils.loadComponents(['tile'], Render.home);
     } else if(route == 'adwords') {
         Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
             addComponentInstance('.tileContainer', 'main_adwords', {});

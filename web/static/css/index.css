@@ -38,6 +38,8 @@ main {
     overflow: hidden;
     background: white;
     border-radius: 20px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
 }
 .tile:hover {
     border: 1px solid #00EEEE;
@@ -132,4 +134,8 @@ tr:not(:last-child) {
 .btn:active {
   background-color: slateblue; /* darker gray on active */
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1); /* inset shadow on active */
+}
+a {
+    text-decoration: none;
+    color: black;
 }

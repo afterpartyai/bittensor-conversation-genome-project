@@ -30,7 +30,7 @@ DIVIDER = '_' * 120
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 
 
@@ -148,6 +148,15 @@ def get_account():
     print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
 
 
+@app.get("/favicon.ico")
+async def favicon():
+    favicon_data = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect x="10" y="10" width="80" height="80" rx="15" fill="#5bc0de"></rect>
+        </svg>""".encode("utf-8")
+    return Response(content=favicon_data, media_type="image/svg+xml")
+
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -262,10 +271,10 @@ def get_api_get_queue_item():
     out = {"success": 0, "errors":[], "data":{}}
     taskType = "ad"
     out['data'] = [
-        {"id": 1, "type":"Hugging Face", "title": "reddit_dataset_69", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_69"},
-        {"id": 2, "type":"Hugging Face", "title": "reddit_dataset_229", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_229"},
-        {"id": 3, "type":"Hugging Face", "title": "reddit_dataset_88", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_88"},
-        {"id": 4, "type":"Hugging Face", "title": "reddit_dataset_13", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_13"},
+        {"id": 1, "status":"Done", "updated_at":"10-29, 5:31pm", "type":"Hugging Face", "title": "reddit_dataset_69", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_69"},
+        {"id": 2, "status":"Paused", "updated_at":"10-23, 3:21pm", "type":"Hugging Face", "title": "reddit_dataset_229", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_229"},
+        {"id": 3, "status":"Error", "updated_at":"10-27, 5:24pm", "type":"Hugging Face", "title": "reddit_dataset_88", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_88"},
+        {"id": 4, "status":"Archived", "updated_at":"10-28, 5:12pm", "type":"Hugging Face", "title": "reddit_dataset_13", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_13"},
     ];
 
 
