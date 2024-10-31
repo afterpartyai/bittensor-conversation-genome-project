@@ -10,6 +10,12 @@ html {
   background-color: #f7faff;
 }
 
+body {
+  width: 100vw;
+  height: 100vh;
+  background-image: linear-gradient(to right top, #ffffff, #f5f4f5, #ebeaeb, #e2dfe0, #d9d5d5);
+}
+
 .frow {
     display: flex;
     flex-direction: row;
@@ -139,3 +145,4 @@ a {
     text-decoration: none;
     color: black;
 }
+
