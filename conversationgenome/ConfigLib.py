@@ -9,7 +9,7 @@ load_dotenv()
 class c:
     state = {
         "validator" : {
-            "miners_per_window": 3,
+            "miners_per_window": 6,
         },
         "system" : {
             "mode": 'test',

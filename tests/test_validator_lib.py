@@ -68,7 +68,7 @@ async def test_full():
         full_conversation_tag_count = len(tags)
         lines = Utils.get(full_conversation, "lines", [])
         participants = Utils.get(full_conversation, "participants", [])
-        miners_per_window = c.get("validator", "miners_per_window", 3)
+        miners_per_window = c.get("validator", "miners_per_window", 6)
         min_lines = c.get("convo_window", "min_lines", 5)
         max_lines = c.get("convo_window", "max_lines", 50)
         overlap_lines = c.get("convo_window", "overlap_lines", 2)
@@ -99,11 +99,11 @@ async def test_full():
             half = int(len(full_conversation_metadata['tags'])/2)
             full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
 
-        bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
+        bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of {miners_per_window} miners")
 
         # Loop through conversation windows. Send each window to multiple miners
         for window_idx, conversation_window in enumerate(conversation_windows):
-            selected_miner_uids = vl.selectStage1Miners(miner_uids)
+            selected_miner_uids = vl.selectStage1Miners(miner_uids, num=miners_per_window)
             bt.logging.debug(f"Sending conversation_window {window_idx} to selected miners: {selected_miner_uids}")
 
             miner_results = await vl.send_to_miners(conversation_guid, window_idx, conversation_window, selected_miner_uids)
