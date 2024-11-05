@@ -55,7 +55,7 @@ Api.postJob = (data, callback) => {
       contentType: 'application/json; charset=utf-8',
       dataType: 'json',
       success: function(data) {
-        return callback ? callback(o) : null;
+        return callback ? callback(data) : null;
       }
     });
 }
@@ -74,6 +74,7 @@ function addComponentInstance(sel, componentName, item) {
             componentInstance.find("[data-field="+key+"]").attr('href', val);
         } else {
             componentInstance.find("[data-field="+key+"]").text(val);
+            componentInstance.find("[data-attr="+key+"]").attr("data-"+key, val);
         }
     }
     componentInstance.appendTo(sel);
@@ -96,13 +97,19 @@ Render.home = () => {
 
 Render.adwords = (data) => {
     const sel = ".main_adwords table tbody";
+    $(sel).empty();
     for(idx in data) {
         let item = data[idx];
         console.log("item", item);
         addComponentInstance(sel, 'adwords_row', item);
     }
 }
-
+function loadJobs() {
+    Api.getQueueJobs('adwords', (o) => {
+        console.log("QUEUE", o);
+        Render.adwords(o['data']);
+    })
+}
 $(document).ready(function() {
     route = Utils.getRequest('route', 'home');
     if(route == 'home') {
@@ -110,10 +117,7 @@ $(document).ready(function() {
     } else if(route == 'adwords') {
         Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
             addComponentInstance('.tileContainer', 'main_adwords', {});
-            Api.getQueueJobs('adwords', (o) => {
-                console.log("QUEUE", o);
-                Render.adwords(o['data']);
-            })
+            loadJobs();
         });
     } else if(route == 'public_data') {
         Utils.loadComponents(['main_public_data'], () => {
@@ -130,26 +134,62 @@ $(document).ready(function() {
     }
 });
 
+let app = {};
 let curDialog = null;
+
 function addJob(obj) {
     let settings = {title:"Add Ad Context Job", width:600};
     curDialog = loadedComponents["adwords_dialog_add_job"];
     $(curDialog).dialog(settings);
 }
+
+app.unserializeDialog = function(curDialog, data) {
+    curDialog.find("[data-field]").each(function() {
+        let el = $(this);
+        const key = el.attr('data-field');
+        if(data[key] != undefined) {
+            el.val(data[key]);
+        }
+    });
+}
+
+app.editJob = function(el) {
+    const id = $(el).attr('data-id');
+    let settings = {
+        title:"Edit Ad Context Job",
+        width:600
+    }
+    let data = {
+        id: id,
+        title:"ABC",
+    }
+
+    curDialog = loadedComponents["adwords_dialog_add_job"];
+    app.unserializeDialog(curDialog, data);
+    $(curDialog).dialog(settings);
+}
+
 function saveJob(el) {
     let mainDialog = $(el).closest(".ui-dialog");
     let data = {};
+    let errors = [];
     mainDialog.find("[data-field]").each(function() {
         const key = $(this).attr('data-field');
         const val = $(this).val();
-        console.log("key", key);
+        const minLen = parseInt($(this).attr('data-len-min'));
         data[key] = val;
+        if(minLen > 0 && val.length < minLen) {
+            errors.push(key+ " must be at least "+minLen+" characters in length")
+        }
     });
     console.log(data);
-    //let data = {title:"test1"}
-    Api.postJob(data);
-    $(curDialog).dialog('close');
-    //alert("Created");
+    if(errors.length == 0) {
+        Api.postJob(data, () => {
+            $(curDialog).dialog('close');
+            loadJobs();
+        });
+    } else {
+        alert(errors.join(", "));
+    }
 
 }
-

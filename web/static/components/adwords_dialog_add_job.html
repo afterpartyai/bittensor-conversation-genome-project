@@ -1,7 +1,7 @@
 <div class="adwords_dialog_add_job">
     <h1>Add Job</h1>
     <div class="fcolumn" style="margin-bottom:20px;">
-        <div>Title: <input data-field="title" data-len-min="5" /></div>
+        <div>Title (required): <input data-field="title" data-len-min="5" /></div>
         <div>Tags: <input data-field="tags" /></div>
         <div>Data Source Type:
             <select data-field="data_source_type_id" >
@@ -11,7 +11,7 @@
                 <option value="4">Web Url</option>
             </select>
         </div>
-        <div>Data Source URL: <input data-field="url" /></div>
+        <div>Data Source URL: <input data-field="url"  data-len-min="10" /></div>
     </div>
-    <div onclick="saveJob(this)" class="btn">Save</div>
+    <div onclick="saveJob(this)" class="btn btn-red">Save</div>
 </div>
