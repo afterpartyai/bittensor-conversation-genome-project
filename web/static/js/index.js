@@ -130,14 +130,26 @@ $(document).ready(function() {
     }
 });
 
+let curDialog = null;
 function addJob(obj) {
     let settings = {title:"Add Ad Context Job", width:600};
-    $(loadedComponents["adwords_dialog_add_job"]).dialog(settings);
+    curDialog = loadedComponents["adwords_dialog_add_job"];
+    $(curDialog).dialog(settings);
 }
-function saveJob(obj) {
-    let data = {title:"test1"}
-    Api.postJob(data)
-    alert("Created");
+function saveJob(el) {
+    let mainDialog = $(el).closest(".ui-dialog");
+    let data = {};
+    mainDialog.find("[data-field]").each(function() {
+        const key = $(this).attr('data-field');
+        const val = $(this).val();
+        console.log("key", key);
+        data[key] = val;
+    });
+    console.log(data);
+    //let data = {title:"test1"}
+    Api.postJob(data);
+    $(curDialog).dialog('close');
+    //alert("Created");
 
 }
 
