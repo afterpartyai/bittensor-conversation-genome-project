@@ -42,6 +42,23 @@ Api.getQueueJobs = (type, callback) => {
        return callback(o);
     });
 }
+Api.postJob = (data, callback) => {
+    /*
+    $.post("/api/v1/job", JSON.stringify(data), (o) => {
+       return callback ? callback(o) : null;
+    }, 'json');
+    */
+    $.ajax({
+      type: 'POST',
+      url: "/api/v1/job",
+      data: JSON.stringify(data),
+      contentType: 'application/json; charset=utf-8',
+      dataType: 'json',
+      success: function(data) {
+        return callback ? callback(o) : null;
+      }
+    });
+}
 
 function addComponentInstance(sel, componentName, item) {
     //console.log("Add instance", componentName, loadedComponents);
@@ -117,3 +134,10 @@ function addJob(obj) {
     let settings = {title:"Add Ad Context Job", width:600};
     $(loadedComponents["adwords_dialog_add_job"]).dialog(settings);
 }
+function saveJob(obj) {
+    let data = {title:"test1"}
+    Api.postJob(data)
+    alert("Created");
+
+}
+

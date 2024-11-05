@@ -38,6 +38,7 @@ app = FastAPI()
 
 class Db:
     source_type = 2 # Non-CGP
+    conn = None
     db_name = None
     table_name = None
     sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (
@@ -76,6 +77,7 @@ class Db:
         if db_name == None:
             db_name = self.db_name
         conn = sqlite3.connect(db_name)
+        self.conn = conn
         conn.row_factory = Db.dict_factory
         cursor = conn.cursor()
 
@@ -135,6 +137,24 @@ class Db:
         else:
             return None
 
+    def save(self, tableName, data):
+        cursor = self.get_cursor()
+        if 'id' in data:
+            # Update existing row
+            set_clause = ", ".join(f"{column} = ?" for column in data.keys() if column != 'id')
+            sql = f"UPDATE {tableName} SET {set_clause} WHERE id = ?"
+            cursor.execute(sql, list(data.values()) + [data['id']])
+            id = data['id']
+        else:
+            # Insert new row
+            columns = ", ".join(data.keys())
+            placeholders = ", ".join("?" * len(data))
+            sql = f"INSERT INTO {tableName} ({columns}) VALUES ({placeholders})"
+            cursor.execute(sql, list(data.values()))
+            id = cursor.lastrowid
+        self.conn.commit()
+        #self.conn.close()
+        return id
 
     @staticmethod
     def dict_factory(cursor, row):
@@ -295,7 +315,11 @@ def get_api_get_queue_item():
     return out
 
 @app.post("/api/v1/job")
-def post_api_create_job():
+def post_api_create_job(data: dict):
     out = get_default_json()
+    db = Db("cgp_tags.sqlite", "jobs")
+    db.save("jobs", data)
+
+    out['data'] = data
     return out
 
