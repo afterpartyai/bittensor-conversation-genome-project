@@ -64,12 +64,17 @@ class Db:
 	PRIMARY KEY("id" AUTOINCREMENT)
 )"""
 
-    def __init__(self, db_name, table_name):
+    def __init__(self, db_name=None, table_name=None):
+        if db_name == None:
+            db_name = "conversations.sqlite"
+        if table_name == None:
+            db_name = "conversations"
         self.db_name = db_name
         self.table_name = table_name
 
-    def get_cursor(self):
-        db_name = "conversations.sqlite"
+    def get_cursor(self, db_name = None ):
+        if db_name == None:
+            db_name = self.db_name
         conn = sqlite3.connect(db_name)
         conn.row_factory = Db.dict_factory
         cursor = conn.cursor()
@@ -120,6 +125,16 @@ class Db:
             return rows[0]
         else:
             return None
+
+    def get_all(self, sql):
+        cursor = self.get_cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        if rows:
+            return rows
+        else:
+            return None
+
 
     @staticmethod
     def dict_factory(cursor, row):
@@ -266,19 +281,21 @@ def post_get_api_generate_key(data: dict):
             out['errors'].append([9893846, "Keypair not installed",])
     return out
 
+def get_default_json():
+    return {"success": 0, "errors":[], "warnings":[], "data":{}}
 @app.get("/api/v1/queue")
 def get_api_get_queue_item():
-    out = {"success": 0, "errors":[], "data":{}}
+    out = get_default_json()
     taskType = "ad"
-    out['data'] = [
-        {"id": 1, "status":"Done", "updated_at":"10-29, 5:31pm", "type":"Hugging Face", "title": "reddit_dataset_69", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_69"},
-        {"id": 2, "status":"Paused", "updated_at":"10-23, 3:21pm", "type":"Hugging Face", "title": "reddit_dataset_229", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_229"},
-        {"id": 3, "status":"Error", "updated_at":"10-27, 5:24pm", "type":"Hugging Face", "title": "reddit_dataset_88", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_88"},
-        {"id": 4, "status":"Archived", "updated_at":"10-28, 5:12pm", "type":"Hugging Face", "title": "reddit_dataset_13", "url":"https://huggingface.co/datasets/wenknow/reddit_dataset_13"},
-    ];
-
+    db = Db("cgp_tags.sqlite", "jobs")
+    sql = 'SELECT * FROM jobs ORDER BY updated_at DESC LIMIT 25'
+    out['data'] = db.get_all(sql)
 
     out['success'] = 1
     return out
 
+@app.post("/api/v1/job")
+def post_api_create_job():
+    out = get_default_json()
+    return out
 
