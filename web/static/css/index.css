@@ -1,3 +1,9 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 .mulish-300 {
   font-family: "Mulish", sans-serif;
   font-optical-sizing: auto;
@@ -130,6 +136,10 @@ tr:not(:last-child) {
   cursor: pointer;
   text-align: center;
   max-width: 200px;
+  height: 38px;
+}
+.btn-red {
+    background-color: darkred;
 }
 
 .btn:hover {

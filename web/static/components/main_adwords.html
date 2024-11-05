@@ -1,9 +1,26 @@
+
 <div class="main_adwords" style="width:100%;">
     <div>Ad Context Jobs</div>
-    <div onclick="addJob(this)" class="btn">Add Job</div>
+    <div class="frow" style="align-items:center;">
+        <div onclick="addJob(this)" class="btn">Add Job</div>
+        <div style="flex:1;">
+            <div class="frow" style="align-items:center;justify-content:flex-end;">
+                <select>
+                    <option>___ Choose Action ___</option>
+                    <option>Select All</option>
+                    <option>Pause</option>
+                    <option>Resume</option>
+                    <option>Delete</option>
+                </select>
+                <div class="btn btn-red" style="">Execute Action</div>
+            </div>
+
+        </div>
+    </div>
     <table>
         <thead>
             <tr>
+                <th><input type="checkbox" /></th>
                 <th>ID</th>
                 <th>Status</th>
                 <th>Type</th>
@@ -13,7 +30,6 @@
                 <th>Updated</th>
             </tr>
         </thead>
-        <tbody>
-        </tbody>
+        <tbody></tbody>
     </table>
 </div>

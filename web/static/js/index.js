@@ -52,6 +52,9 @@ function addComponentInstance(sel, componentName, item) {
         const val = item[key];
         if(key == 'image_url') {
             componentInstance.find("[data-field="+key+"]").attr('src', val);
+        } else if(key == 'link') {
+            console.log("LINK", val, componentInstance.find("[data-field="+key+"]"));
+            componentInstance.find("[data-field="+key+"]").attr('href', val);
         } else {
             componentInstance.find("[data-field="+key+"]").text(val);
         }
@@ -62,10 +65,10 @@ function addComponentInstance(sel, componentName, item) {
 let Render = {};
 Render.home = () => {
     const taskTypes = [
-        { title:"Adword Analysis/Context generation", image_url:'/static/images/icons/ad_analysis.jpg' },
-        { title:"Public Data Analysis", image_url:'/static/images/icons/public_data_analysis.jpg' },
-        { title:"Social Media Analysis", image_url:'/static/images/icons/social_media_analysis.jpg' },
-        { title:"Survey Data Analysis", image_url:'/static/images/icons/survey_analysis.jpg' },
+        { title:"Adword Analysis/Context generation", image_url:'/static/images/icons/ad_analysis.jpg', link:'/static/html/index.html?route=adwords' },
+        { title:"Public Data Analysis", image_url:'/static/images/icons/public_data_analysis.jpg', link:'/static/html/index.html?route=public_data' },
+        { title:"Social Media Analysis", image_url:'/static/images/icons/social_media_analysis.jpg', link:'/static/html/index.html?route=social_media' },
+        { title:"Survey Data Analysis", image_url:'/static/images/icons/survey_analysis.jpg', link:'/static/html/index.html?route=survey' },
     ]
     const sel = $("main .tileContainer");
     for(let idx in taskTypes) {
@@ -111,5 +114,6 @@ $(document).ready(function() {
 });
 
 function addJob(obj) {
-    $(loadedComponents["adwords_dialog_add_job"]).dialog({title:"Add Ad Context Job", width:600});
+    let settings = {title:"Add Ad Context Job", width:600};
+    $(loadedComponents["adwords_dialog_add_job"]).dialog(settings);
 }

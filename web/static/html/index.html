@@ -25,12 +25,10 @@
 
 
 <header>
-    <h1>ReadyAI Custom Data Queue</h1>
-<div class="container">
-  <div id="ball"></div>
-  <p id="xyz">ReadyAI</p>
-</div>
-
+    <div class="container">
+      <div id="ball"></div>
+      <div id="xyz">ReadyAI Custom Data Queue</div>
+    </div>
 </header>
 <main style="position:relative;">
     <div class="tileContainer">
@@ -51,10 +49,10 @@
 
 <style>
 .container {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 500px;
+  position: relative;
+  left: 40px;
+  top: 40px;
+  width: 1000px;
   height: 150px;
 }
 .container #xyz {
@@ -65,9 +63,12 @@
   font-weight: bold;
   overflow: hidden;
   color: #272727;
-  animation: textreveal 4s infinite alternate;
+  width: 0;
+  animation: textreveal 2s forwards;
+  animation-iteration-count: 1;
+  /* animation: textreveal 4s infinite alternate; */
 }
-.container #ball {
+.container #ball2 {
   position: absolute;
   top: 27.5px;
   left: 50px;
@@ -77,7 +78,9 @@
   overflow: hidden;
   background-color: #f57724;
   border-radius: 50%;
-  animation: ballmove 4s infinite alternate;
+  animation: ballmove 2s forwards;
+  animation-iteration-count: 1;
+  /* animation: ballmove 4s infinite alternate; */
   z-index: 1;
   box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.3);
 }
@@ -117,10 +120,10 @@
     width: 0;
   }
   40% {
-    width: 240px;
+    width: 1440px;
   }
   100% {
-    width: 240px;
+    width: 1440px;
   }
 }
 </style>
