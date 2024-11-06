@@ -240,22 +240,28 @@ def get_api_get_reserve_task():
     out = get_default_json()
     taskType = "ad"
     db = Db("cgp_tags.sqlite", "tasks")
-    sql = 'SELECT * FROM tasks WHERE status = 1 ORDER BY updated_at DESC LIMIT 1'
-    sql = "SELECT * from tasks WHERE status = 1 LIMIT 1"
-    lock_value = random_sqlite_integer()
 
-    data = {"id":5, "lock_value":21}
-    db.save("tasks", data)
-    update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
-    print(update_query)
+    # Get lock value so we can lock it in one operation and then get the locked row subsequently
+    lock_value = random_sqlite_integer()
+    debug = True
+    if not debug:
+        update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
+    else:
+        update_query = f"UPDATE tasks SET lock_value = {lock_value}, locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
     cursor = db.execute(update_query)
     if cursor.rowcount < 1:
         print("No rows were updated.", cursor.rowcount)
     else:
         print(f"{cursor.rowcount} row(s) were updated.")
         sql = f"SELECT * from tasks WHERE lock_value = {lock_value} LIMIT 1"
-        row = db.get_row(sql)
-        out['data'] = row
+        task_row = db.get_row(sql)
+        prompt_chain_row = db.get_row("SELECT * FROM prompt_chains LIMIT 1")
+        promptChainId = prompt_chain_row["id"]
+        promptRows = db.get_all(f"SELECT id, prompt_type, prompt FROM prompts WHERE prompt_chain_id = {promptChainId}")
+
+        data = {"task": task_row, "prompt_chain":prompt_chain_row, "prompts":promptRows}
+        out['data'] = data
+
         out['success'] = 1
     return out
 
