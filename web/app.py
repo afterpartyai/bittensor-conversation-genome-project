@@ -253,16 +253,20 @@ def get_api_get_reserve_task():
         print("No rows were updated.", cursor.rowcount)
     else:
         print(f"{cursor.rowcount} row(s) were updated.")
-        sql = f"SELECT * from tasks WHERE lock_value = {lock_value} LIMIT 1"
-        task_row = db.get_row(sql)
-        prompt_chain_row = db.get_row("SELECT * FROM prompt_chains LIMIT 1")
-        promptChainId = prompt_chain_row["id"]
-        promptRows = db.get_all(f"SELECT id, prompt_type, prompt FROM prompts WHERE prompt_chain_id = {promptChainId}")
+        sql = f"SELECT tasks.*, job_types.prompt_chain_id from tasks JOIN jobs ON jobs.id = tasks.job_id JOIN job_types ON jobs.job_type_id = job_types.id WHERE lock_value = {lock_value} LIMIT 1"
+        taskRow = db.get_row(sql)
+        if taskRow:
+            promptChainId = taskRow['prompt_chain_id']
+            sqlPromptChain = f"SELECT * FROM prompt_chains WHERE id = {promptChainId} LIMIT 1"
+            print(sqlPromptChain)
+            prompt_chain_row = db.get_row(sqlPromptChain)
+            promptChainId = prompt_chain_row["id"]
+            promptRows = db.get_all(f"SELECT id, prompt_type, prompt FROM prompts WHERE prompt_chain_id = {promptChainId}")
 
-        data = {"task": task_row, "prompt_chain":prompt_chain_row, "prompts":promptRows}
-        out['data'] = data
+            data = {"task": taskRow, "prompt_chain":prompt_chain_row, "prompts":promptRows}
+            out['data'] = data
 
-        out['success'] = 1
+            out['success'] = 1
     return out
 
 
