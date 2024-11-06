@@ -172,8 +172,9 @@ def post_get_api_generate_key(data: dict):
 
 def get_default_json():
     return {"success": 0, "errors":[], "warnings":[], "data":{}}
-@app.get("/api/v1/queue")
-def get_api_get_queue_item():
+
+@app.get("/api/v1/job")
+def get_api_get_jobs():
     out = get_default_json()
     taskType = "ad"
     db = Db("cgp_tags.sqlite", "jobs")
@@ -182,6 +183,41 @@ def get_api_get_queue_item():
 
     out['success'] = 1
     return out
+
+@app.get("/api/v1/job/{id}")
+def get_api_get_job(id: int):
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "jobs")
+    sql = f'SELECT * FROM jobs WHERE id = {id} LIMIT 1'
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/task")
+def get_api_get_tasks():
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite")
+    sql = 'SELECT * FROM tasks ORDER BY updated_at DESC LIMIT 25'
+    out['data'] = db.get_all(sql)
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/task/{id}")
+def get_api_get_task(id: int):
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "jobs")
+    sql = f'SELECT * FROM tasks WHERE id = {id} LIMIT 1'
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+
 
 @app.post("/api/v1/job")
 def post_api_create_job(data: dict):

@@ -29,14 +29,21 @@ Utils.loadComponents = (componentList, callback, containerSel) => {
     });
 }
 
+// _________________________ API Calls  _________________________
+
 let Api = {};
 Api.getTaskTypes = (callback) => {
     $.get("/", (o) => {
        console.log("O", o);
     });
 }
-Api.getQueueJobs = (type, callback) => {
-    $.get("/api/v1/queue", (o) => {
+Api.getJobs = (type, callback) => {
+    $.get("/api/v1/job", (o) => {
+       return callback(o);
+    });
+}
+Api.getJob = (id, callback) => {
+    $.get("/api/v1/job/"+id, (o) => {
        return callback(o);
     });
 }
@@ -57,6 +64,8 @@ Api.postJob = (data, callback) => {
       }
     });
 }
+
+// _________________________ Components  _________________________
 
 function addComponentInstance(sel, componentName, item) {
     //console.log("Add instance", componentName, loadedComponents);
@@ -161,7 +170,7 @@ Routes.do = () => {
         } else {
             Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
                 addComponentInstance('.tileContainer', 'job', {});
-                app.loadJob();
+                app.loadJob(jobId);
             });
         }
     } else if(route == 'public_data') {
@@ -176,6 +185,11 @@ Routes.do = () => {
         Utils.loadComponents(['main_survey'], () => {
 
         }, '.tileContainer');
+    } else if(route == 'admin') {
+        Utils.loadComponents(['main_admin'], () => {
+            addComponentInstance('.tileContainer', 'main_admin', {});
+
+        });
     }
 }
 
@@ -206,7 +220,7 @@ Render.adwords = (data) => {
     }
 }
 app.loadJobs = () => {
-    Api.getQueueJobs('adwords', (o) => {
+    Api.getJobs('adwords', (o) => {
         console.log("QUEUE", o);
         Render.adwords(o['data']);
     })

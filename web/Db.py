@@ -110,6 +110,14 @@ class Db:
         else:
             return None
 
+    def get_row(self, sql):
+        rows = self.get_all(sql)
+        if rows and len(rows) > 0:
+            return rows[0]
+        else:
+            return None
+
+
     def save(self, tableName, data):
         cursor = self.get_cursor()
         if 'id' in data:
