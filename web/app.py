@@ -231,3 +231,32 @@ def post_put_api_create_job(data: dict, id=None):
     out['data'] = data
     return out
 
+def random_sqlite_integer():
+    return random.randint(1, 9223372036854775807)
+
+
+@app.get("/api/v1/reserve_task")
+def get_api_get_reserve_task():
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "tasks")
+    sql = 'SELECT * FROM tasks WHERE status = 1 ORDER BY updated_at DESC LIMIT 1'
+    sql = "SELECT * from tasks WHERE status = 1 LIMIT 1"
+    lock_value = random_sqlite_integer()
+
+    data = {"id":5, "lock_value":21}
+    db.save("tasks", data)
+    update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
+    print(update_query)
+    cursor = db.execute(update_query)
+    if cursor.rowcount < 1:
+        print("No rows were updated.", cursor.rowcount)
+    else:
+        print(f"{cursor.rowcount} row(s) were updated.")
+        sql = f"SELECT * from tasks WHERE lock_value = {lock_value} LIMIT 1"
+        row = db.get_row(sql)
+        out['data'] = row
+        out['success'] = 1
+    return out
+
+

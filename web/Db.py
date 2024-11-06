@@ -49,10 +49,11 @@ class Db:
     def get_cursor(self, db_name = None ):
         if db_name == None:
             db_name = self.db_name
-        conn = sqlite3.connect(db_name)
-        self.conn = conn
-        conn.row_factory = Db.dict_factory
-        cursor = conn.cursor()
+        if not self.conn:
+            conn = sqlite3.connect(db_name)
+            conn.row_factory = Db.dict_factory
+            self.conn = conn
+        cursor = self.conn.cursor()
 
         return cursor
 
@@ -100,6 +101,13 @@ class Db:
             return rows[0]
         else:
             return None
+
+    def execute(self, sql, values=[]):
+        cursor = self.get_cursor()
+        cursor.execute(sql, values)
+        print(cursor.rowcount)
+        self.conn.commit()
+        return cursor
 
     def get_all(self, sql):
         cursor = self.get_cursor()
