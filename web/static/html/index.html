@@ -9,7 +9,7 @@
 <!-- Google Font -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"  crossorigin="anonymous">
 
@@ -18,16 +18,13 @@
 
 
 <style>
-    body {
-        font-family: 'Roboto', sans-serif;
-    }
 </style>
 
 
 <header>
-    <div class="container">
+    <div style="padding-left:20px;padding-top:20px;">
       <div id="ball"></div>
-      <div id="xyz">ReadyAI Custom Data Queue</div>
+      <h1 id="xyz">ReadyAI Custom Data Queue</h1>
     </div>
 </header>
 <main style="position:relative;">
@@ -48,84 +45,6 @@
 
 
 <style>
-.container {
-  position: relative;
-  left: 40px;
-  top: 40px;
-  width: 1000px;
-  height: 150px;
-}
-.container #xyz {
-  position: absolute;
-  font-size: 40px;
-  display: inline-block;
-  white-space: nowrap;
-  font-weight: bold;
-  overflow: hidden;
-  color: #272727;
-  width: 0;
-  animation: textreveal 2s forwards;
-  animation-iteration-count: 1;
-  /* animation: textreveal 4s infinite alternate; */
-}
-.container #ball2 {
-  position: absolute;
-  top: 27.5px;
-  left: 50px;
-  height: 98px;
-  width: 100px;
-  white-space: nowrap;
-  overflow: hidden;
-  background-color: #f57724;
-  border-radius: 50%;
-  animation: ballmove 2s forwards;
-  animation-iteration-count: 1;
-  /* animation: ballmove 4s infinite alternate; */
-  z-index: 1;
-  box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.3);
-}
-@keyframes ballmove {
-  0% {
-    transform: translate(0px, 8.5px) scale(0.1);
-  }
-  10% {
-    transform: translateX(0px) scale(0.5);
-  }
-  40% {
-    transform: translateX(255px) scale(0.5);
-  }
-  60% {
-    transform: translate(240px, 8.5px) scale(0.1);
-  }
-/*
-  70% {
-    transform: translate(240px, 8.5px) scale(0.15);
-  }
-  80% {
-    transform: translate(240px, 8.5px) scale(0.1);
-  }
-  90% {
-    transform: translate(240px, 8.5px) scale(0.15);
-  }
-  100% {
-    transform: translate(240px, 8.5px) scale(0.1);
-  }
-*/
-}
-@keyframes textreveal {
-  0% {
-    width: 0;
-  }
-  10% {
-    width: 0;
-  }
-  40% {
-    width: 1440px;
-  }
-  100% {
-    width: 1440px;
-  }
-}
 </style>
 
 
