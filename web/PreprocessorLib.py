@@ -58,7 +58,8 @@ class PreprocessorLib():
                 #db.save("jobs", updateRow)
                 return
         # Collect list of files
-        files = ['test_data_1.csv']
+        extensions = ['.csv']
+        files = self.list_files(path, extensions)
         # determine number of rows per file
         row_counts = {}
         for cur_file in files:
@@ -94,6 +95,34 @@ class PreprocessorLib():
             print(updateRow)
             db.save("jobs", updateRow)
 
+    def list_files(self, directory_path, extensions=None):
+        """
+        List files in the given directory with specified extensions.
+
+        :param directory_path: Path to the directory to scan.
+        :param extensions: List of file extensions to filter by, or None to return all files.
+        :return: List of matching file names.
+        """
+        try:
+            # Get list of all entries in the directory
+            entries = os.listdir(directory_path)
+        except FileNotFoundError:
+            print(f"The directory {directory_path} does not exist.")
+            return None
+        except PermissionError:
+            print(f"Permission denied: unable to access {directory_path}.")
+            return None
+
+        # Filter entries to get files only
+        files = [entry for entry in entries if os.path.isfile(os.path.join(directory_path, entry))]
+
+        if extensions is not None:
+            # Ensure extensions are in lowercase for case-insensitive comparison
+            extensions = [ext.lower() for ext in extensions]
+            # Filter files by extension
+            files = [file for file in files if os.path.splitext(file)[1].lower() in extensions]
+
+        return files
 
 
 if __name__ == "__main__":
