@@ -5,11 +5,9 @@ Utils.getRequest = (name, defaultVal) => {
 }
 
 Utils.addComponent = (o, sel, componentName) => {
-    console.log("COMPONENT LOADED", o, sel, componentName);
+    //console.log("COMPONENT LOADED", o, sel, componentName);
     sel = sel ? sel : "components";
     loadedComponents[componentName] = $(o);
-
-    //$(o).appendTo(sel);
 }
 var loadedComponents = {};
 Utils.loadComponents = (componentList, callback, containerSel) => {
@@ -62,6 +60,10 @@ Api.postJob = (data, callback) => {
 
 function addComponentInstance(sel, componentName, item) {
     //console.log("Add instance", componentName, loadedComponents);
+    if(!loadedComponents[componentName]) {
+        console.log("Component "+componentName+" not found. Aborting");
+        return;
+    }
     let componentInstance = loadedComponents[componentName].clone().removeClass("."+componentName)
     //let componentInstance = $('components .'+componentName).clone().removeClass("."+componentName);
     //console.log("Add componentInstance:", componentInstance, " componentName:", componentName)
@@ -79,60 +81,6 @@ function addComponentInstance(sel, componentName, item) {
     }
     componentInstance.appendTo(sel);
 }
-
-let Render = {};
-Render.home = () => {
-    const taskTypes = [
-        { title:"Adword Analysis/Context generation", image_url:'/static/images/icons/ad_analysis.jpg', link:'/static/html/index.html?route=adwords' },
-        { title:"Public Data Analysis", image_url:'/static/images/icons/public_data_analysis.jpg', link:'/static/html/index.html?route=public_data' },
-        { title:"Social Media Analysis", image_url:'/static/images/icons/social_media_analysis.jpg', link:'/static/html/index.html?route=social_media' },
-        { title:"Survey Data Analysis", image_url:'/static/images/icons/survey_analysis.jpg', link:'/static/html/index.html?route=survey' },
-    ]
-    const sel = $("main .tileContainer");
-    for(let idx in taskTypes) {
-        let taskType = taskTypes[idx];
-        addComponentInstance('.tileContainer', 'tile', taskType);
-    }
-}
-
-Render.adwords = (data) => {
-    const sel = ".main_adwords table tbody";
-    $(sel).empty();
-    for(idx in data) {
-        let item = data[idx];
-        console.log("item", item);
-        addComponentInstance(sel, 'adwords_row', item);
-    }
-}
-function loadJobs() {
-    Api.getQueueJobs('adwords', (o) => {
-        console.log("QUEUE", o);
-        Render.adwords(o['data']);
-    })
-}
-$(document).ready(function() {
-    route = Utils.getRequest('route', 'home');
-    if(route == 'home') {
-        Utils.loadComponents(['tile'], Render.home);
-    } else if(route == 'adwords') {
-        Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
-            addComponentInstance('.tileContainer', 'main_adwords', {});
-            loadJobs();
-        });
-    } else if(route == 'public_data') {
-        Utils.loadComponents(['main_public_data'], () => {
-
-        }, '.tileContainer');
-    } else if(route == 'social_media') {
-        Utils.loadComponents(['main_social_media'], () => {
-
-        }, '.tileContainer');
-    } else if(route == 'survey') {
-        Utils.loadComponents(['main_survey'], () => {
-
-        }, '.tileContainer');
-    }
-});
 
 let app = {};
 let curDialog = null;
@@ -186,10 +134,91 @@ function saveJob(el) {
     if(errors.length == 0) {
         Api.postJob(data, () => {
             $(curDialog).dialog('close');
-            loadJobs();
+            app.loadJobs();
         });
     } else {
         alert(errors.join(", "));
     }
 
 }
+
+// _________________________ Routes _________________________
+
+let Routes = {};
+
+Routes.do = () => {
+    route = Utils.getRequest('route', 'home');
+    jobId = Utils.getRequest('job');
+
+    if(route == 'home') {
+        Utils.loadComponents(['tile'], Render.home);
+    } else if(route == 'adwords') {
+        if(!jobId) {
+            Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
+                addComponentInstance('.tileContainer', 'main_adwords', {});
+                app.loadJobs();
+            });
+        } else {
+            Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
+                addComponentInstance('.tileContainer', 'job', {});
+                app.loadJob();
+            });
+        }
+    } else if(route == 'public_data') {
+        Utils.loadComponents(['main_public_data'], () => {
+
+        }, '.tileContainer');
+    } else if(route == 'social_media') {
+        Utils.loadComponents(['main_social_media'], () => {
+
+        }, '.tileContainer');
+    } else if(route == 'survey') {
+        Utils.loadComponents(['main_survey'], () => {
+
+        }, '.tileContainer');
+    }
+}
+
+// _________________________ Renderers _________________________
+
+let Render = {};
+Render.home = () => {
+    const taskTypes = [
+        { title:"Adword Analysis/Context generation", image_url:'/static/images/icons/ad_analysis.jpg', link:'/static/html/index.html?route=adwords' },
+        { title:"Public Data Analysis", image_url:'/static/images/icons/public_data_analysis.jpg', link:'/static/html/index.html?route=public_data' },
+        { title:"Social Media Analysis", image_url:'/static/images/icons/social_media_analysis.jpg', link:'/static/html/index.html?route=social_media' },
+        { title:"Survey Data Analysis", image_url:'/static/images/icons/survey_analysis.jpg', link:'/static/html/index.html?route=survey' },
+    ]
+    const sel = $("main .tileContainer");
+    for(let idx in taskTypes) {
+        let taskType = taskTypes[idx];
+        addComponentInstance('.tileContainer', 'tile', taskType);
+    }
+}
+
+Render.adwords = (data) => {
+    const sel = ".main_adwords table tbody";
+    $(sel).empty();
+    for(idx in data) {
+        let item = data[idx];
+        console.log("item", item);
+        addComponentInstance(sel, 'adwords_row', item);
+    }
+}
+app.loadJobs = () => {
+    Api.getQueueJobs('adwords', (o) => {
+        console.log("QUEUE", o);
+        Render.adwords(o['data']);
+    })
+}
+app.loadJob = (jobId) => {
+    Api.getJob(jobId, (o) => {
+        console.log("QUEUE", o);
+        Render.adwords(o['data']);
+    })
+}
+
+$(document).ready(function() {
+    Routes.do();
+});
+

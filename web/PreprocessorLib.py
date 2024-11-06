@@ -7,6 +7,29 @@ from Db import Db
 
 class PreprocessorLib():
     db = None
+    JOB_STATUS_QUEUED =  1
+    JOB_STATUS_TASKED =  2
+    JOB_STATUS_DONE =  3
+    JOB_STATUS_PAUSED =  4
+    JOB_STATUS_DELETED =  10
+    JOB_STATUS_ARCHIVED =  11
+    JOB_STATUS_ERROR_PATH =  90
+    JOB_STATUS_ERROR_DATA_SOURCE =  91
+    JOB_STATUS_ERROR_PROMPT =  92
+
+    JOB_STATUS_DICT = {}
+
+    def __init__(self):
+        self.JOB_STATUS_DICT = {
+            JOB_STATUS_QUEUED: 'Queued',
+            JOB_STATUS_TASKED: 'In progress',
+            JOB_STATUS_DONE: 'Complete',
+            JOB_STATUS_PAUSED: 'Paused',
+            JOB_STATUS_DELETED: 'Deleted',
+            JOB_STATUS_ARCHIVED: 'Archived',
+            JOB_STATUS_ERROR_PATH: 'Error',
+            JOB_STATUS_ERROR_DATA_SOURCE: 'Error',
+        }
 
     def start(self):
         print("Starting...")
@@ -51,11 +74,11 @@ class PreprocessorLib():
                 print(f"Path {path} not found. Aborting.")
                 updateRow = {
                     "id": job['id'],
-                    "status": 99,
+                    "status": self.JOB_STATUS_ERROR_PATH,
                     "status_str": f"Path {path} not found",
                 }
-                print(updateRow)
-                #db.save("jobs", updateRow)
+                #print(updateRow)
+                self.db.save("jobs", updateRow)
                 return
         # Collect list of files
         extensions = ['.csv']
