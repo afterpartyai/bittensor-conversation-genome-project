@@ -220,8 +220,11 @@ def get_api_get_task(id: int):
 
 
 @app.post("/api/v1/job")
-def post_api_create_job(data: dict):
+@app.put("/api/v1/job/{id}")
+def post_put_api_create_job(data: dict, id=None):
     out = get_default_json()
+    if id:
+        data['id'] = id
     db = Db("cgp_tags.sqlite", "jobs")
     db.save("jobs", data)
 

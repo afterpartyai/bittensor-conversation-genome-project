@@ -1,0 +1,39 @@
+
+<div class="main_admin" style="width:100%;">
+    <h2>Admin Dashboard</h2>
+    <div class="frow" style="margin-bottom:20px;">
+        <a href="/static/html/index.html?route=admin_users" class="btn">Settings</a>
+        <a href="/static/html/index.html?route=admin_users" class="btn">Users</a>
+    </div>
+    <div class="frow" style="align-items:center;">
+        <div onclick="addJob(this)" class="btn">➕</div>
+        <div style="flex:1;">
+            <div class="frow" style="align-items:center;justify-content:flex-end;">
+                <select>
+                    <option>___ Choose Action ___</option>
+                    <option>Pause</option>
+                    <option>Resume</option>
+                    <option>Delete</option>
+                </select>
+                <div class="btn btn-red" style="">Execute Action</div>
+            </div>
+
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th><input type="checkbox" /></th>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Type</th>
+                <th>Data Type</th>
+                <th>Title</th>
+                <th>URL/Path</th>
+                <th>Updated</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>

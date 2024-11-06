@@ -64,6 +64,18 @@ Api.postJob = (data, callback) => {
       }
     });
 }
+Api.putJob = (id, data, callback) => {
+    $.ajax({
+      type: 'PUT',
+      url: "/api/v1/job/"+id,
+      data: JSON.stringify(data),
+      contentType: 'application/json; charset=utf-8',
+      dataType: 'json',
+      success: function(data) {
+        return callback ? callback(data) : null;
+      }
+    });
+}
 
 // _________________________ Components  _________________________
 
@@ -112,18 +124,17 @@ app.unserializeDialog = function(curDialog, data) {
 
 app.editJob = function(el) {
     const id = $(el).attr('data-id');
-    let settings = {
+    let dialogSettings = {
         title:"Edit Ad Context Job",
         width:600
     }
-    let data = {
-        id: id,
-        title:"ABC",
-    }
+    Api.getJob(id, (o) => {
+        let data = o['data'];
 
-    curDialog = loadedComponents["adwords_dialog_add_job"];
-    app.unserializeDialog(curDialog, data);
-    $(curDialog).dialog(settings);
+        curDialog = loadedComponents["adwords_dialog_add_job"];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
 }
 
 function saveJob(el) {
@@ -141,10 +152,17 @@ function saveJob(el) {
     });
     console.log(data);
     if(errors.length == 0) {
-        Api.postJob(data, () => {
-            $(curDialog).dialog('close');
-            app.loadJobs();
-        });
+        if(data['id']) {
+            Api.putJob(data['id'], data, () => {
+                $(curDialog).dialog('close');
+                app.loadJobs();
+            });
+        } else {
+            Api.postJob(data, () => {
+                $(curDialog).dialog('close');
+                app.loadJobs();
+            });
+        }
     } else {
         alert(errors.join(", "));
     }
@@ -188,7 +206,6 @@ Routes.do = () => {
     } else if(route == 'admin') {
         Utils.loadComponents(['main_admin'], () => {
             addComponentInstance('.tileContainer', 'main_admin', {});
-
         });
     }
 }
@@ -215,7 +232,7 @@ Render.adwords = (data) => {
     $(sel).empty();
     for(idx in data) {
         let item = data[idx];
-        console.log("item", item);
+        //console.log("adwords render item", item);
         addComponentInstance(sel, 'adwords_row', item);
     }
 }
