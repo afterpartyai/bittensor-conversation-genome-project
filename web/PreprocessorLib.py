@@ -6,9 +6,12 @@ from Db import Db
 
 
 class PreprocessorLib():
+    db = None
+
     def start(self):
         print("Starting...")
         db = Db("cgp_tags.sqlite", "jobs")
+        self.db = db
         while True:
             print(".")
             sql = 'SELECT * FROM jobs WHERE status = 1 ORDER BY updated_at DESC LIMIT 1'
@@ -32,6 +35,10 @@ class PreprocessorLib():
 
         return normalized_path
 
+    def count_lines_in_file(self, file_path):
+        with open(file_path, 'r') as file:
+            return sum(1 for _ in file)
+
     def preprocessJob(self, job):
         print(f"Preprocessing job: {job}")
         # Access data source
@@ -51,8 +58,33 @@ class PreprocessorLib():
                 #db.save("jobs", updateRow)
                 return
         # Collect list of files
+        files = ['test_data_1.csv']
         # determine number of rows per file
-        # Decide on chunk for the file
+        row_counts = {}
+        for cur_file in files:
+            fullRoute = os.path.join(path, cur_file)
+            row_counts[cur_file] = self.count_lines_in_file(fullRoute)
+            # Decide on chunk for the file
+            task_type = 1
+            if task_type == 1:
+                num_task_windows = int(row_counts[cur_file] / 1000) + 1
+            updateJob = {
+                "id": job['id'],
+                "num_task_windows": num_task_windows,
+            }
+            for task_window_idx in range(num_task_windows):
+                taskRow = {
+                    "job_id": job['id'],
+                    "task_window_index": task_window_idx,
+                    "header_row_text": "",
+                    "begin_row": 2,
+                    "end_row": 5,
+                    "data_type": 1,
+                    "data_url": "",
+                }
+                self.db.save("tasks", taskRow)
+
+        print("row_counts", row_counts)
         # Create tasks for each chunk
         if False:
             updateRow = {
