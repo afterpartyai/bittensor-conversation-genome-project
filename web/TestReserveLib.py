@@ -47,8 +47,11 @@ class TestReserveLib():
 
 if __name__ == "__main__":
     trl = TestReserveLib()
-    url = 'http://localhost:8001/api/v1/reserve_task'
+    baseUrl = 'http://localhost:8001'
+    url = baseUrl + '/api/v1/reserve_task'
     task = trl.getPage(url)
+    taskData = Utils.get(task, 'data.task')
+    taskId = Utils.get(taskData, 'id')
     dataUrl = Utils.get(task, 'data.task.data_url')
     prompts = Utils.get(task, 'data.prompts')
     cacheName = Utils.md5(dataUrl)+".dat"
@@ -77,7 +80,9 @@ if __name__ == "__main__":
         response = trl.post(inferenceApi, a)
         if outVar:
             outVarDict[outVar] = response['data']
-    print(outVarDict)
+    postUrl = baseUrl + f"/api/v1/task/{taskId}/workproduct"
+    print("POST", postUrl, outVarDict)
+    trl.post(postUrl, outVarDict)
         #break
 
 

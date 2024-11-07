@@ -219,6 +219,23 @@ def get_api_get_task(id: int):
     return out
 
 
+@app.post("/api/v1/task/{id}/workproduct")
+def post_api_workproduct(id:int=None, data: dict=None ):
+    out = get_default_json()
+    userId = 1
+    rootPath = f"user_data/{userId}/contacts_20241105/results"
+    import time
+    unix_timestamp = int(time.time())
+    print("ID", id)
+    fname = f"/{id}.{unix_timestamp}.json"
+    path = rootPath + fname
+    dataStr = json.dumps(data)
+    f = open(path, 'w')
+    f.write(dataStr)
+    f.close()
+    return out
+
+
 
 @app.post("/api/v1/job")
 @app.put("/api/v1/job/{id}")
