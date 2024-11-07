@@ -16,8 +16,13 @@ class PreprocessorLib():
     JOB_STATUS_ERROR_PATH =  90
     JOB_STATUS_ERROR_DATA_SOURCE =  91
     JOB_STATUS_ERROR_PROMPT =  92
+    JOB_STATUS_ERROR_EMPTY_PATH =  93
 
     JOB_STATUS_DICT = {}
+
+    JOB_DATA_SOURCE_LOCAL = 1
+    JOB_DATA_SOURCE_HUGGING_FACE = 2
+    JOB_DATA_SOURCE_ONEDRIVE = 3
 
     def __init__(self):
         self.JOB_STATUS_DICT = {
@@ -62,14 +67,21 @@ class PreprocessorLib():
         with open(file_path, 'r') as file:
             return sum(1 for _ in file)
 
+    def getUserId(self):
+        return 1
+
     def preprocessJob(self, job):
-        print(f"Preprocessing job: {job}")
-        # Access data source
-        if job['data_source_type_id'] == 1:
+        jobTypeId = Utils.get(job, 'job_type_id')
+        print(f"Preprocessing job: {job} type: {jobTypeId}")
+
+        if job['data_source_type_id'] == self.JOB_DATA_SOURCE_LOCAL:
             print(f"Checking for local files at path: {job['url']}...")
-            user_id = 1
+            userId = getUserId()
+
+            # Check user-specific data path
             user_path = os.path.join(os.getcwd(), "user_data", str(user_id))
             path = self.secure_join(user_path,job['url'])
+
             if not os.path.exists(path):
                 print(f"Path {path} not found. Aborting.")
                 updateRow = {
@@ -80,14 +92,29 @@ class PreprocessorLib():
                 #print(updateRow)
                 self.db.save("jobs", updateRow)
                 return
+
             # Collect list of files
-            extensions = ['.csv']
+            # TODO: Job specific data files
+            # TODO: Handle Windows or Linux command lines
+            extensions = ['.csv'] # , '.xslx' .txt
             files = self.list_files(path, extensions)
-            # determine number of rows per file
+
+            if len(files) == 0:
+                print(f"Path {path} empty. Aborting.")
+                updateRow = {
+                    "id": job['id'],
+                    "status": self.JOB_STATUS_ERROR_EMPTY_PATH,
+                    "status_str": f"Path {path} empty",
+                }
+                self.db.save("jobs", updateRow)
+                return
+
+            # Determine number of rows per file
             row_counts = {}
             for cur_file in files:
                 fullRoute = os.path.join(path, cur_file)
                 row_counts[cur_file] = self.count_lines_in_file(fullRoute)
+
                 # Decide on chunk for the file
                 task_type = 1
                 if task_type == 1:

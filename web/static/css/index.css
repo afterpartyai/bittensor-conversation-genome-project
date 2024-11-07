@@ -235,4 +235,15 @@ a {
   }
 }
 
+input, select, textarea, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: none;
+    border: none;
+    background: none;
+    border-bottom: 1px solid #4a599d;
+
+}
+input, textarea, td select {
+    width: 100%;
+}
+
 

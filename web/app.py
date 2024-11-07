@@ -200,8 +200,8 @@ def get_api_get_job(id: int):
 def get_api_get_tasks():
     out = get_default_json()
     taskType = "ad"
-    db = Db("cgp_tags.sqlite")
-    sql = 'SELECT * FROM tasks ORDER BY updated_at DESC LIMIT 25'
+    db = Db("cgp_tags.sqlite", "tasks")
+    sql = 'SELECT id, status, data_url, lock_value, locked_at, locked_by FROM tasks ORDER BY updated_at DESC LIMIT 25'
     out['data'] = db.get_all(sql)
 
     out['success'] = 1

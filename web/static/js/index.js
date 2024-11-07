@@ -107,7 +107,7 @@ let app = {};
 let curDialog = null;
 
 function addJob(obj) {
-    let settings = {title:"Add Ad Context Job", width:600};
+    let settings = {title:"Create Ad Context Job", width:600};
     curDialog = loadedComponents["adwords_dialog_add_job"];
     $(curDialog).dialog(settings);
 }

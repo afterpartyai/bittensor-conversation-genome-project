@@ -1,19 +1,25 @@
 <div class="adwords_dialog_add_job">
-    <h1>Add Job</h1>
     <div class="fcolumn" style="margin-bottom:20px;">
         <input type="hidden" data-field="id" />
-        <div>Title (required): <input data-field="title" data-len-min="5" /></div>
-        <div>Tags: <input data-field="tags" /></div>
-        <div>Status: <input data-field="status" /></div>
-        <div>Data Source Type:
-            <select data-field="data_source_type_id" >
-                <option value="1">Local File</option>
-                <option value="2">Hugging Face</option>
-                <option value="3">S3</option>
-                <option value="4">Web Url</option>
-            </select>
-        </div>
-        <div>Data Source URL: <input data-field="url"  data-len-min="5" /></div>
+        <table>
+        <tbody>
+            <tr><td>Title (required)</td><td><input data-field="title" data-len-min="5" /></td></tr>
+            <tr><td>Tags</td><td><input data-field="tags" data-len-min="5" /></td></tr>
+            <tr><td>Status</td><td><input data-field="status" data-len-min="5" /></td></tr>
+            <tr><td>Status</td><td><input data-field="status" data-len-min="5" /></td></tr>
+            <tr><td>Data Source Type</td>
+                <td><select data-field="data_source_type_id" >
+                    <option value="1">Local File</option>
+                    <option value="2">Hugging Face</option>
+                    <option value="3">S3</option>
+                    <option value="4">Web Url</option>
+                </select></td>
+            </tr>
+            <tr><td>Data Source URL</td><td><input data-field="url" data-len-min="5" /></td></tr>
+        </tbody>
+        </table>
     </div>
-    <div onclick="saveJob(this)" class="btn btn-red">Save</div>
+    <div class="frow" style="justify-content: flex-end;">
+        <div onclick="saveJob(this)" class="btn btn-red">Save</div>
+    </div>
 </div>
