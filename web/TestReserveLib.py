@@ -36,11 +36,21 @@ class TestReserveLib():
                 if begin_row <= i <= end_row:
                     yield line.rstrip()
 
+                url = "https://api.example.com/endpoint"
+    def post(self, url, data):
+        response = requests.post(url, json=data)
+        if response.status_code == 200:
+            #print("RESPONSE", response.content, dir(response))
+            return response.json()
+        else:
+            print("ERROR", response.status_code, response)
+
 if __name__ == "__main__":
     trl = TestReserveLib()
     url = 'http://localhost:8001/api/v1/reserve_task'
     task = trl.getPage(url)
     dataUrl = Utils.get(task, 'data.task.data_url')
+    prompts = Utils.get(task, 'data.prompts')
     cacheName = Utils.md5(dataUrl)+".dat"
     cachePath = os.path.join("cache", cacheName)
     if not os.path.isfile(cachePath):
@@ -50,6 +60,25 @@ if __name__ == "__main__":
         print("Found cache")
     begin_row = 2
     end_row = 5
+    rows = []
     for idx, row in enumerate(trl.get_rows(cachePath, begin_row, end_row)):
-        print(idx, row)
+        rows.append(row)
+
+    inferenceApi = "http://api.infer.com:8001/api/v1/ai"
+    outVarDict = {'data':"\n".join(rows)}
+    for promptRow in prompts:
+        promptSend = Utils.get(promptRow, 'prompt')
+        for key,val in outVarDict.items():
+            promptSend = promptSend.replace(f"{key}", val)
+        outVar = Utils.get(promptRow, 'output_variable_name')
+        a = {
+            "body":promptSend,
+        }
+        response = trl.post(inferenceApi, a)
+        if outVar:
+            outVarDict[outVar] = response['data']
+    print(outVarDict)
+        #break
+
+
 

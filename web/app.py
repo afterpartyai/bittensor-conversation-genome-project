@@ -263,7 +263,7 @@ def get_api_get_reserve_task():
             print(sqlPromptChain)
             prompt_chain_row = db.get_row(sqlPromptChain)
             promptChainId = prompt_chain_row["id"]
-            promptRows = db.get_all(f"SELECT id, prompt_type, prompt FROM prompts WHERE prompt_chain_id = {promptChainId}")
+            promptRows = db.get_all(f"SELECT id, prompt_type, prompt, output_variable_name FROM prompts WHERE prompt_chain_id = {promptChainId}")
 
             data = {"task": taskRow, "prompt_chain":prompt_chain_row, "prompts":promptRows}
             out['data'] = data
