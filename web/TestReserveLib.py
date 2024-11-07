@@ -1,7 +1,10 @@
 import requests
 import json
-from Utils import Utils
 import os
+
+import dotenv
+
+from Utils import Utils
 
 class TestReserveLib():
     def getPage(self, url):
@@ -27,6 +30,11 @@ class TestReserveLib():
         else:
             print(f"Failed to download file: {response.status_code}")
 
+    def get_rows(self, file_path, begin_row, end_row):
+        with open(file_path, 'r') as file:
+            for i, line in enumerate(file, start=1):
+                if begin_row <= i <= end_row:
+                    yield line.rstrip()
 
 if __name__ == "__main__":
     trl = TestReserveLib()
@@ -40,6 +48,8 @@ if __name__ == "__main__":
         trl.getFile(dataUrl, cachePath)
     else:
         print("Found cache")
-    print()
-
+    begin_row = 2
+    end_row = 5
+    for idx, row in enumerate(trl.get_rows(cachePath, begin_row, end_row)):
+        print(idx, row)
 
