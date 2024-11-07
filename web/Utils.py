@@ -2,7 +2,7 @@ import uuid
 import csv
 import json
 import time
-
+import hashlib
 
 class Utils:
     @staticmethod
@@ -39,3 +39,7 @@ class Utils:
         import time
         return time.strftime(format_str)
 
+    def md5(inStr):
+        md5_hash = hashlib.md5()
+        md5_hash.update(inStr.encode('utf-8'))
+        return md5_hash.hexdigest()

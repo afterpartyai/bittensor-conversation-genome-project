@@ -62,6 +62,7 @@ async def favicon():
 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/user_data", StaticFiles(directory="user_data"), name="user_data")
 
 
 @app.get("/")
@@ -243,11 +244,12 @@ def get_api_get_reserve_task():
 
     # Get lock value so we can lock it in one operation and then get the locked row subsequently
     lock_value = random_sqlite_integer()
+    userId = 1
     debug = True
     if not debug:
         update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
     else:
-        update_query = f"UPDATE tasks SET lock_value = {lock_value}, locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
+        update_query = f"UPDATE tasks SET lock_value = {lock_value}, locked_at = STRFTIME('%s', 'NOW'), locked_by = {userId} WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
     cursor = db.execute(update_query)
     if cursor.rowcount < 1:
         print("No rows were updated.", cursor.rowcount)
