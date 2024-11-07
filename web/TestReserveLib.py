@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import time
 
 import dotenv
 
@@ -45,45 +46,62 @@ class TestReserveLib():
         else:
             print("ERROR", response.status_code, response)
 
+    def process(self):
+        baseUrl = 'http://localhost:8001'
+        url = baseUrl + '/api/v1/reserve_task'
+        task = self.getPage(url)
+        success = Utils.get(task, 'success')
+        if success:
+            taskData = Utils.get(task, 'data.task')
+            taskId = Utils.get(taskData, 'id')
+            dataUrl = Utils.get(task, 'data.task.data_url')
+            if not dataUrl:
+                print(f"Invalid data URL: {dataUrl} for task {taskId}. Aborting.")
+                return
+            prompts = Utils.get(task, 'data.prompts')
+            cacheName = Utils.md5(dataUrl)+".dat"
+            cachePath = os.path.join("cache", cacheName)
+            if not os.path.isfile(cachePath):
+                print("Download file")
+                self.getFile(dataUrl, cachePath)
+            else:
+                print("Found cache")
+            begin_row = 2
+            end_row = 5
+            rows = []
+            for idx, row in enumerate(self.get_rows(cachePath, begin_row, end_row)):
+                rows.append(row)
+
+            inferenceApi = "http://api.infer.com:8001/api/v1/ai"
+            outVarDict = {'data':"\n".join(rows)}
+            for promptRow in prompts:
+                promptSend = Utils.get(promptRow, 'prompt')
+                for key,val in outVarDict.items():
+                    promptSend = promptSend.replace(f"{key}", val)
+                outVar = Utils.get(promptRow, 'output_variable_name')
+                a = {
+                    "body":promptSend,
+                }
+                response = self.post(inferenceApi, a)
+                if outVar:
+                    outVarDict[outVar] = response['data']
+            postUrl = baseUrl + f"/api/v1/task/{taskId}/results"
+            print("POST", postUrl, outVarDict)
+            self.post(postUrl, outVarDict)
+            return True
+        else:
+            print("No tasks available")
+            return False
+            #break
+
+
 if __name__ == "__main__":
     trl = TestReserveLib()
-    baseUrl = 'http://localhost:8001'
-    url = baseUrl + '/api/v1/reserve_task'
-    task = trl.getPage(url)
-    taskData = Utils.get(task, 'data.task')
-    taskId = Utils.get(taskData, 'id')
-    dataUrl = Utils.get(task, 'data.task.data_url')
-    prompts = Utils.get(task, 'data.prompts')
-    cacheName = Utils.md5(dataUrl)+".dat"
-    cachePath = os.path.join("cache", cacheName)
-    if not os.path.isfile(cachePath):
-        print("Download file")
-        trl.getFile(dataUrl, cachePath)
-    else:
-        print("Found cache")
-    begin_row = 2
-    end_row = 5
-    rows = []
-    for idx, row in enumerate(trl.get_rows(cachePath, begin_row, end_row)):
-        rows.append(row)
-
-    inferenceApi = "http://api.infer.com:8001/api/v1/ai"
-    outVarDict = {'data':"\n".join(rows)}
-    for promptRow in prompts:
-        promptSend = Utils.get(promptRow, 'prompt')
-        for key,val in outVarDict.items():
-            promptSend = promptSend.replace(f"{key}", val)
-        outVar = Utils.get(promptRow, 'output_variable_name')
-        a = {
-            "body":promptSend,
-        }
-        response = trl.post(inferenceApi, a)
-        if outVar:
-            outVarDict[outVar] = response['data']
-    postUrl = baseUrl + f"/api/v1/task/{taskId}/workproduct"
-    print("POST", postUrl, outVarDict)
-    trl.post(postUrl, outVarDict)
-        #break
-
+    while True:
+        success = trl.process()
+        if success:
+            time.sleep(1)
+        else:
+            time.sleep(5)
 
 

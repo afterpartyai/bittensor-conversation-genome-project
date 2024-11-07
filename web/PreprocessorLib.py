@@ -21,14 +21,14 @@ class PreprocessorLib():
 
     def __init__(self):
         self.JOB_STATUS_DICT = {
-            JOB_STATUS_QUEUED: 'Queued',
-            JOB_STATUS_TASKED: 'In progress',
-            JOB_STATUS_DONE: 'Complete',
-            JOB_STATUS_PAUSED: 'Paused',
-            JOB_STATUS_DELETED: 'Deleted',
-            JOB_STATUS_ARCHIVED: 'Archived',
-            JOB_STATUS_ERROR_PATH: 'Error',
-            JOB_STATUS_ERROR_DATA_SOURCE: 'Error',
+            self.JOB_STATUS_QUEUED: 'Queued',
+            self.JOB_STATUS_TASKED: 'In progress',
+            self.JOB_STATUS_DONE: 'Complete',
+            self.JOB_STATUS_PAUSED: 'Paused',
+            self.JOB_STATUS_DELETED: 'Deleted',
+            self.JOB_STATUS_ARCHIVED: 'Archived',
+            self.JOB_STATUS_ERROR_PATH: 'Error',
+            self.JOB_STATUS_ERROR_DATA_SOURCE: 'Error',
         }
 
     def start(self):
@@ -80,43 +80,45 @@ class PreprocessorLib():
                 #print(updateRow)
                 self.db.save("jobs", updateRow)
                 return
-        # Collect list of files
-        extensions = ['.csv']
-        files = self.list_files(path, extensions)
-        # determine number of rows per file
-        row_counts = {}
-        for cur_file in files:
-            fullRoute = os.path.join(path, cur_file)
-            row_counts[cur_file] = self.count_lines_in_file(fullRoute)
-            # Decide on chunk for the file
-            task_type = 1
-            if task_type == 1:
-                num_task_windows = int(row_counts[cur_file] / 1000) + 1
-            updateJob = {
-                "id": job['id'],
-                "num_task_windows": num_task_windows,
-            }
-            for task_window_idx in range(num_task_windows):
-                taskRow = {
-                    "job_id": job['id'],
-                    "task_window_index": task_window_idx,
-                    "header_row_text": "",
-                    "begin_row": 2,
-                    "end_row": 5,
-                    "data_type": 1,
-                    "data_url": "",
+            # Collect list of files
+            extensions = ['.csv']
+            files = self.list_files(path, extensions)
+            # determine number of rows per file
+            row_counts = {}
+            for cur_file in files:
+                fullRoute = os.path.join(path, cur_file)
+                row_counts[cur_file] = self.count_lines_in_file(fullRoute)
+                # Decide on chunk for the file
+                task_type = 1
+                if task_type == 1:
+                    num_task_windows = int(row_counts[cur_file] / 1000) + 1
+                updateJob = {
+                    "id": job['id'],
+                    "num_task_windows": num_task_windows,
                 }
-                self.db.save("tasks", taskRow)
+                for task_window_idx in range(num_task_windows):
+                    taskRow = {
+                        "status": 2,
+                        "job_id": job['id'],
+                        "task_window_index": task_window_idx,
+                        "data_url": f"http://localhost:8001/user_data/1/contacts_20241105/{cur_file}",
+                        "header_row_text": "id,convo",
+                        "begin_row": 2,
+                        "end_row": 5,
+                        "data_type": 1,
+                    }
+                    print("taskRow", taskRow)
+                    self.db.save("tasks", taskRow)
 
-        print("row_counts", row_counts)
+            print("row_counts", row_counts)
         # Create tasks for each chunk
-        if False:
+        if True:
             updateRow = {
-                "id": row['id'],
+                "id": job['id'],
                 "status": 2,
             }
             print(updateRow)
-            db.save("jobs", updateRow)
+            self.db.save("jobs", updateRow)
 
     def list_files(self, directory_path, extensions=None):
         """

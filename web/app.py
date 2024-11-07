@@ -219,7 +219,7 @@ def get_api_get_task(id: int):
     return out
 
 
-@app.post("/api/v1/task/{id}/workproduct")
+@app.post("/api/v1/task/{id}/results")
 def post_api_workproduct(id:int=None, data: dict=None ):
     out = get_default_json()
     userId = 1
@@ -262,9 +262,9 @@ def get_api_get_reserve_task():
     # Get lock value so we can lock it in one operation and then get the locked row subsequently
     lock_value = random_sqlite_integer()
     userId = 1
-    debug = True
+    debug = False
     if not debug:
-        update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW') WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
+        update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW'), locked_by = {userId} WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
     else:
         update_query = f"UPDATE tasks SET lock_value = {lock_value}, locked_at = STRFTIME('%s', 'NOW'), locked_by = {userId} WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
     cursor = db.execute(update_query)
