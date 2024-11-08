@@ -182,7 +182,7 @@ function addComponentInstance(sel, componentName, item) {
             console.log("LINK", val, componentInstance.find("[data-field="+key+"]"));
             componentInstance.find("[data-field="+key+"]").attr('href', val);
         } else {
-            componentInstance.find("[data-field="+key+"]").text(val);
+            componentInstance.find("[data-field="+key+"]").html(val);
             componentInstance.find("[data-attr="+key+"]").attr("data-"+key, val);
         }
     }
@@ -381,6 +381,10 @@ app.loadJobs = (refreshOnlyOnChange) => {
         //console.log("QUEUE1", o);
         if( !refreshOnlyOnChange || (refreshOnlyOnChange && change) ) {
             console.log("Refresh jobs");
+            for(idx in o['data']) {
+                let item = o['data'][idx];
+                item['title_link'] = "<a href='/static/html/index.html?route=adwords_task&job_id="+item['id']+"'>"+item['title']+"</a>";
+            }
             Render.adwords(o['data']);
         } else {
             //console.log("No change jobs");
