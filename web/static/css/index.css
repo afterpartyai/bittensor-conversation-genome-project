@@ -141,6 +141,9 @@ tr:not(:last-child) {
 .btn-red {
     background-color: darkred;
 }
+.btn-orange {
+    background-color: darkorange;
+}
 
 .btn:hover {
   background-color: darkblue; /* slightly darker gray on hover */

@@ -224,7 +224,7 @@ app.unserializeDialog = function(curDialog, data) {
     curDialog.find("[data-field]").each(function() {
         let el = $(this);
         const key = el.attr('data-field');
-        if(data[key] != undefined) {
+        if(data[key] != undefined && data[key] != "") {
             el.val(data[key]);
         }
     });
@@ -418,24 +418,25 @@ app.upload = () => {
     const form = document.getElementById('upload-form');
     const filesInput = document.getElementById('files');
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
+    const files = filesInput.files;
+    const formData = new FormData();
+    const datasetName = $("input[name=dataset-directory]").val();
+    formData.append(`dataset_name`, datasetName);
 
-      const files = filesInput.files;
-      const formData = new FormData();
-
-      for (let i = 0; i < files.length; i++) {
+    for (let i = 0; i < files.length; i++) {
         formData.append(`files`, files[i]);
-      }
+    }
 
-      fetch('/api/v1/upload', {
+    fetch('/api/v1/upload', {
         method: 'POST',
         body: formData,
-      })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error(error));
-    });
+        })
+          .then((response) => response.json())
+          .then((data) => {
+              console.log(data);
+              $("[data-field=url]").val(datasetName)
+          })
+          .catch((error) => console.error(error));
 }
 
 

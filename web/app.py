@@ -2,6 +2,7 @@ import json
 import random
 import os
 import time
+import shutil
 
 import hashlib
 import binascii
@@ -281,6 +282,10 @@ def post_put_api_create_job(data: dict, id=None):
     out = get_default_json()
     if id:
         data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
     db = Db("cgp_tags.sqlite", "jobs")
     db.save("jobs", data)
 
@@ -330,10 +335,20 @@ def get_api_get_reserve_task():
 async def upload_files(request: Request):
     form = await request.form()
     files = form.getlist('files')
+    datasetName =  form.get('dataset_name')
+    UPLOAD_DIR = "user_data/1/"+datasetName
 
     for file in files:
-        # Process the uploaded file
-        print(f"Received file: {file.filename} ({file.content_type})")
+        # Create the upload directory if it doesn't exist
+        if not os.path.exists(UPLOAD_DIR):
+            os.makedirs(UPLOAD_DIR)
+
+        # Copy the file to the upload directory
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        with open(file_path, 'wb') as f:
+            shutil.copyfileobj(file.file, f)
+
+        print(f"File '{file.filename}' to dir {UPLOAD_DIR} uploaded successfully!")
 
     return JSONResponse({"message": "Files uploaded successfully"}, status_code=201)
 
