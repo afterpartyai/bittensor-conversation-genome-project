@@ -134,7 +134,7 @@ class Db:
             sql = f"UPDATE {tableName} SET {set_clause} WHERE id = ?"
             columns = set_clause.replace(' = ?', '').split(", ")
             values = [data[column] for column in columns] + [data['id']]
-            print("set_clause", sql, values)
+            #print("set_clause", sql, values)
             cursor.execute(sql, values)
             id = data['id']
         else:

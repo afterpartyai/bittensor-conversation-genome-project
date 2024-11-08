@@ -3,6 +3,7 @@ import csv
 import json
 import time
 import hashlib
+import binascii
 
 class Utils:
     @staticmethod
@@ -39,7 +40,21 @@ class Utils:
         import time
         return time.strftime(format_str)
 
+    @staticmethod
     def md5(inStr):
         md5_hash = hashlib.md5()
         md5_hash.update(inStr.encode('utf-8'))
         return md5_hash.hexdigest()
+
+    @staticmethod
+    def dictToCrc(data=None):
+        if data == None:
+            data = Utils.getUuid()
+            #print("UUID", data)
+        try:
+            dataStr = str(json.dumps(data))
+            crc = binascii.crc32(dataStr.encode('utf8'))
+            return crc
+        except:
+            print("Error converting dictToCrc", data)
+

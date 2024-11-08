@@ -1,8 +1,11 @@
 import time
 import os
+from constants import *
 
 from Utils import Utils
 from Db import Db
+from huggingface_hub import HfApi, hf_hub_download
+import re
 
 
 class PreprocessorLib():
@@ -41,15 +44,15 @@ class PreprocessorLib():
         db = Db("cgp_tags.sqlite", "jobs")
         self.db = db
         while True:
-            print(".")
             sql = 'SELECT * FROM jobs WHERE status = 1 ORDER BY updated_at DESC LIMIT 1'
             rows = db.get_all(sql)
             if rows:
                 row = rows[0]
                 self.preprocessJob(row)
             else:
-                print(f"No jobs for preprocessing")
+                print(f"{YELLOW}{Utils.get_time()} No jobs for preprocessing{COLOR_END}")
             time.sleep(5)
+
     def secure_join(self, base_dir, *paths):
         # Join the base directory with the user-provided path
         target_path = os.path.join(base_dir, *paths)
@@ -70,43 +73,99 @@ class PreprocessorLib():
     def getUserId(self):
         return 1
 
+    def validate(self, userId, job):
+        # Check user-specific data path
+        user_path = os.path.join(os.getcwd(), "user_data", str(userId))
+        path = self.secure_join(user_path,job['url'])
+
+        if not os.path.exists(path):
+            print(f"{RED}Error: Path {path} not found. Aborting.{COLOR_END}")
+            updateRow = {
+                "id": job['id'],
+                "status": self.JOB_STATUS_ERROR_PATH,
+                "status_str": f"Path {path} not found",
+            }
+            #print(updateRow)
+            self.db.save("jobs", updateRow)
+            return
+
+        # Collect list of files
+        # TODO: Job specific data files
+        # TODO: Handle Windows or Linux command lines
+        extensions = ['.csv'] # , '.xslx' .txt
+        files = self.list_files(path, extensions)
+
+        if len(files) == 0:
+            print(f"Path {path} empty. Aborting.")
+            updateRow = {
+                "id": job['id'],
+                "status": self.JOB_STATUS_ERROR_EMPTY_PATH,
+                "status_str": f"Path {path} empty",
+            }
+            self.db.save("jobs", updateRow)
+            return
+        return files
+
+    def preprocessLocalFiles(self, job):
+        pass
+
+
+    def listHuggingFaceFiles(self, url):
+        api_token = "TOKEN"
+        api = HfApi(token=api_token)
+
+        match = re.match(r"https://huggingface.co/([^/]+/[^/]+)", url)
+        if not match:
+            print("{RED}Invalid URL format: must be of the form 'https://huggingface.co/{model_or_dataset}. Aborting.'{COLOR_END}")
+            return
+
+        # Extract the model or dataset identifier
+        repo_id = match.group(1)
+        repo_id = "wenknow/reddit_dataset_209"
+        print("repo_id", repo_id)
+
+        # List the files in the repository
+        files = api.list_repo_files(repo_id, repo_type="dataset")
+        if False:
+            # Gather detailed information about each file
+            file_details = []
+            for file_name in files:
+                if True: #try:
+                    # Download the file metadata to get more information
+                    file_info = hf_hub_download(repo_id, file_name, token=api_token, cache_dir=None, force_filename=None, resume_download=False, force_download=False, etag_timeout=None, revision=None, local_dir=None, local_dir_use_symlinks=None)
+                    # Since hf_hub_download primarily downloads files, you might need to check the cache or use API capabilities
+                    # For sizes, consider accessing file system properties if directly downloading
+                    file_size = os.path.getsize(file_info)  # Example method to get file size
+                    file_details.append({
+                        "file_name": file_name,
+                        "file_size": file_size
+                    })
+                    print("{GREEN}file_info{COLOR_END}", file_info)
+                else: #except Exception as e:
+                    # Handle exceptions, such as missing metadata or failed downloads
+                    print(f"Could not retrieve details for {file_name}: {e}")
+                break
+
+        return files
+
+    def preprocessHuggingFace(self, job):
+        print(f"{GREEN}HuggingFace JOB{COLOR_END}", job)
+        url = "https://huggingface.co/datasets/wenknow/reddit_dataset_88"
+        url = "https://huggingface.co/datasets/wenknow/reddit_dataset_209"
+        url = "https://huggingface.co/datasets/fka/awesome-chatgpt-prompts"
+        #url = "https://huggingface.co/gpt2"
+        files = self.listHuggingFaceFiles(url)
+        print("FILES", files)
+
     def preprocessJob(self, job):
         jobTypeId = Utils.get(job, 'job_type_id')
-        print(f"Preprocessing job: {job} type: {jobTypeId}")
+        print(f"{Utils.get_time()} Preprocessing job: {job} type: {jobTypeId}")
 
         if job['data_source_type_id'] == self.JOB_DATA_SOURCE_LOCAL:
             print(f"Checking for local files at path: {job['url']}...")
-            userId = getUserId()
-
-            # Check user-specific data path
-            user_path = os.path.join(os.getcwd(), "user_data", str(user_id))
-            path = self.secure_join(user_path,job['url'])
-
-            if not os.path.exists(path):
-                print(f"Path {path} not found. Aborting.")
-                updateRow = {
-                    "id": job['id'],
-                    "status": self.JOB_STATUS_ERROR_PATH,
-                    "status_str": f"Path {path} not found",
-                }
-                #print(updateRow)
-                self.db.save("jobs", updateRow)
-                return
-
-            # Collect list of files
-            # TODO: Job specific data files
-            # TODO: Handle Windows or Linux command lines
-            extensions = ['.csv'] # , '.xslx' .txt
-            files = self.list_files(path, extensions)
-
-            if len(files) == 0:
-                print(f"Path {path} empty. Aborting.")
-                updateRow = {
-                    "id": job['id'],
-                    "status": self.JOB_STATUS_ERROR_EMPTY_PATH,
-                    "status_str": f"Path {path} empty",
-                }
-                self.db.save("jobs", updateRow)
+            userId = self.getUserId()
+            files = self.validate(userId, job)
+            if not files:
                 return
 
             # Determine number of rows per file
@@ -138,8 +197,10 @@ class PreprocessorLib():
                     self.db.save("tasks", taskRow)
 
             print("row_counts", row_counts)
+        elif job['data_source_type_id'] == self.JOB_DATA_SOURCE_HUGGING_FACE:
+            self.preprocessHuggingFace(job)
         # Create tasks for each chunk
-        if True:
+        if False:
             updateRow = {
                 "id": job['id'],
                 "status": 2,
@@ -148,13 +209,6 @@ class PreprocessorLib():
             self.db.save("jobs", updateRow)
 
     def list_files(self, directory_path, extensions=None):
-        """
-        List files in the given directory with specified extensions.
-
-        :param directory_path: Path to the directory to scan.
-        :param extensions: List of file extensions to filter by, or None to return all files.
-        :return: List of matching file names.
-        """
         try:
             # Get list of all entries in the directory
             entries = os.listdir(directory_path)
