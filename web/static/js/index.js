@@ -1,7 +1,24 @@
 let Utils = {};
 Utils.getRequest = (name, defaultVal) => {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(name) || defaultVal;
+  if(name != '*') {
+      return urlParams.get(name) || defaultVal;
+  } else {
+      return [...urlParams.entries()].reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
+  }
+}
+
+Utils.objectToReqStr = (obj) => {
+    let out = [];
+    for(let key in obj) {
+        console.log(key, obj[key]);
+        if(!obj[key] ||  (typeof obj[key] == 'string' && obj[key].length == 0)) {
+            //console.log(" Empty, Skip", !obj[key], );
+        } else {
+            out.push(key+"="+obj[key]);
+        }
+    }
+    return out.join('&');
 }
 
 Utils.addComponent = (o, sel, componentName) => {
@@ -67,6 +84,14 @@ Api.getJobs = (type, callback) => {
        return callback(o);
     });
 }
+Api.getRows = (type, callback) => {
+    let allParams = Utils.getRequest('*');
+    allParams['route'] = null;
+
+    $.get("/api/v1/"+type+"?"+Utils.objectToReqStr(allParams), (o) => {
+       return callback(o);
+    });
+}
 Api.getJob = (id, callback) => {
     $.get("/api/v1/job/"+id, (o) => {
        return callback(o);
@@ -107,7 +132,7 @@ Api.putJob = (id, data, callback) => {
 function addComponentInstance(sel, componentName, item) {
     //console.log("Add instance", componentName, loadedComponents);
     if(!loadedComponents[componentName]) {
-        console.log("Component "+componentName+" not found. Aborting");
+        console.log("Component "+componentName+" not found. Skipping.");
         return;
     }
     let componentInstance = loadedComponents[componentName].clone().removeClass("."+componentName)
@@ -199,17 +224,18 @@ function saveJob(el) {
 // _________________________ Routes _________________________
 
 let Routes = {};
-
+app.tableRow = null;
 Routes.do = () => {
     route = Utils.getRequest('route', 'home');
-    jobId = Utils.getRequest('job');
 
     if(route == 'home') {
         Utils.loadComponents(['tile'], Render.home);
     } else if(route == 'adwords') {
+        jobId = Utils.getRequest('job');
         if(!jobId) {
             Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
                 addComponentInstance('.tileContainer', 'main_adwords', {});
+                app.tableRow = 'adwords_row';
                 app.loadJobs();
                 app.loadJobsInterval = setInterval(app.loadJobs.bind(this, true), 5000);
             });
@@ -219,6 +245,13 @@ Routes.do = () => {
                 app.loadJob(jobId);
             });
         }
+    } else if(route == 'adwords_task') {
+        jobId = Utils.getRequest('job_id');
+        Utils.loadComponents(['main_adwords', 'tasks_row', 'adwords_dialog_add_job'], () => {
+            addComponentInstance('.tileContainer', 'main_adwords', {});
+            app.tableRow = 'tasks_row';
+            app.loadRows('task', Api.getTasks, Render.adwords, true);
+        });
     } else if(route == 'public_data') {
         Utils.loadComponents(['main_public_data'], () => {
 
@@ -275,6 +308,23 @@ app.loadJobs = (refreshOnlyOnChange) => {
         if( !refreshOnlyOnChange || (refreshOnlyOnChange && change) ) {
             console.log("Refresh jobs");
             Render.adwords(o['data']);
+        } else {
+            //console.log("No change jobs");
+        }
+    })
+}
+app.loadRows = (type, apiFunction, renderFunction, refreshOnlyOnChange) => {
+    Api.getRows(type, (o) => {
+        //console.log("response", o);
+        let change = false;
+        let typeVar = 'load_'+type+'_checksum';
+        if(app[typeVar] && app[typeVar] != o['checksum']) {
+            change = true;
+        }
+        app[typeVar] = o['checksum'];
+        if( !refreshOnlyOnChange || (refreshOnlyOnChange && change) ) {
+            console.log("Refresh "+type);
+            renderFunction(o['data']);
         } else {
             //console.log("No change jobs");
         }
