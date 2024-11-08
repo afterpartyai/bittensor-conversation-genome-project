@@ -28,12 +28,15 @@ class Utils:
         return out
 
     @staticmethod
-    def guid():
+    def guid(returnInt=True):
         import time
         current_time = int(round(time.time() * 1000))
-        guid = uuid.uuid1(node=current_time)
-        guid_int = int(guid.int)
-        return guid_int
+        guid = uuid.uuid1()
+        if returnInt:
+            guid_int = int(guid.int)
+            return guid_int
+        else:
+            return guid
 
     @staticmethod
     def get_time(format_str="%H:%M:%S"):
@@ -58,3 +61,36 @@ class Utils:
         except:
             print("Error converting dictToCrc", data)
 
+    @staticmethod
+    def empty(val):
+        out = True
+        #print("TYPE", type(val))
+        valType = type(val)
+        if not val:
+            out = True
+        elif valType == str:
+            if len(val.strip()) > 0:
+                out = False
+        elif valType == int:
+            if val != 0:
+                out = False
+        elif valType == list:
+            #print("LIST", val)
+            if len(val) != 0:
+                out = False
+        elif valType == dict:
+            #print("DICT", val)
+            if len(val.keys()) != 0:
+                out = False
+        else:
+            print("EMPTY doesn't work with type %s" % (valType))
+        return out
+
+    @staticmethod
+    def _int(val, default=None):
+        out = default
+        try:
+            out = int(val)
+        except:
+            pass
+        return out

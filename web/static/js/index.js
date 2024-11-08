@@ -1,4 +1,32 @@
 let Utils = {};
+Utils.get = function(object, path, defaultVal) {
+    //console.log(object, path);
+    if(typeof window == 'object') {
+        window.test = object;
+    }
+    if(!object) {
+        return false;
+    }
+    if(typeof path == "number") {
+        path = "" + path;
+    }
+    var out = defaultVal;
+    var parts = path.split(".");
+    var cur = object;
+    for(var idx in parts) {
+        var pathPart = parts[idx];
+        if(typeof cur == "object" && pathPart in cur) {
+            cur = cur[pathPart];
+        } else {
+            return defaultVal;
+        }
+    }
+    if(!cur) {
+        cur = defaultVal;
+    }
+    return cur;
+}
+
 Utils.getRequest = (name, defaultVal) => {
   const urlParams = new URLSearchParams(window.location.search);
   if(name != '*') {
@@ -81,6 +109,11 @@ Api.getTaskTypes = (callback) => {
 }
 Api.getJobs = (type, callback) => {
     $.get("/api/v1/job", (o) => {
+       return callback(o);
+    });
+}
+Api.getProfile = (callback) => {
+    $.get("/api/v1/profile", (o) => {
        return callback(o);
     });
 }
@@ -249,6 +282,17 @@ function saveJob(el) {
 let Routes = {};
 app.tableRow = null;
 Routes.do = () => {
+    //          <a style="text-decoration:underline;" href="/static/html/index.html?route=admin">Admin</a>
+    Api.getProfile( (o) => {
+        if(o['success']) {
+            console.log(o);
+            $("#user-info").html(Utils.get(o, 'data.username') + " / Credits: <b>" + Utils.get(o, 'data.credits')+"</b>");
+        } else {
+            $("#user-info").html("Not logged in");
+        }
+    });
+
+
     route = Utils.getRequest('route', 'home');
 
     if(route == 'home') {

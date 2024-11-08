@@ -33,6 +33,7 @@ DIVIDER = '_' * 120
 
 
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from Db import Db
@@ -70,6 +71,17 @@ app.mount("/user_data", StaticFiles(directory="user_data"), name="user_data")
 @app.get("/")
 def get_request():
     return {"message": "Forbidden"}
+
+@app.get("/login")
+async def do_login(request: Request):
+    if not Utils.empty(request.query_params.get("api_key")):
+        expiry = 30*24*60*60 # 30 days
+        response = RedirectResponse(url="/static/html/index.html", status_code=302)
+        response.set_cookie(key="api_key", value=request.query_params.get("api_key"), max_age=expiry)
+    else:
+        return "Error"
+    return response
+
 
 @app.post("/api/v1/conversation/reserve")
 def post_request():
@@ -172,9 +184,25 @@ def post_get_api_generate_key(data: dict):
     return out
 
 def get_default_json():
-    return {"success": 0, "errors":[], "warnings":[], "data":{}}
+    return {"success": 0, "data":{}, "errors":[], "warnings":[], }
 
 
+@app.get("/api/v1/profile")
+def get_api_get_profile(request: Request):
+    out = get_default_json()
+    db = Db("cgp_tags.sqlite", "users")
+    # TODO: Remove when session or JWT is adopted
+    apiKey = request.cookies.get("api_key")
+    print(Utils.guid(returnInt=False))
+    if not Utils.empty(apiKey):
+        sql = f"SELECT id, username, credits FROM users WHERE api_key = '{apiKey}' LIMIT 1"
+        userRow = db.get_row(sql)
+        if userRow:
+            out['data'] = userRow
+            out['success'] = 1
+    else:
+        out['warnings'].append([23421211, "User not logged in"])
+    return out
 
 
 @app.get("/api/v1/job")
