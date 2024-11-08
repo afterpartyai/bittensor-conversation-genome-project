@@ -210,7 +210,7 @@ def get_api_get_tasks(request: Request):
     where = ' 1=1 '
     if jobId:
         where += f' AND job_id = {jobId} '
-    sql = f'SELECT id, status, job_id, data_url, lock_value, locked_at, locked_by FROM tasks WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    sql = f'SELECT id, status, job_id, data_url, lock_value, locked_at, locked_by, updated_at FROM tasks WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
     print(sql)
     out['data'] = db.get_all(sql)
 

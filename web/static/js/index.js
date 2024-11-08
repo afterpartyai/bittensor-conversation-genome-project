@@ -250,7 +250,7 @@ Routes.do = () => {
         Utils.loadComponents(['main_adwords', 'tasks_row', 'adwords_dialog_add_job'], () => {
             addComponentInstance('.tileContainer', 'main_adwords', {});
             app.tableRow = 'tasks_row';
-            app.loadRows('task', Api.getTasks, Render.adwords, true);
+            app.loadRows('task', Render.adwords, 'tasks_row', true);
         });
     } else if(route == 'public_data') {
         Utils.loadComponents(['main_public_data'], () => {
@@ -288,13 +288,14 @@ Render.home = () => {
     }
 }
 
-Render.adwords = (data) => {
+Render.adwords = (data, rowComponentName) => {
+    console.log("Render.adwords ", data, rowComponentName);
     const sel = ".main_adwords table tbody";
     $(sel).empty();
     for(idx in data) {
         let item = data[idx];
         //console.log("adwords render item", item);
-        addComponentInstance(sel, 'adwords_row', item);
+        addComponentInstance(sel, rowComponentName, item);
     }
 }
 app.loadJobs = (refreshOnlyOnChange) => {
@@ -313,20 +314,24 @@ app.loadJobs = (refreshOnlyOnChange) => {
         }
     })
 }
-app.loadRows = (type, apiFunction, renderFunction, refreshOnlyOnChange) => {
+app.loadRows = (type, renderFunction, rowComponentName, refreshOnlyOnChange) => {
     Api.getRows(type, (o) => {
-        //console.log("response", o);
+        console.log("response", o);
         let change = false;
         let typeVar = 'load_'+type+'_checksum';
+        // If endpoint doesn't have a change checksum, always render
+        if(!o['checksum']) {
+            change = true;
+        }
         if(app[typeVar] && app[typeVar] != o['checksum']) {
             change = true;
         }
         app[typeVar] = o['checksum'];
         if( !refreshOnlyOnChange || (refreshOnlyOnChange && change) ) {
             console.log("Refresh "+type);
-            renderFunction(o['data']);
+            return renderFunction(o['data'], rowComponentName);
         } else {
-            //console.log("No change jobs");
+            console.log("No change "+type);
         }
     })
 }
