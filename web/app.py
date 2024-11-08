@@ -33,7 +33,7 @@ DIVIDER = '_' * 120
 
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from Db import Db
@@ -326,4 +326,14 @@ def get_api_get_reserve_task():
             out['success'] = 1
     return out
 
+@app.post("/api/v1/upload")
+async def upload_files(request: Request):
+    form = await request.form()
+    files = form.getlist('files')
+
+    for file in files:
+        # Process the uploaded file
+        print(f"Received file: {file.filename} ({file.content_type})")
+
+    return JSONResponse({"message": "Files uploaded successfully"}, status_code=201)
 

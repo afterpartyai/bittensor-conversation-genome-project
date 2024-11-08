@@ -413,6 +413,30 @@ app.loadJob = (jobId) => {
         Render.adwords(o['data']);
     })
 }
+app.upload = () => {
+    const form = document.getElementById('upload-form');
+    const filesInput = document.getElementById('files');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const files = filesInput.files;
+      const formData = new FormData();
+
+      for (let i = 0; i < files.length; i++) {
+        formData.append(`files`, files[i]);
+      }
+
+      fetch('/api/v1/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      .then((response) => response.json())
+      .then((data) => console.log(data))
+      .catch((error) => console.error(error));
+    });
+}
+
 
 $(document).ready(function() {
     Routes.do();
