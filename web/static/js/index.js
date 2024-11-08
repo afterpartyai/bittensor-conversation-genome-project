@@ -128,6 +128,7 @@ Api.putJob = (id, data, callback) => {
 }
 
 // _________________________ Components  _________________________
+Components = {};
 
 function addComponentInstance(sel, componentName, item) {
     //console.log("Add instance", componentName, loadedComponents);
@@ -153,6 +154,28 @@ function addComponentInstance(sel, componentName, item) {
         }
     }
     componentInstance.appendTo(sel);
+}
+Components.getRowTitles = (rowComponentName) => {
+    console.log("getRowTitles", rowComponentName, loadedComponents[rowComponentName]);
+    if(!loadedComponents[rowComponentName]) {
+        console.log("Component "+rowComponentName+" not found. Skipping.");
+        return;
+    }
+    let rowProto = loadedComponents[rowComponentName];
+    let thead = '<tr>';
+    $(rowProto).find("[data-field]").each( function() {
+         const el = $(this);
+         let title = el.attr("data-field");
+         if(el.attr("data-title")) {
+             title = el.attr("data-title");
+         } else {
+             title = title.substr(0,1).toUpperCase() + title.substr(1);
+         }
+         thead += '<th>'+title+'</th>';
+         console.log("field", title);
+    });
+    thead += '</tr>';
+    return thead;
 }
 
 let app = {};
@@ -292,6 +315,11 @@ Render.adwords = (data, rowComponentName) => {
     console.log("Render.adwords ", data, rowComponentName);
     const sel = ".main_adwords table tbody";
     $(sel).empty();
+    const selHead = ".main_adwords table thead";
+    $(selHead).empty();
+    const rowTitles = Components.getRowTitles(rowComponentName);
+    $(rowTitles).appendTo(selHead)
+
     for(idx in data) {
         let item = data[idx];
         //console.log("adwords render item", item);
