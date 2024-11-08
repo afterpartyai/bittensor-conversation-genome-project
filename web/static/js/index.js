@@ -356,6 +356,7 @@ Render.home = () => {
 }
 
 Render.adwords = (data, rowComponentName) => {
+    rowComponentName = rowComponentName ? rowComponentName : 'adwords_row';
     console.log("Render.adwords ", data, rowComponentName);
     const sel = ".main_adwords table tbody";
     $(sel).empty();
