@@ -246,4 +246,10 @@ input, textarea, td select {
     width: 100%;
 }
 
+.ui-dialog-titlebar {
+    background: none;
+    border: none;
+    padding-top: 12px;
+}
+
 

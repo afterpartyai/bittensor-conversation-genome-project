@@ -4,6 +4,8 @@ import os
 import time
 
 import hashlib
+import binascii
+
 import sqlite3
 
 from Utils import Utils
@@ -120,8 +122,6 @@ def put_record_request(c_guid, data: dict):
         out['errors'].append([9893843, "Missing hotkey",])
     return out
 
-import hashlib
-import binascii
 
 def hashReadyAiMessage(password):
     salt = "THIS IS MY SALT"
@@ -174,6 +174,9 @@ def post_get_api_generate_key(data: dict):
 def get_default_json():
     return {"success": 0, "errors":[], "warnings":[], "data":{}}
 
+
+
+
 @app.get("/api/v1/job")
 def get_api_get_jobs():
     out = get_default_json()
@@ -181,6 +184,7 @@ def get_api_get_jobs():
     db = Db("cgp_tags.sqlite", "jobs")
     sql = 'SELECT * FROM jobs ORDER BY updated_at DESC LIMIT 25'
     out['data'] = db.get_all(sql)
+    out['checksum'] = Utils.dictToCrc(out['data'])
 
     out['success'] = 1
     return out

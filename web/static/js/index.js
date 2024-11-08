@@ -28,6 +28,31 @@ Utils.loadComponents = (componentList, callback, containerSel) => {
       return callback();
     });
 }
+Utils.statsStrs = {
+    1: {title: "Active", color:"black", },
+    2: {title: "Preprocessed", color:"orange", },
+    3: {title: "Complete", color:"green", },
+    4: {title: "Four", color:"black", },
+    5: {title: "Five", color:"black", },
+    14: {title: "Other", color:"black", },
+    90: {title: "Error", color:"red", },
+    91: {title: "Error", color:"red", },
+    92: {title: "Error", color:"red", },
+    93: {title: "Error", color:"red", },
+    94: {title: "Error", color:"red", },
+    95: {title: "Error", color:"red", },
+}
+Utils.statusToStr = (num, styled) => {
+    let val = num;
+    if(Utils.statsStrs[num]) {
+        val = Utils.statsStrs[num]['title'];
+        if(true || styled) {
+            val = '<span title="Status: '+num+'" style="color:'+Utils.statsStrs[num]['color']+';">'+val+'</span>';
+        }
+    }
+
+    return val;
+}
 
 // _________________________ API Calls  _________________________
 
@@ -92,6 +117,8 @@ function addComponentInstance(sel, componentName, item) {
         const val = item[key];
         if(key == 'image_url') {
             componentInstance.find("[data-field="+key+"]").attr('src', val);
+        } else if(key == 'status') {
+            componentInstance.find("[data-field="+key+"]").html(Utils.statusToStr(val), true);
         } else if(key == 'link') {
             console.log("LINK", val, componentInstance.find("[data-field="+key+"]"));
             componentInstance.find("[data-field="+key+"]").attr('href', val);
@@ -184,6 +211,7 @@ Routes.do = () => {
             Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
                 addComponentInstance('.tileContainer', 'main_adwords', {});
                 app.loadJobs();
+                app.loadJobsInterval = setInterval(app.loadJobs.bind(this, true), 5000);
             });
         } else {
             Utils.loadComponents(['main_adwords', 'adwords_row', 'adwords_dialog_add_job'], () => {
@@ -236,15 +264,25 @@ Render.adwords = (data) => {
         addComponentInstance(sel, 'adwords_row', item);
     }
 }
-app.loadJobs = () => {
+app.loadJobs = (refreshOnlyOnChange) => {
     Api.getJobs('adwords', (o) => {
-        console.log("QUEUE", o);
-        Render.adwords(o['data']);
+        let change = false;
+        if(app['loadJobsChecksum'] && app['loadJobsChecksum'] != o['checksum']) {
+            change = true;
+        }
+        app['loadJobsChecksum'] = o['checksum'];
+        //console.log("QUEUE1", o);
+        if( !refreshOnlyOnChange || (refreshOnlyOnChange && change) ) {
+            console.log("Refresh jobs");
+            Render.adwords(o['data']);
+        } else {
+            //console.log("No change jobs");
+        }
     })
 }
 app.loadJob = (jobId) => {
     Api.getJob(jobId, (o) => {
-        console.log("QUEUE", o);
+        //console.log("QUEUE2", o);
         Render.adwords(o['data']);
     })
 }
