@@ -56,6 +56,7 @@ class ValidatorLib:
     def __init__(self):
         super(ValidatorLib, self).__init__()
         self.read_api_key()
+        
 
     def read_api_key(self):
         fail_message = "WARNING: You have not generated a ReadyAI Conversation Server API key. Starting on October 7th, 2024, you will no longer be able to request conversations from the ReadyAI Conversation server without an API Key. For instructions on how to generate your key, read the documentation in docs/generate-validator-api-key.md"
@@ -307,8 +308,24 @@ class ValidatorLib:
         await llml.test_tagging()
 
 
-    def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
-        
+    def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power, unavailable_uids=None):
+
+        #trend all unavailable uids towards 0
+        if unavailable_uids:
+            #find instances of unavailable_uids in uids and overwrite to reward of 0
+            for unavailable_uid in unavailable_uids:
+                if unavailable_uid in uids:
+                    print(f"found unavaiable uid: {unavailable_uid} in uids: {uids} with rewards: {rewards}")
+                    indices = [i for i, uid in enumerate(uids) if uid == unavailable_uid]
+                    print(f"Found indices: {indices}")
+                    if len(indices)>0:
+                        for index in indices:
+                            rewards[index]=0
+                    print(f"After overwrite, uids: {uids} with rewards: {rewards}")
+                else:
+                    uids = np.append(uids, unavailable_uid)
+                    rewards = np.append(rewards, 0)
+
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:

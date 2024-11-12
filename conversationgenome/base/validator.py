@@ -354,8 +354,11 @@ class BaseValidatorNeuron(BaseNeuron):
         then normalizes, applies a non-linear transformation, and renormalizes the scores.
         """
 
+        #first, find unavailable uids:
+        unavailable_uids = [i for i in range(self.metagraph.n) if not check_uid_availability(self.metagraph,i,self.config.neuron.vpermit_tao_limit)]
+
         vl = ValidatorLib()
-        updated_scores, updated_ema_scores = vl.update_scores(rewards, uids, self.ema_scores, self.scores, self.config.neuron.moving_average_alpha, self.device, self.metagraph.n, self.nonlinear_power)
+        updated_scores, updated_ema_scores = vl.update_scores(rewards, uids, self.ema_scores, self.scores, self.config.neuron.moving_average_alpha, self.device, self.metagraph.n, self.nonlinear_power, unavailable_uids)
 
         if updated_scores.size > 0 and updated_ema_scores.size > 0 and not np.isnan(updated_scores).any() and not np.isnan(updated_ema_scores).any():
             self.scores = updated_scores
