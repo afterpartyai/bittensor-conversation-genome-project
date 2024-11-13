@@ -423,6 +423,42 @@ def post_put_api_job_type(data: dict, id=None):
     out['data'] = data
     return out
 
+@app.get("/api/v1/user")
+@app.get("/api/v1/user/{id}")
+def get_api_get_job_types(request: Request, id: int = None):
+    out = get_default_json()
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "users")
+    limit = 100
+    where = ' 1=1 '
+    if id:
+        where += f' AND id = {id} '
+    sql = f'SELECT id, status, username, user_level, api_key, credits FROM users WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    if not id:
+        out['data'] = db.get_all(sql)
+    else:
+        out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.post("/api/v1/user")
+@app.put("/api/v1/user/{id}")
+def post_put_api_job_type(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "users")
+    db.save("users", data)
+
+    out['data'] = data
+    return out
+
 
 
 @app.post("/api/v1/prompt_chain")

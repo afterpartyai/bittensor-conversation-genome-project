@@ -334,6 +334,22 @@ app.editPromptChain = function(el) {
     });
 }
 
+app.editUser = function(el) {
+    const id = $(el).attr('data-id');
+    let dialogSettings = {
+        title:"Edit User",
+        width:600
+    }
+    Api.getRow('user', id, (o) => {
+        let data = o['data'];
+
+        curDialog = loadedComponents['dialog/dialog_user'];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
+}
+
+
 function saveRow(el, tableName) {
     let mainDialog = $(el).closest(".ui-dialog");
     let data = {};
@@ -445,6 +461,12 @@ Routes.do = () => {
                 addComponentInstance('.tileContainer', 'main_adwords', {});
                 app.tableRow = 'admin/job_type_row';
                 app.loadRows('job_type', Render.adwords, app.tableRow, true);
+            });
+        } else if(subroute == "user") {
+            Utils.loadComponents(['main_adwords', 'admin/user_row', 'dialog/dialog_user' ], () => {
+                addComponentInstance('.tileContainer', 'main_adwords', {});
+                app.tableRow = 'admin/user_row';
+                app.loadRows('user', Render.adwords, app.tableRow, true);
             });
         } else {
             Utils.loadComponents(['main_admin'], () => {
