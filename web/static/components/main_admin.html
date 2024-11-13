@@ -2,8 +2,14 @@
 <div class="main_admin" style="width:100%;">
     <h2>Admin Dashboard</h2>
     <div class="frow" style="margin-bottom:20px;">
-        <a href="/static/html/index.html?route=admin_users" class="btn">Settings</a>
-        <a href="/static/html/index.html?route=admin_users" class="btn">Users</a>
+        <div class="frow panel-group">
+            <a href="/static/html/index.html?route=admin_setting" class="btn">⚙️ Settings</a>
+            <a href="/static/html/index.html?route=admin_user" class="btn btn-orange">🧑‍🤝‍🧑 Users</a>
+        </div>
+        <div class="frow panel-group" style="">
+            <a href="/static/html/index.html?route=admin_prompt_chain" class="btn btn-blue">⛓️ Prompt Chains</a>
+            <a href="/static/html/index.html?route=admin_prompt" class="btn btn-purple">🛠️ Prompts</a>
+        </div>
     </div>
     <div class="frow" style="align-items:center;">
         <div onclick="addJob(this)" class="btn">➕</div>

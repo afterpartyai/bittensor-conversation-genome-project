@@ -18,12 +18,26 @@
                     <option value="2">Hugging Face</option>
                     <option value="3">S3</option>
                     <option value="4">Web Url</option>
-                </select></td>
+                </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Local File Upload</td>
+                <td>
+                    <form id="upload-form">
+                        <input type="file" id="files" multiple="">
+                        <div class="frow">
+                            Dataset Name: <input name="dataset-directory" /><div onclick="app.upload(this)" class="btn btn-orange">Upload</button>
+                        </div>
+                    </form>
+
+                </td>
             </tr>
             <tr><td>Data Source URL</td><td><input data-field="url" data-len-min="5" /></td></tr>
         </tbody>
         </table>
     </div>
+
     <div class="frow" style="justify-content: flex-end;">
         <div onclick="saveJob(this)" class="btn btn-red">Save</div>
     </div>

@@ -141,6 +141,15 @@ tr:not(:last-child) {
 .btn-red {
     background-color: darkred;
 }
+.btn-orange {
+    background-color: darkorange;
+}
+.btn-blue {
+    background-color: slateblue;
+}
+.btn-purple {
+    background-color: darkblue;
+}
 
 .btn:hover {
   background-color: darkblue; /* slightly darker gray on hover */
@@ -252,4 +261,12 @@ input, textarea, td select {
     padding-top: 12px;
 }
 
+.panel-group {
+    border-radius:12px;
+    padding:20px;
+    background:rgba(0,0,0,0.1);
+}
 
+.text-detail {
+    font-size: 12px;
+}

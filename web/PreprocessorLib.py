@@ -104,7 +104,7 @@ class PreprocessorLib():
             }
             self.db.save("jobs", updateRow)
             return
-        return files
+        return (path, files)
 
     def preprocessLocalFiles(self, job):
         pass
@@ -164,7 +164,7 @@ class PreprocessorLib():
         if job['data_source_type_id'] == self.JOB_DATA_SOURCE_LOCAL:
             print(f"Checking for local files at path: {job['url']}...")
             userId = self.getUserId()
-            files = self.validate(userId, job)
+            (path, files) = self.validate(userId, job)
             if not files:
                 return
 
@@ -200,7 +200,7 @@ class PreprocessorLib():
         elif job['data_source_type_id'] == self.JOB_DATA_SOURCE_HUGGING_FACE:
             self.preprocessHuggingFace(job)
         # Create tasks for each chunk
-        if False:
+        if True:
             updateRow = {
                 "id": job['id'],
                 "status": 2,
