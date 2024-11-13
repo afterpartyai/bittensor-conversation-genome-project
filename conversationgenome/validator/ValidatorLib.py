@@ -315,13 +315,16 @@ class ValidatorLib:
             #find instances of unavailable_uids in uids and overwrite to reward of 0
             for unavailable_uid in unavailable_uids:
                 if unavailable_uid in uids:
-                    print(f"found unavaiable uid: {unavailable_uid} in uids: {uids} with rewards: {rewards}")
                     indices = [i for i, uid in enumerate(uids) if uid == unavailable_uid]
-                    print(f"Found indices: {indices}")
+                    if self.verbose:
+                        bt.logging.info(f"Found Unavaiable UID: {unavailable_uid} in uids: {uids} with rewards: {rewards}")
                     if len(indices)>0:
+                        if self.verbose:
+                            bt.logging.info(f"UID {unavailable_uid} Appears at indices: {indices} of the UIDs array")
                         for index in indices:
                             rewards[index]=0
-                    print(f"After overwrite, uids: {uids} with rewards: {rewards}")
+                    if self.verbose:
+                        bt.logging.info(f"After overwrite, uids: {uids} with rewards: {rewards}")
                 else:
                     uids = np.append(uids, unavailable_uid)
                     rewards = np.append(rewards, 0)
@@ -355,6 +358,12 @@ class ValidatorLib:
         # Update EMA scores
         alpha: float = moving_average_alpha
         ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+
+        #correct asymptotic ema_score behavior for unavailable UIDs
+        if unavailable_uids:
+            for unavailable_uid in unavailable_uids:
+                if ema_scores[unavailable_uid] < 1e-20:
+                    ema_scores[unavailable_uid] = 0
         
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
