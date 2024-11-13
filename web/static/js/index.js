@@ -349,6 +349,21 @@ app.editUser = function(el) {
     });
 }
 
+app.editTask = function(el) {
+    const id = $(el).attr('data-id');
+    let dialogSettings = {
+        title:"Edit Task",
+        width:600
+    }
+    Api.getRow('task', id, (o) => {
+        let data = o['data'];
+
+        curDialog = loadedComponents['dialog/dialog_task'];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
+}
+
 
 function saveRow(el, tableName) {
     let mainDialog = $(el).closest(".ui-dialog");
@@ -423,7 +438,7 @@ Routes.do = () => {
         }
     } else if(route == 'adwords_task') {
         jobId = Utils.getRequest('job_id');
-        Utils.loadComponents(['main_adwords', 'tasks_row', 'adwords_dialog_add_job'], () => {
+        Utils.loadComponents(['main_adwords', 'tasks_row', 'dialog/dialog_task'], () => {
             addComponentInstance('.tileContainer', 'main_adwords', {});
             app.tableRow = 'tasks_row';
             app.loadRows('task', Render.adwords, 'tasks_row', true);
