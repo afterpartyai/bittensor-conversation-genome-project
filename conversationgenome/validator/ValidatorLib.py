@@ -56,6 +56,7 @@ class ValidatorLib:
     def __init__(self):
         super(ValidatorLib, self).__init__()
         self.read_api_key()
+        
 
     def read_api_key(self):
         fail_message = "WARNING: You have not generated a ReadyAI Conversation Server API key. Starting on October 7th, 2024, you will no longer be able to request conversations from the ReadyAI Conversation server without an API Key. For instructions on how to generate your key, read the documentation in docs/generate-validator-api-key.md"
@@ -307,8 +308,27 @@ class ValidatorLib:
         await llml.test_tagging()
 
 
-    def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
-        
+    def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power, unavailable_uids=None):
+
+        #trend all unavailable uids towards 0
+        if unavailable_uids:
+            #find instances of unavailable_uids in uids and overwrite to reward of 0
+            for unavailable_uid in unavailable_uids:
+                if unavailable_uid in uids:
+                    indices = [i for i, uid in enumerate(uids) if uid == unavailable_uid]
+                    if self.verbose:
+                        bt.logging.info(f"Found Unavaiable UID: {unavailable_uid} in uids: {uids} with rewards: {rewards}")
+                    if len(indices)>0:
+                        if self.verbose:
+                            bt.logging.info(f"UID {unavailable_uid} Appears at indices: {indices} of the UIDs array")
+                        for index in indices:
+                            rewards[index]=0
+                    if self.verbose:
+                        bt.logging.info(f"After overwrite, uids: {uids} with rewards: {rewards}")
+                else:
+                    uids = np.append(uids, unavailable_uid)
+                    rewards = np.append(rewards, 0)
+
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
@@ -338,6 +358,12 @@ class ValidatorLib:
         # Update EMA scores
         alpha: float = moving_average_alpha
         ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+
+        #correct asymptotic ema_score behavior for unavailable UIDs
+        if unavailable_uids:
+            for unavailable_uid in unavailable_uids:
+                if ema_scores[unavailable_uid] < 1e-20:
+                    ema_scores[unavailable_uid] = 0
         
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
