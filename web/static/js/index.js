@@ -244,7 +244,7 @@ app.unserializeDialog = function(curDialog, data) {
 app.editJob = function(el) {
     const id = $(el).attr('data-id');
     let dialogSettings = {
-        title:"Edit Ad Context Job",
+        title:"Edit Job",
         width:600
     }
     Api.getJob(id, (o) => {
@@ -288,6 +288,22 @@ function saveJob(el) {
 
 }
 
+app.editJobType = function(el) {
+    const id = $(el).attr('data-id');
+    let dialogSettings = {
+        title:"Edit Job Type",
+        width:600
+    }
+    Api.getRow('job_type', id, (o) => {
+        let data = o['data'];
+
+        curDialog = loadedComponents['dialog/dialog_job_type'];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
+}
+
+
 app.editPrompt = function(el) {
     const id = $(el).attr('data-id');
     let dialogSettings = {
@@ -298,6 +314,21 @@ app.editPrompt = function(el) {
         let data = o['data'];
 
         curDialog = loadedComponents["dialog/dialog_prompt"];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
+}
+
+app.editPromptChain = function(el) {
+    const id = $(el).attr('data-id');
+    let dialogSettings = {
+        title:"Edit Prompt Chain",
+        width:600
+    }
+    Api.getRow('prompt_chain', id, (o) => {
+        let data = o['data'];
+
+        curDialog = loadedComponents["dialog/dialog_prompt_chain"];
         app.unserializeDialog(curDialog, data);
         $(curDialog).dialog(dialogSettings);
     });
@@ -398,7 +429,7 @@ Routes.do = () => {
         subroute = route.substr(6);
         if(subroute == "prompt_chain") {
             console.log("PC")
-            Utils.loadComponents(['main_adwords', 'admin/prompt_chain_row', 'adwords_dialog_add_job'], () => {
+            Utils.loadComponents(['main_adwords', 'admin/prompt_chain_row', 'dialog/dialog_prompt_chain'], () => {
                 addComponentInstance('.tileContainer', 'main_adwords', {});
                 app.tableRow = 'admin/prompt_chain_row';
                 app.loadRows('prompt_chain', Render.adwords, app.tableRow, true);
@@ -408,6 +439,12 @@ Routes.do = () => {
                 addComponentInstance('.tileContainer', 'main_adwords', {});
                 app.tableRow = 'admin/prompt_row';
                 app.loadRows('prompt', Render.adwords, app.tableRow, true);
+            });
+        } else if(subroute == "job_type") {
+            Utils.loadComponents(['main_adwords', 'admin/job_type_row', 'dialog/dialog_job_type' ], () => {
+                addComponentInstance('.tileContainer', 'main_adwords', {});
+                app.tableRow = 'admin/job_type_row';
+                app.loadRows('job_type', Render.adwords, app.tableRow, true);
             });
         } else {
             Utils.loadComponents(['main_admin'], () => {

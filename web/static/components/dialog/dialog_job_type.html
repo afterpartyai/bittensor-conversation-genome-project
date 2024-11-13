@@ -1,0 +1,22 @@
+<div class="adwords_dialog_add_job">
+    <div class="fcolumn" style="margin-bottom:20px;">
+        <input type="hidden" data-field="id" />
+        <table>
+        <tbody>
+            <tr><td>Title (required)</td><td><input data-field="title" data-len-min="5" /></td></tr>
+            <tr><td>Status</td><td><input data-field="status" /></td></tr>
+            <tr><td>Prompt Chain ID</td><td><input data-field="prompt_chain_id" /></td></tr>
+            <tr><td>Description</td>
+                <td>
+                    <textarea style="height:50px" data-field="description"></textarea>
+                </td>
+            </tr>
+            <tr><td>Tags</td><td><input data-field="tags"  /></td></tr>
+        </tbody>
+        </table>
+    </div>
+
+    <div class="frow" style="justify-content: flex-end;">
+        <div onclick="saveRow(this, 'job_type')" class="btn btn-red">Save</div>
+    </div>
+</div>

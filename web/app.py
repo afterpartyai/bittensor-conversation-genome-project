@@ -308,6 +308,39 @@ def get_api_get_prompt_chains(request: Request):
     out['success'] = 1
     return out
 
+@app.get("/api/v1/prompt_chain/{id}")
+def get_api_get_prompt_chain(id: int, request: Request):
+    out = get_default_json()
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    where = ' 1=1 '
+    where += f' AND id = {id} '
+    sql = f'SELECT id, status, title, description, updated_at FROM prompt_chains WHERE {where} ORDER BY updated_at DESC'
+    print(sql)
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+
+@app.post("/api/v1/prompt_chain")
+@app.put("/api/v1/prompt_chain/{id}")
+def post_put_api_prompt_chain(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    db.save("prompt_chains", data)
+
+    out['data'] = data
+    return out
+
+
+
+
 @app.get("/api/v1/prompt")
 def get_api_get_prompts(request: Request):
     out = get_default_json()
@@ -349,6 +382,61 @@ def post_put_api_prompt(data: dict, id=None):
         data['status'] = 1
     db = Db("cgp_tags.sqlite", "prompts")
     db.save("prompts", data)
+
+    out['data'] = data
+    return out
+
+
+@app.get("/api/v1/job_type")
+@app.get("/api/v1/job_type/{id}")
+def get_api_get_job_types(request: Request, id: int = None):
+    out = get_default_json()
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "job_types")
+    limit = 100
+    where = ' 1=1 '
+    if id:
+        where += f' AND id = {id} '
+    sql = f'SELECT id, status, title, prompt_chain_id, description, updated_at FROM job_types WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    if not id:
+        out['data'] = db.get_all(sql)
+    else:
+        out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.post("/api/v1/job_type")
+@app.put("/api/v1/job_type/{id}")
+def post_put_api_job_type(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "job_types")
+    db.save("job_types", data)
+
+    out['data'] = data
+    return out
+
+
+
+@app.post("/api/v1/prompt_chain")
+@app.put("/api/v1/prompt_chain/{id}")
+def post_put_api_prompt_chain(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    db.save("prompt_chains", data)
 
     out['data'] = data
     return out
