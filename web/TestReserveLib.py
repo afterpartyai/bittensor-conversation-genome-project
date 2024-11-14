@@ -3,11 +3,21 @@ import json
 import os
 import time
 
-import dotenv
+from dotenv import load_dotenv
+
+from constants import *
 
 from Utils import Utils
 
 class TestReserveLib():
+    open_ai_api_key = None
+
+    def __init__(self):
+        load_dotenv()
+        open_ai_api_key = os.getenv('OPENAI_API_KEY2')
+        if not open_ai_api_key:
+            print(f"{RED}Env file missing OPENAI_API_KEY.{COLOR_END}")
+
     def getPage(self, url):
         response = requests.get(url)
 
