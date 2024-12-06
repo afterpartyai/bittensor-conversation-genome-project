@@ -153,7 +153,7 @@ class Miner(BaseMinerNeuron):
             self.metagraph.S[caller_uid]
         )  # Return the stake as the priority.
         bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority
+            f"Prioritizing {synapse.dendrite.hotkey} with value: {prirority}"
         )
         return prirority
 
@@ -162,5 +162,5 @@ class Miner(BaseMinerNeuron):
 if __name__ == "__main__":
     with Miner() as miner:
         while True:
-            bt.logging.info("CGP Miner running...", time.time())
+            bt.logging.info(f"CGP Miner running... {time.time()}")
             time.sleep(5)

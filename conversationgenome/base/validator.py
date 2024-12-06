@@ -264,8 +264,8 @@ class BaseValidatorNeuron(BaseNeuron):
             return
         
 
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", str(self.metagraph.uids.tolist()))
+        bt.logging.debug(f"raw_weights: {raw_weights}")
+        bt.logging.debug(f"raw_weight_uids{self.metagraph.uids.tolist()}")
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
@@ -277,8 +277,8 @@ class BaseValidatorNeuron(BaseNeuron):
             subtensor=self.subtensor,
             metagraph=self.metagraph,
         )
-        bt.logging.debug("processed_weights", processed_weights)
-        bt.logging.debug("processed_weight_uids", processed_weight_uids)
+        bt.logging.debug(f"processed_weights {processed_weights}")
+        bt.logging.debug(f"processed_weight_uids {processed_weight_uids}")
 
         # Convert to uint16 weights and uids.
         (
@@ -287,8 +287,8 @@ class BaseValidatorNeuron(BaseNeuron):
         ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
             uids=processed_weight_uids, weights=processed_weights
         )
-        bt.logging.debug("uint_weights", uint_weights)
-        bt.logging.debug("uint_uids", uint_uids)
+        bt.logging.debug(f"uint_weights: {uint_weights}")
+        bt.logging.debug(f"uint_uids: {uint_uids}")
 
         # Set the weights on chain via our subtensor connection.
         print("---Set the weights on chain", self.wallet, self.config.netuid, uint_uids, uint_weights, self.spec_version)
@@ -308,7 +308,7 @@ class BaseValidatorNeuron(BaseNeuron):
         if result is True:
             bt.logging.info("set_weights on chain successfully!")
         else:
-            bt.logging.error("set_weights failed", msg)
+            bt.logging.error(f"set_weights failed: {msg}")
 
     def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""

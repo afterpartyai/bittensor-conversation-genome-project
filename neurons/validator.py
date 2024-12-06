@@ -136,12 +136,12 @@ class Validator(BaseValidatorNeuron):
                         k= miner_sample_size
                     )
                     if self.verbose:
-                        print("miner_uid pool", miner_uids)
+                        print(f"miner_uid pool {miner_uids}")
                     if len(miner_uids) == 0:
                         bt.logging.error("No miners found.")
                         time.sleep(30)
                         return
-                    bt.logging.info("miner_uid pool", miner_uids)
+                    bt.logging.info(f"miner_uid pool {miner_uids}")
                     # Create a synapse to distribute to miners
                     bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
                     window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
@@ -230,7 +230,7 @@ if __name__ == "__main__":
                 print(f"ERROR 2294375 -- WandB init error: {e}")
 
             while True:
-                bt.logging.info("CGP Validator running...", time.time())
+                bt.logging.info(f"CGP Validator running... {time.time()}")
                 time.sleep(5)
     except KeyboardInterrupt:
         bt.logging.info("Keyboard interrupt detected. Exiting validator.")
