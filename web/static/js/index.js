@@ -334,6 +334,37 @@ app.editPromptChain = function(el) {
     });
 }
 
+app.editUser = function(el) {
+    const id = $(el).attr('data-id');
+    let dialogSettings = {
+        title:"Edit User",
+        width:600
+    }
+    Api.getRow('user', id, (o) => {
+        let data = o['data'];
+
+        curDialog = loadedComponents['dialog/dialog_user'];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
+}
+
+app.editTask = function(el) {
+    const id = $(el).attr('data-id');
+    let dialogSettings = {
+        title:"Edit Task",
+        width:600
+    }
+    Api.getRow('task', id, (o) => {
+        let data = o['data'];
+
+        curDialog = loadedComponents['dialog/dialog_task'];
+        app.unserializeDialog(curDialog, data);
+        $(curDialog).dialog(dialogSettings);
+    });
+}
+
+
 function saveRow(el, tableName) {
     let mainDialog = $(el).closest(".ui-dialog");
     let data = {};
@@ -407,7 +438,7 @@ Routes.do = () => {
         }
     } else if(route == 'adwords_task') {
         jobId = Utils.getRequest('job_id');
-        Utils.loadComponents(['main_adwords', 'tasks_row', 'adwords_dialog_add_job'], () => {
+        Utils.loadComponents(['main_adwords', 'tasks_row', 'dialog/dialog_task'], () => {
             addComponentInstance('.tileContainer', 'main_adwords', {});
             app.tableRow = 'tasks_row';
             app.loadRows('task', Render.adwords, 'tasks_row', true);
@@ -445,6 +476,12 @@ Routes.do = () => {
                 addComponentInstance('.tileContainer', 'main_adwords', {});
                 app.tableRow = 'admin/job_type_row';
                 app.loadRows('job_type', Render.adwords, app.tableRow, true);
+            });
+        } else if(subroute == "user") {
+            Utils.loadComponents(['main_adwords', 'admin/user_row', 'dialog/dialog_user' ], () => {
+                addComponentInstance('.tileContainer', 'main_adwords', {});
+                app.tableRow = 'admin/user_row';
+                app.loadRows('user', Render.adwords, app.tableRow, true);
             });
         } else {
             Utils.loadComponents(['main_admin'], () => {

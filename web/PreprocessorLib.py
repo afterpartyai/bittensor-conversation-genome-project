@@ -1,12 +1,14 @@
 import time
 import os
+import re
+
+from dotenv import load_dotenv
+
 from constants import *
 
 from Utils import Utils
 from Db import Db
 from huggingface_hub import HfApi, hf_hub_download
-import re
-
 
 class PreprocessorLib():
     db = None
@@ -232,6 +234,8 @@ class PreprocessorLib():
 
 
 if __name__ == "__main__":
+    print("open_ai_api_key", open_ai_api_key)
+
     pl = PreprocessorLib()
     pl.start()
 

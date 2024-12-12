@@ -23,6 +23,7 @@ except:
     print("pyarrow not installed")
 
 class TestReserveLib():
+    open_ai_api_key = None
     test_scale_mode = True
     words = None
     #host = "https://api.example.com"
@@ -33,6 +34,9 @@ class TestReserveLib():
     def __init__(self):
         if not self.host:
             dotenv.load_dotenv()
+            open_ai_api_key = os.getenv('OPENAI_API_KEY2')
+            if not open_ai_api_key:
+                print(f"{RED}Env file missing OPENAI_API_KEY.{COLOR_END}")
             host = os.getenv('HOST')
             if not host:
                 host = self.default_host
