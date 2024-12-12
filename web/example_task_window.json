@@ -1,1 +1,79 @@
-{"success": 1, "data": {"task": {"id": 2148, "status": 3, "crc": null, "job_id": 723, "task_window_index": 7, "json": null, "created_at": "2024-12-12T17:59:48", "updated_at": "2024-12-12T22:38:10", "header_row_text": "id,convo", "begin_row": 72, "end_row": 82, "data_type": 1, "data_url": "/user_data/1/content_moderation/SN13_dataset_sample2.csv", "retries": null, "lock_value": 3754911951998732957, "locked_at": null, "locked_by": null, "rows_processed": 0, "num_tokens": 274, "prompt_chain_id": 2, "json_data": {}}, "prompt_chain": {"id": 2, "status": 1, "job_id": null, "crc": null, "title": "Sentiment Analysis", "name": "sentiment_analysis", "description": null, "url": null, "prompt_chain_id": null, "tags": null, "user_id": null, "created_at": "2024-11-06 18:26:58", "updated_at": "2024-11-20 20:53:19", "json": null, "json_data": {}}, "prompts": [{"id": 3, "status": 1, "prompt_type": 1, "prompt_chain_id": 2, "step": 1, "crc": null, "title": "Sentiment Analysis", "name": "sentiment", "description": null, "prompt": "Tell me the sentiment of this data.  Return the sentiment only and nothing else. \n\n<data>\n{data}\n</data>", "output_variable_name": "sentiment_analysis", "url": null, "tags": null, "user_id": null, "created_at": "2024-11-20 07:04:35", "updated_at": "2024-11-20 21:27:36", "json": null, "json_data": {}}]}, "includes": {}, "user": {}, "system": {"ts": 1734043090, "version": 0.1, "host_url": "http://example.com", "tag": "122024", "customer_id": -1}, "errors": [], "notifications": [], "metadata": {}}
+{
+  "success": 1,
+  "data": {
+    "task": {
+      "id": 547,
+      "status": 3,
+      "crc": null,
+      "job_id": 58,
+      "task_window_index": 0,
+      "json": null,
+      "created_at": "2024-12-12T00:49:49",
+      "updated_at": "2024-12-12T23:14:46",
+      "header_row_text": "id,convo",
+      "begin_row": 1,
+      "end_row": 1,
+      "data_type": 1,
+      "data_url": "dataverse-scraping/reddit_dataset_71|data/train-DataEntity_chunk_0.parquet",
+      "retries": null,
+      "lock_value": 3715363654528161691,
+      "locked_at": null,
+      "locked_by": null,
+      "rows_processed": 0,
+      "num_tokens": null,
+      "prompt_chain_id": 3,
+      "json_data": {}
+    },
+    "prompt_chain": {
+      "id": 3,
+      "status": 1,
+      "job_id": null,
+      "crc": null,
+      "title": "Content Moderation",
+      "name": "content_moderation",
+      "description": "Analyze social media posts including Reddit, Twitter, Facebook, etc.",
+      "url": null,
+      "prompt_chain_id": null,
+      "tags": "",
+      "user_id": null,
+      "created_at": "2024-11-06 18:26:59",
+      "updated_at": "2024-11-20 20:53:40",
+      "json": null,
+      "json_data": {}
+    },
+    "prompts": [
+      {
+        "id": 6,
+        "status": 1,
+        "prompt_type": 1,
+        "prompt_chain_id": 3,
+        "step": 1,
+        "crc": null,
+        "title": "Content Moderation",
+        "name": "content_moderation",
+        "description": "Rules for Harassment Flag",
+        "prompt": "Review the following data and determine if it meets the platform\u2019s guidelines for acceptable material. Flag it only if it violates the following criteria: harassment, hate speech, explicit content, threats, sexual content, drug use, or illegal activity. For flagged content, ensure the decision aligns strictly with the provided criteria. Return one of the following outputs per item per line: \"Allowed\" or \"Flagged\" and NOTHING ELSE.\n\n<data>\n{data}\n</data>",
+        "output_variable_name": "flag",
+        "url": null,
+        "tags": null,
+        "user_id": null,
+        "created_at": "2024-11-20 19:38:57",
+        "updated_at": "2024-11-20 22:11:50",
+        "json": null,
+        "json_data": {}
+      }
+    ]
+  },
+  "includes": {},
+  "user": {},
+  "system": {
+    "ts": 1734045286,
+    "version": 0.1,
+    "host_url": "http://example.com",
+    "tag": "122024",
+    "customer_id": -1
+  },
+  "errors": [],
+  "notifications": [],
+  "metadata": {}
+}
