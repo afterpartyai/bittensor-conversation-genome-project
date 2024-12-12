@@ -372,8 +372,18 @@ class ValidatorLib:
 
     async def validate_tag_set(self, originalTagList):
         cleanTagList = Utils.get_clean_tag_set(originalTagList)
+
+        if len(cleanTagList) >= 20:
+            random_indices = random.sample(range(len(cleanTagList)), 20)
+            cleanTagList = [cleanTagList[i] for i in random_indices]
+        else:
+            if self.verbose:
+                bt.logging.warning("cleanTagList has fewer than 20 elements. Skipping random selection.")
+                
+        cleanTagList = [tag[:50] for tag in cleanTagList]
+        
         if self.verbose:
-            print("Original tag set len: %d clean tag set len: %d" % (len(originalTagList), len(cleanTagList)))
+            print(f"Original tag set len: {len(originalTagList)} clean tag set len: {len(cleanTagList)}")
         cleanTagsStr = ",".join(cleanTagList)
 
         # Tag validation prompt
