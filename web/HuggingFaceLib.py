@@ -3,6 +3,9 @@ import json
 import requests
 import os
 import re
+from constants import *
+
+dotenv = None
 try:
     import dotenv
 except:
@@ -18,11 +21,19 @@ except:
 
 class HuggingFaceLib():
     apiKey = None
+    keyPath = ".hf_key"
 
     def __init__(self, apiKey = None):
         if not apiKey and dotenv:
             dotenv.load_dotenv()
             apiKey = os.getenv('HUGGINGFACE_API_KEY')
+        elif not dotenv and os.path.isfile(self.keyPath):
+            print(f"{CYAN}Loading HF key from file{COLOR_END}")
+            f = open(self.keyPath)
+            apiKey = f.read()
+            f.close()
+            apiKey = apiKey.strip()
+            print(apiKey)
         self.apiKey = apiKey
 
 

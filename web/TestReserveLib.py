@@ -5,6 +5,7 @@ import time
 import random
 from constants import *
 
+dotenv = None
 try:
     import dotenv
 except:
