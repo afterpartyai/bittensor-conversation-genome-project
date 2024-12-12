@@ -47,7 +47,7 @@ class TestReserveLib():
             f.close()
             json_data = json.loads(body)
             json_data['data']['task']['id'] = random.randint(11111111, 99999999)
-            print(json_data)
+            #print(json_data)
             return json_data
 
         response = requests.get(url)
@@ -239,7 +239,7 @@ class TestReserveLib():
                 self.post(postUrl, outVarDict)
             else:
                 waitPost = 1
-                print(f"{YELLOW}Simulate post results for {waitPost} seconds...{COLOR_END}")
+                print(f"{YELLOW}Simulate post results for task {taskId} -- wait {waitPost} seconds...{COLOR_END}")
             return True
         else:
             print(f"{YELLOW}No tasks available{COLOR_END}")
