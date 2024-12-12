@@ -2,9 +2,13 @@ import requests
 import json
 import os
 import time
-import dotenv
 import random
 from constants import *
+
+try:
+    import dotenv
+except:
+    print("dotenv not installed")
 
 #num_tokens
 tiktoken = None
@@ -31,13 +35,14 @@ class TestReserveLib():
     host = None
     default_host = "http://localhost:5002"
 
-    def __init__(self):
+    def __init__(self, open_ai_api_key = None, host=None):
         if not self.host:
-            dotenv.load_dotenv()
-            open_ai_api_key = os.getenv('OPENAI_API_KEY2')
+            if dotenv:
+                dotenv.load_dotenv()
+                open_ai_api_key = os.getenv('OPENAI_API_KEY2')
+                host = os.getenv('HOST')
             if not open_ai_api_key:
                 print(f"{RED}Env file missing OPENAI_API_KEY.{COLOR_END}")
-            host = os.getenv('HOST')
             if not host:
                 host = self.default_host
         self.host = host

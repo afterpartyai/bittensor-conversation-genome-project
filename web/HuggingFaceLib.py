@@ -3,7 +3,10 @@ import json
 import requests
 import os
 import re
-import dotenv
+try:
+    import dotenv
+except:
+    print("dotenv not installed")
 
 
 HfApi = hf_hub_download = None
@@ -17,7 +20,7 @@ class HuggingFaceLib():
     apiKey = None
 
     def __init__(self, apiKey = None):
-        if not apiKey:
+        if not apiKey and dotenv:
             dotenv.load_dotenv()
             apiKey = os.getenv('HUGGINGFACE_API_KEY')
         self.apiKey = apiKey
