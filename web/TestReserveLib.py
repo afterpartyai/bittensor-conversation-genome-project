@@ -23,6 +23,7 @@ except:
     print("pyarrow not installed")
 
 class TestReserveLib():
+    test_scale_mode = True
     words = None
     #host = "https://api.example.com"
     #host = 'http://localhost:8000'
@@ -39,10 +40,23 @@ class TestReserveLib():
 
     def getPage(self, url):
         #print("GET", url)
+        if self.test_scale_mode:
+            print(f"{YELLOW}Returning simulated task window{COLOR_END}")
+            f = open("example_task_window.json")
+            body = f.read()
+            f.close()
+            json_data = json.loads(body)
+            json_data['data']['task']['id'] = random.randint(11111111, 99999999)
+            print(json_data)
+            return json_data
+
         response = requests.get(url)
 
         if response.status_code == 200:
             json_data = response.json()
+            f = open("example_task_window.json", "w")
+            f.write(json.dumps(json_data))
+            f.close()
             return json_data
         else:
             print(f"Failed to retrieve JSON: {response.status_code}")
@@ -209,18 +223,23 @@ class TestReserveLib():
                     totalTokens += num_tokens
 
                 #continue
-                if False:
+                if not self.test_scale_mode:
                     response = self.post(inferenceApi, a)
                 else:
                     wait = 5
-                    print(f"Simulate OpenAI inference call for {wait} seconds")
+                    print(f"{YELLOW}Simulate OpenAI inference call for {wait} seconds...{COLOR_END}")
                     time.sleep(wait)
+                    response = {'data':self.generate_random_sentence()}
                 if outVar:
                     outVarDict[outVar] = response['data']
             postUrl = baseUrl + f"/cgp/api/v1/task/{taskId}/results"
             outVarDict['totalTokens'] = totalTokens
             print(f"POST results for task id: {GREEN}{taskId}{COLOR_END} to {postUrl} -- {outVarDict}")
-            self.post(postUrl, outVarDict)
+            if not self.test_scale_mode:
+                self.post(postUrl, outVarDict)
+            else:
+                waitPost = 1
+                print(f"{YELLOW}Simulate post results for {waitPost} seconds...{COLOR_END}")
             return True
         else:
             print(f"{YELLOW}No tasks available{COLOR_END}")
@@ -252,8 +271,8 @@ class TestReserveLib():
 if True and __name__ == "__main__":
     trl = TestReserveLib()
     allowNegativeBalance = True
-    #action = "server"
-    action = "single"
+    action = "server"
+    #action = "single"
     if action == "server":
         while True:
             success = trl.process()
