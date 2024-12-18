@@ -1,5 +1,6 @@
 import os
 import json
+import traceback
 
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
@@ -12,9 +13,12 @@ try:
     from openai import OpenAI, AsyncOpenAI
 
     client = OpenAI()
-except:
+except Exception as e:
     if not c.get('env', "OPENAI_DIRECT_CALL"):
         print("No openai package")
+    # Print the exception details
+    print("Exception occurred:", e)
+    traceback.print_exc()
 
 
 

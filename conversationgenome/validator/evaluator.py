@@ -50,7 +50,7 @@ class Evaluator:
             if tag_count_ceiling and count > tag_count_ceiling:
                 break
         if self.verbose:
-            bt.logging.info("all_vectors",all_vectors )
+            bt.logging.info(f"all_vectors: {all_vectors}")
         # Create a vector representing the entire content by averaging the vectors of all tokens
         if len(all_vectors) > 0:
             neighborhood_vectors = np.mean(all_vectors, axis=0)
@@ -117,7 +117,7 @@ class Evaluator:
 
         full_conversation_neighborhood = await self.calculate_semantic_neighborhood(full_convo_metadata)
         if verbose:
-            bt.logging.info("full_conversation_neighborhood vector count: ", len(full_conversation_neighborhood))
+            bt.logging.info(f"full_conversation_neighborhood vector count: {len(full_conversation_neighborhood)}")
 
         num_responses = len(miner_responses)
         scores = np.zeros(num_responses)
