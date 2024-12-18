@@ -150,7 +150,7 @@ class Validator(BaseValidatorNeuron):
 
                     rewards = None
 
-                    responses = self.dendrite.query(
+                    responses = await self.dendrite.forward(
                         axons=[self.metagraph.axons[uid] for uid in miner_uids],
                         synapse=synapse,
                         deserialize=False,
