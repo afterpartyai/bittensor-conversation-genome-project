@@ -63,9 +63,13 @@ async def test_full():
         bufferedConvos[conversation_guid] = full_conversation
         participants = Utils.get(full_conversation, "participants")
         windows = Utils.get(full_conversation, "windows")
+        # Large number of windows were adversely impacting weight sync time, so limit to 5 windows until local cache is ready.
+        windows = windows[0:5]
+        full_conversation["windows"] = windows
         for idx, window in enumerate(windows):
             pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})
 
+    bt.logging.info(f"Generating metadata for {len(pieces)} pieces")
     random.shuffle(pieces)
     if False:
         print(f"Number of pieces: {len(pieces)} windows from last convo:{len(windows)}")

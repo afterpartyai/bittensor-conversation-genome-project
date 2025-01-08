@@ -84,11 +84,15 @@ class Validator(BaseValidatorNeuron):
                 bufferedConvos[conversation_guid] = full_conversation
                 participants = Utils.get(full_conversation, "participants")
                 windows = Utils.get(full_conversation, "windows")
+                windows = Utils.get(full_conversation, "windows")
+                # Large number of windows were adversely impacting weight sync time, so limit to 5 windows until local cache is ready.
+                windows = windows[0:5]
                 # Add each window to the pieces array
                 for idx, window in enumerate(windows):
                     pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})
 
             # Randomly shuffle all of the pieces
+            bt.logging.info(f"Generating metadata for {len(pieces)} pieces")
             random.shuffle(pieces)
 
             # Make sure we have at least 10 valid pieces
