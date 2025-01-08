@@ -96,6 +96,7 @@ class Validator(BaseValidatorNeuron):
                 for piece_idx, piece in enumerate(pieces):
                     conversation_guid = piece['cguid']
                     conversation_window = piece['window']
+                    window_idx = piece['window_idx']
                     full_conversation = bufferedConvos[conversation_guid]
                     conversation_windows = Utils.get(full_conversation, "windows")
                     if not "metadata" in full_conversation:
@@ -103,6 +104,45 @@ class Validator(BaseValidatorNeuron):
                         full_conversation_metadata = await vl.get_convo_metadata(conversation_guid, full_conversation, batch_num=batch_num)
                         if full_conversation_metadata:
                             full_conversation["metadata"] = full_conversation_metadata
+                            llm_type = "openai"
+                            model = "gpt-4o"
+                            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+                            if llm_type_override:
+                                llm_type = llm_type_override
+                                model = c.get("env", "OPENAI_MODEL")
+
+                            full_convo_tags = Utils.get(full_conversation_metadata, "tags", [])
+                            full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
+                            full_conversation_tag_count = len(full_convo_tags)
+                            lines = Utils.get(full_conversation, "lines", [])
+                            participants = Utils.get(full_conversation, "participants")
+                            miners_per_window = c.get("validator", "miners_per_window", 6)
+                            min_lines = c.get("convo_window", "min_lines", 5)
+                            max_lines = c.get("convo_window", "max_lines", 10)
+                            overlap_lines = c.get("convo_window", "overlap_lines", 2)
+                            validatorHotkey = "FINDHOTKEY-"
+                            try:
+                                validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
+                            except:
+                                pass
+
+                            await vl.put_convo(validatorHotkey, conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
+                            try:
+                                wl.log({
+                                   "llm_type": llm_type,
+                                   "model": model,
+                                   "conversation_guid": conversation_guid,
+                                   "full_convo_tag_count": full_conversation_tag_count,
+                                   "num_lines": len(lines),
+                                   "num_participants": len(participants),
+                                   "num_convo_windows": len(conversation_windows),
+                                   "convo_windows_min_lines": min_lines,
+                                   "convo_windows_max_lines": max_lines,
+                                   "convo_windows_overlap_lines": overlap_lines,
+                                   "netuid": self.config.netuid
+                                })
+                            except:
+                                pass
                     else:
                         print(f"FOUND metadata for {conversation_guid}")
                         full_conversation_metadata = full_conversation["metadata"]
@@ -114,133 +154,85 @@ class Validator(BaseValidatorNeuron):
                         half = int(len(full_conversation_metadata['tags'])/2)
                         #full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
 
-                    conversation_guid = Utils.get(full_conversation, "guid")
-                    #print("full_conversation", full_conversation)
-                    bt.logging.info(f"Received {len(conversation_windows)} conversation_windows from API")
+                    miner_uids = conversationgenome.utils.uids.get_random_uids(
+                        self,
+                        k= miner_sample_size
+                    )
+                    if self.verbose:
+                        print(f"miner_uid pool {miner_uids}")
+                    if len(miner_uids) == 0:
+                        bt.logging.error("No miners found.")
+                        time.sleep(30)
+                        return
+                    bt.logging.info(f"miner_uid pool {miner_uids}")
+                    # Create a synapse to distribute to miners
+                    bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
+                    window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
 
-                    llm_type = "openai"
-                    model = "gpt-4o"
-                    llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
-                    if llm_type_override:
-                        llm_type = llm_type_override
-                        model = c.get("env", "OPENAI_MODEL")
+                    synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
 
-                    full_convo_tags = Utils.get(full_conversation_metadata, "tags", [])
-                    full_convo_vectors = Utils.get(full_conversation_metadata, "vectors", {})
-                    full_conversation_tag_count = len(full_convo_tags)
-                    lines = Utils.get(full_conversation, "lines", [])
-                    participants = Utils.get(full_conversation, "participants")
-                    miners_per_window = c.get("validator", "miners_per_window", 6)
-                    min_lines = c.get("convo_window", "min_lines", 5)
-                    max_lines = c.get("convo_window", "max_lines", 10)
-                    overlap_lines = c.get("convo_window", "overlap_lines", 2)
-                    validatorHotkey = "FINDHOTKEY-"
-                    try:
-                        validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
-                    except:
-                        pass
+                    rewards = None
 
-                    await vl.put_convo(validatorHotkey, conversation_guid, full_conversation_metadata, type="validator",  batch_num=batch_num, window=999)
-                    try:
-                        wl.log({
-                           "llm_type": llm_type,
-                           "model": model,
-                           "conversation_guid": conversation_guid,
-                           "full_convo_tag_count": full_conversation_tag_count,
-                           "num_lines": len(lines),
-                           "num_participants": len(participants),
-                           "num_convo_windows": len(conversation_windows),
-                           "convo_windows_min_lines": min_lines,
-                           "convo_windows_max_lines": max_lines,
-                           "convo_windows_overlap_lines": overlap_lines,
-                           "netuid": self.config.netuid
-                        })
-                    except:
-                        pass
+                    responses = await self.dendrite.forward(
+                        axons=[self.metagraph.axons[uid] for uid in miner_uids],
+                        synapse=synapse,
+                        deserialize=False,
+                    )
+                    if self.verbose:
+                        print("RAW RESPONSES", len(responses))
 
-
-                    # Loop through conversation windows. Send each window to multiple miners
-                    bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of miners")
-                    for window_idx, conversation_window in enumerate(conversation_windows):
-                        miner_uids = conversationgenome.utils.uids.get_random_uids(
-                            self,
-                            k= miner_sample_size
-                        )
-                        if self.verbose:
-                            print(f"miner_uid pool {miner_uids}")
-                        if len(miner_uids) == 0:
-                            bt.logging.error("No miners found.")
-                            time.sleep(30)
-                            return
-                        bt.logging.info(f"miner_uid pool {miner_uids}")
-                        # Create a synapse to distribute to miners
-                        bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
-                        window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
-
-                        synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
-
-                        rewards = None
-
-                        responses = await self.dendrite.forward(
-                            axons=[self.metagraph.axons[uid] for uid in miner_uids],
-                            synapse=synapse,
-                            deserialize=False,
-                        )
-                        if self.verbose:
-                            print("RAW RESPONSES", len(responses))
-
-                        for window_idx, response in enumerate(responses):
-                            if not response.cgp_output:
-                                #bt.logging.error(f"BAD RESPONSE: hotkey: {response.axon.hotkey} output: {response.cgp_output}")
-                                bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey}")
-                                if response.axon.hotkey in hot_key_watchlist:
-                                    print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
-                                continue
-                            try:
-                                miner_response = response.cgp_output
-                            except:
-                                miner_response = response
-                            miner_result = miner_response[0]
-                            miner_result['original_tags'] = miner_result['tags']
-
-                            # Clean and validate tags for duplicates or whitespace matches
-                            miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
-
-                            miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
-                            #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
-                            bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} original tags: {len(miner_result['original_tags'])}")
+                    for window_idx, response in enumerate(responses):
+                        if not response.cgp_output:
+                            #bt.logging.error(f"BAD RESPONSE: hotkey: {response.axon.hotkey} output: {response.cgp_output}")
+                            bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey}")
                             if response.axon.hotkey in hot_key_watchlist:
-                                print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
-                            log_path = c.get('env', 'SCORING_DEBUG_LOG')
-                            if not Utils.empty(log_path):
-                                Utils.append_log(log_path, f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
-                            await vl.put_convo(response.axon.hotkey, conversation_guid, miner_result, type="miner",  batch_num=batch_num, window=window_idx)
+                                print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
+                            continue
+                        try:
+                            miner_response = response.cgp_output
+                        except:
+                            miner_response = response
+                        miner_result = miner_response[0]
+                        miner_result['original_tags'] = miner_result['tags']
 
-                        (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
+                        # Clean and validate tags for duplicates or whitespace matches
+                        miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
+
+                        miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
+                        #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
+                        bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} original tags: {len(miner_result['original_tags'])}")
+                        if response.axon.hotkey in hot_key_watchlist:
+                            print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
+                        log_path = c.get('env', 'SCORING_DEBUG_LOG')
+                        if not Utils.empty(log_path):
+                            Utils.append_log(log_path, f"CGP Received tags: {response.cgp_output[0]['tags']} -- PUTTING OUTPUT")
+                        await vl.put_convo(response.axon.hotkey, conversation_guid, miner_result, type="miner",  batch_num=batch_num, window=window_idx)
+
+                    (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
 
 
-                        if final_scores:
-                            for idx, score in enumerate(final_scores):
-                                if self.verbose:
-                                    bt.logging.info(f"score {score}")
+                    if final_scores:
+                        for idx, score in enumerate(final_scores):
+                            if self.verbose:
+                                bt.logging.info(f"score {score}")
 
-                                uid=-1
-                                try:
-                                    uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
-                                except Exception as e:
-                                    print(f"ERROR 1162494 -- WandB logging error: {e}")
-                                wl.log({
-                                    "conversation_guid."+uid: conversation_guid,
-                                    "window_id."+uid: window_idx,
-                                    "hotkey."+uid: Utils.get(score, "hotkey"),
-                                    "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
-                                    "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
-                                })
-                                if self.verbose:
-                                    print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
+                            uid=-1
+                            try:
+                                uid = str(self.metagraph.hotkeys.index(Utils.get(score, "hotkey")))
+                            except Exception as e:
+                                print(f"ERROR 1162494 -- WandB logging error: {e}")
+                            wl.log({
+                                "conversation_guid."+uid: conversation_guid,
+                                "window_id."+uid: window_idx,
+                                "hotkey."+uid: Utils.get(score, "hotkey"),
+                                "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
+                                "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                            })
+                            if self.verbose:
+                                print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
 
-                            # Update the scores based on the rewards.
-                            self.update_scores(rank_scores, miner_uids)
+                        # Update the scores based on the rewards.
+                        self.update_scores(rank_scores, miner_uids)
                     return True
             else:
                 bt.logging.error(f"No conversation received from endpoint")

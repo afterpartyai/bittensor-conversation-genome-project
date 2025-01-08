@@ -80,6 +80,8 @@ async def test_full():
         #for window_idx, conversation_window in enumerate(conversation_windows):
         for piece_idx, piece in enumerate(pieces):
             conversation_guid = piece['cguid']
+            conversation_window = piece['window']
+            window_idx = piece['window_idx']
             full_conversation = bufferedConvos[conversation_guid]
             if not "metadata" in full_conversation:
                 print(f"No metadata for {conversation_guid}")
@@ -134,7 +136,6 @@ async def test_full():
                 full_conversation_metadata = full_conversation["metadata"]
 
             window_idx = piece['window_idx']
-            conversation_window = piece['window']
 
             selected_miner_uids = vl.selectStage1Miners(miner_uids, num=miners_per_window)
             bt.logging.debug(f"Sending conversation_window {window_idx} for piece {piece_idx} to selected miners: {selected_miner_uids}")
@@ -182,7 +183,7 @@ async def test_full():
                             "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
                         })
 
-            break
+            #break
     if wandb_enabled:
         wl.end_log_wandb()
 
