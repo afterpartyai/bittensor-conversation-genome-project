@@ -137,7 +137,7 @@ class Validator(BaseValidatorNeuron):
                                 wl.log({
                                    "llm_type": llm_type,
                                    "model": model,
-                                   "conversation_guid": conversation_guid,
+                                   "conversation_guid": "HIDDEN", #conversation_guid,
                                    "full_convo_tag_count": full_conversation_tag_count,
                                    "num_lines": len(lines),
                                    "num_participants": len(participants),
