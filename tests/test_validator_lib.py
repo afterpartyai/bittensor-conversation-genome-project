@@ -57,25 +57,25 @@ async def test_full():
     bufferedConvos = {}
     pieces = []
     for i in range(num_convos_per_buffer):
-        full_conversation = await vl.reserve_conversation(batch_num=batch_num)
+        full_conversation = await vl.reserve_conversation(batch_num=batch_num, return_indexed_windows=True)
         if not full_conversation:
             continue
         conversation_guid = str(Utils.get(full_conversation, "guid"))
         bufferedConvos[conversation_guid] = full_conversation
         participants = Utils.get(full_conversation, "participants")
-        windows = Utils.get(full_conversation, "windows")
+        indexed_windows = Utils.get(full_conversation, "windows")
         # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
-        windows = windows[0:num_windows_per_convo]
-        full_conversation["windows"] = windows
-        for idx, window in enumerate(windows):
-            pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})
+        indexed_windows_subset = random.sample(indexed_windows, num_windows_per_convo)
+        for idx, indexed_window in enumerate(indexed_windows_subset):
+            pieces.append({"cguid":conversation_guid, "window_idx":indexed_window[0], "window":indexed_window[1], "participants":participants})
+        #full_conversation["windows"] = indexed_windows_subset
 
     bt.logging.info(f"Generating metadata for {len(pieces)} pieces")
     random.shuffle(pieces)
     if False:
-        print(f"Number of pieces: {len(pieces)} windows from last convo:{len(windows)}")
+        print(f"Number of pieces: {len(pieces)} windows from last convo:{len(indexed_windows)}")
         for piece in pieces[0:5]:
-            print(piece['window_idx'], piece['cguid'])
+            print(f"Window piece: {piece['cguid']} / {piece['window_idx']}")
     test_mode = True
     # Make sure we have at least 10 valid pieces
     if len(pieces) > 10:
