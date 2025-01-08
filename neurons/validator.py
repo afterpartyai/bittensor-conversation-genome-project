@@ -63,7 +63,6 @@ class Validator(BaseValidatorNeuron):
                 miners_per_window = self.config.neuron.sample_size
             miner_sample_size = min(self.metagraph.n.item(), miners_per_window)
             bt.logging.debug(f"miner_sample_size: {miner_sample_size} config: {self.config.neuron.sample_size}, available: {self.metagraph.n.item()}")
-            batch_num = random.randint(100000, 9999999)
 
             # Get hotkeys to watch for debugging
             hot_keys = c.get("env", "HIGHLIGHT_HOTKEYS", "")
@@ -76,7 +75,8 @@ class Validator(BaseValidatorNeuron):
             # Reserve conversations from the conversation API
             bufferedConvos = {}
             pieces = []
-            for i in range(num_convos_per_buffer):
+            for idx_convo in range(num_convos_per_buffer):
+                batch_num = random.randint(100000, 9999999)
                 full_conversation = await vl.reserve_conversation(batch_num=batch_num)
                 if not full_conversation:
                     continue
@@ -84,12 +84,11 @@ class Validator(BaseValidatorNeuron):
                 bufferedConvos[conversation_guid] = full_conversation
                 participants = Utils.get(full_conversation, "participants")
                 windows = Utils.get(full_conversation, "windows")
-                windows = Utils.get(full_conversation, "windows")
                 # Large number of windows were adversely impacting weight sync time, so limit to 5 windows until local cache is ready.
                 windows = windows[0:5]
                 # Add each window to the pieces array
                 for idx, window in enumerate(windows):
-                    pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})
+                    pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants, "batch_num":batch_num})
 
             # Randomly shuffle all of the pieces
             bt.logging.info(f"Generating metadata for {len(pieces)} pieces")
@@ -101,10 +100,12 @@ class Validator(BaseValidatorNeuron):
                     conversation_guid = piece['cguid']
                     conversation_window = piece['window']
                     window_idx = piece['window_idx']
+                    batch_num = piece['batch_num']
                     full_conversation = bufferedConvos[conversation_guid]
                     conversation_windows = Utils.get(full_conversation, "windows")
                     if not "metadata" in full_conversation:
-                        print(f"No metadata for {conversation_guid}")
+                        if test_mode:
+                            print(f"No metadata cached for {conversation_guid}. Processing metadata...")
                         full_conversation_metadata = await vl.get_convo_metadata(conversation_guid, full_conversation, batch_num=batch_num)
                         if full_conversation_metadata:
                             full_conversation["metadata"] = full_conversation_metadata
@@ -148,10 +149,10 @@ class Validator(BaseValidatorNeuron):
                             except:
                                 pass
                     else:
-                        print(f"FOUND metadata for {conversation_guid}")
+                        if test_mode:
+                            print(f"FOUND buffered metadata for {conversation_guid}")
                         full_conversation_metadata = full_conversation["metadata"]
 
-                    #(full_conversation, full_conversation_metadata, conversation_windows) = result
                     if test_mode:
                         # In test_mode, to expand the miner scores, remove half of the full convo tags.
                         # This "generates" more unique tags found for the miners
@@ -170,7 +171,7 @@ class Validator(BaseValidatorNeuron):
                         return
                     bt.logging.info(f"miner_uid pool {miner_uids}")
                     # Create a synapse to distribute to miners
-                    bt.logging.info(f"Sending convo {conversation_guid} window {window_idx} of {len(conversation_window)} lines to miners...")
+                    bt.logging.info(f"Sending convo window {window_idx} of {len(conversation_window)} lines to miners...")
                     window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
 
                     synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
@@ -226,7 +227,7 @@ class Validator(BaseValidatorNeuron):
                             except Exception as e:
                                 print(f"ERROR 1162494 -- WandB logging error: {e}")
                             wl.log({
-                                "conversation_guid."+uid: conversation_guid,
+                                "conversation_guid."+uid: "HIDDEN",
                                 "window_id."+uid: window_idx,
                                 "hotkey."+uid: Utils.get(score, "hotkey"),
                                 "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
@@ -237,7 +238,7 @@ class Validator(BaseValidatorNeuron):
 
                         # Update the scores based on the rewards.
                         self.update_scores(rank_scores, miner_uids)
-                    return True
+                return True
             else:
                 bt.logging.error(f"No conversation received from endpoint")
         except Exception as e:
