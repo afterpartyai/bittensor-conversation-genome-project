@@ -64,7 +64,7 @@ class Miner(BaseMinerNeuron):
         window_idx = Utils.get(window, "window_idx")
         lines = Utils.get(window, "lines")
 
-        bt.logging.info(f"Miner received {conversation_guid} / {window_idx} with {len(lines)} conversation lines")
+        bt.logging.info(f"Miner received window {window_idx} with {len(lines)} conversation lines")
 
         ml = MinerLib()
         result = await ml.do_mining(conversation_guid, window_idx, lines, 17)
