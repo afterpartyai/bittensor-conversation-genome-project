@@ -96,42 +96,46 @@ class ValidatorLib:
                 model = c.get("env", "OPENAI_MODEL")
 
             bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
-
-            # Do overview tagging and generate base participant profiles
-            full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
-            if not full_conversation_metadata:
-                bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
-                validatorHotkey = "HK-FAIL"
-                await self.put_convo("NO-TAGS", conversation_guid, {"tags":[], "vectors":[]}, type="validator", batch_num=batch_num)
-
-                return None
-            full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
-            full_conversation_vectors = Utils.get(full_conversation_metadata, "vectors", [])
-            bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
-
-            log_path = c.get('env', 'SCORING_DEBUG_LOG')
-            if not Utils.empty(log_path):
-                Utils.append_log(log_path, f"Validator found full convo tags {full_conversation_tags} in FullConvo")
-
-            # Make sure there are enough tags to make processing worthwhile
-            minValidTags = self.validateMinimumTags(full_conversation_tags)
-            if minValidTags:
-                # Break the full conversation up into overlapping conversation windows
-                convoWindows = self.getConvoWindows(full_conversation)
-                if len(convoWindows) > minConvWindows:
-                    out = (full_conversation, full_conversation_metadata, convoWindows)
-                else:
-                    bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
-                    out = None
+            # Break the full conversation up into overlapping conversation windows
+            convoWindows = self.getConvoWindows(full_conversation)
+            if len(convoWindows) > minConvWindows:
+                out = full_conversation
             else:
-                bt.logging.info("Not enough valid tags for conversation. Passing.")
+                bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
                 out = None
-            #await self.end_log_wandb(conversation_guid)
-            #return None
+            full_conversation['windows'] = convoWindows
             return out
         else:
             bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
         return None
+
+    async def get_convo_metadata(self, conversation_guid, full_conversation, batch_num):
+        # Do overview tagging and generate base participant profiles
+        full_conversation_metadata = await self.generate_full_convo_metadata(full_conversation)
+        if not full_conversation_metadata:
+            bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
+            validatorHotkey = "HK-FAIL"
+            await self.put_convo("NO-TAGS", conversation_guid, {"tags":[], "vectors":[]}, type="validator", batch_num=batch_num)
+
+            return None
+        full_conversation_tags = Utils.get(full_conversation_metadata, "tags", [])
+        full_conversation_vectors = Utils.get(full_conversation_metadata, "vectors", [])
+        bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
+
+        log_path = c.get('env', 'SCORING_DEBUG_LOG')
+        if not Utils.empty(log_path):
+            Utils.append_log(log_path, f"Validator found full convo tags {full_conversation_tags} in FullConvo")
+
+        # Make sure there are enough tags to make processing worthwhile
+        minValidTags = self.validateMinimumTags(full_conversation_tags)
+        if not minValidTags:
+            bt.logging.info("Not enough valid tags for conversation. Passing.")
+            out = None
+        else:
+            out = full_conversation_metadata
+        #await self.end_log_wandb(conversation_guid)
+        #return None
+        return out
 
     async def getConvo(self):
         hotkey = self.hotkey
@@ -195,7 +199,7 @@ class ValidatorLib:
 
 
     async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
-        bt.logging.info(f"Send to conversation {conversation_guid} / {window_idx} to miners: {miner_uids}")
+        bt.logging.info(f"Send to conversation window {window_idx} to miners: {miner_uids}")
         results = []
         ml = MinerLib()
         tasks = [asyncio.create_task(ml.do_mining(conversation_guid, window_idx, conversation_window, minerUid)) for minerUid in miner_uids]
@@ -308,16 +312,16 @@ class ValidatorLib:
 
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
-        
+
         if isinstance(uids, np.ndarray):
             uids_array = np.copy(uids)
         else:
             uids_array = np.array(uids, dtype=np.int64)
-        
+
         # Ensure float32 dtype for consistency with PyTorch
         rewards = np.array(rewards, dtype=np.float32)
         ema_scores = np.array(ema_scores, dtype=np.float32)
-        
+
         # NaN handling
         if np.isnan(rewards).any():
             if self.verbose:
@@ -338,7 +342,7 @@ class ValidatorLib:
         # Update EMA scores
         alpha: float = moving_average_alpha
         ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
-        
+
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
 
@@ -359,7 +363,7 @@ class ValidatorLib:
             scores = transformed_scores / (sum_transformed)
         else:
             scores = np.ones_like(transformed_scores) / neurons
-            
+
         if self.verbose:
             bt.logging.debug(f"Updated final scores: {scores}")
 
@@ -379,9 +383,9 @@ class ValidatorLib:
         else:
             if self.verbose:
                 bt.logging.warning("cleanTagList has fewer than 20 elements. Skipping random selection.")
-                
+
         cleanTagList = [tag[:50] for tag in cleanTagList]
-        
+
         if self.verbose:
             print(f"Original tag set len: {len(originalTagList)} clean tag set len: {len(cleanTagList)}")
         cleanTagsStr = ",".join(cleanTagList)
@@ -404,7 +408,7 @@ class ValidatorLib:
         processed_tag_list = [element for element in validTags if element in cleanTagsStr]
 
         return processed_tag_list
-    
+
     def transposed_cubic_distribution(self, i, num_uids):
         # Calculate the range of x values
         y_min, y_max = 0.001, 0.003
@@ -419,7 +423,7 @@ class ValidatorLib:
         y_scaled = y_min + (y_max - y_min) * (y_normalized + 1) / 2
 
         return y_scaled
-    
+
     def get_raw_weights(self, scores):
         if scores is None or scores.size == 0 or np.isnan(scores).any():
             bt.logging.error("Nan detected in Weights. Returning None.")
@@ -431,7 +435,7 @@ class ValidatorLib:
         # Order the UIDs for weight assignment
         ordered_uids = np.argsort(raw_weights)[::-1]
         zero_uids = np.where(raw_weights == 0)[0]
-        
+
         # Determine if there are any ties in raw_weights
         unique_weights, counts = np.unique(raw_weights, return_counts=True)
         ties = unique_weights[counts > 1]
@@ -442,28 +446,28 @@ class ValidatorLib:
                 continue
             # Find the indices in raw_weights that have the tied value
             tied_indices = np.nonzero(raw_weights == tie)[0]
-            
+
             # Find the positions of these tied indices within ordered_uids
             positions_in_ordered_uids = np.nonzero(np.isin(ordered_uids, tied_indices))[0]
-            
+
             # Shuffle these positions amongst themselves
             shuffled_positions = np.random.permutation(positions_in_ordered_uids)
-            
+
             # Apply the shuffle to ordered_uids
             ordered_uids[positions_in_ordered_uids] = ordered_uids[shuffled_positions]
 
-        #Calculate proper length for calculating weight values    
+        #Calculate proper length for calculating weight values
         num_uids = len(ordered_uids) - len(zero_uids)
         ordered_uids_no_zeros = ordered_uids[~np.isin(ordered_uids, zero_uids)]
         # calculate proper weight values for each non-zero uid
         if num_uids > 0:
             for i, uid in enumerate(ordered_uids_no_zeros):
                 weight = self.transposed_cubic_distribution(i, num_uids)
-                
+
                 # Assign the weight to the raw_weights tensor
                 if weight:
                     raw_weights[uid] = weight
-                else: 
+                else:
                     bt.logging.error("Error in Weights calculation. Setting this UID to 0")
                     raw_weights[uid] = 0
 
