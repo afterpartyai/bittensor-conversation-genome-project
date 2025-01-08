@@ -95,7 +95,7 @@ class ValidatorLib:
                 llm_type = llm_type_override
                 model = c.get("env", "OPENAI_MODEL")
 
-            bt.logging.info(f"Reserved conversation ID: {conversation_guid} with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
+            bt.logging.info(f"Reserved conversation with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
             # Break the full conversation up into overlapping conversation windows
             convoWindows = self.getConvoWindows(full_conversation)
             if len(convoWindows) > minConvWindows:

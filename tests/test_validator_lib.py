@@ -53,6 +53,7 @@ async def test_full():
     vl = ValidatorLib()
     el = Evaluator()
     num_convos_per_buffer = c.get("validator", "num_convos_per_buffer", 10)
+    num_windows_per_convo = c.get("validator", "num_windows_per_convo", 5)
     bufferedConvos = {}
     pieces = []
     for i in range(num_convos_per_buffer):
@@ -63,8 +64,8 @@ async def test_full():
         bufferedConvos[conversation_guid] = full_conversation
         participants = Utils.get(full_conversation, "participants")
         windows = Utils.get(full_conversation, "windows")
-        # Large number of windows were adversely impacting weight sync time, so limit to 5 windows until local cache is ready.
-        windows = windows[0:5]
+        # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
+        windows = windows[0:num_windows_per_convo]
         full_conversation["windows"] = windows
         for idx, window in enumerate(windows):
             pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})

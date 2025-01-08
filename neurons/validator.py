@@ -57,6 +57,7 @@ class Validator(BaseValidatorNeuron):
 
             miners_per_window = c.get("validator", "miners_per_window", 6)
             num_convos_per_buffer = c.get("validator", "num_convos_per_buffer", 10)
+            num_windows_per_convo = c.get("validator", "num_windows_per_convo", 5)
 
             # If command line overrides the standard 6 miners, then use that
             if self.config.neuron.sample_size != 6:
@@ -84,8 +85,8 @@ class Validator(BaseValidatorNeuron):
                 bufferedConvos[conversation_guid] = full_conversation
                 participants = Utils.get(full_conversation, "participants")
                 windows = Utils.get(full_conversation, "windows")
-                # Large number of windows were adversely impacting weight sync time, so limit to 5 windows until local cache is ready.
-                windows = windows[0:5]
+                # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
+                windows = windows[0:num_windows_per_convo]
                 # Add each window to the pieces array
                 for idx, window in enumerate(windows):
                     pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants, "batch_num":batch_num})
