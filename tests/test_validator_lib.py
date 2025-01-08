@@ -52,10 +52,10 @@ async def test_full():
 
     vl = ValidatorLib()
     el = Evaluator()
-    numConvos = 3
+    num_convos_per_buffer = c.get("validator", "num_convos_per_buffer", 10)
     bufferedConvos = {}
     pieces = []
-    for i in range(numConvos):
+    for i in range(num_convos_per_buffer):
         full_conversation = await vl.reserve_conversation(batch_num=batch_num)
         if not full_conversation:
             continue
@@ -67,9 +67,10 @@ async def test_full():
             pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})
 
     random.shuffle(pieces)
-    print(f"Number of pieces: {len(pieces)} windows:{len(windows)}")
-    for piece in pieces[0:5]:
-        print(piece['window_idx'], piece['cguid'])
+    if False:
+        print(f"Number of pieces: {len(pieces)} windows from last convo:{len(windows)}")
+        for piece in pieces[0:5]:
+            print(piece['window_idx'], piece['cguid'])
     test_mode = True
     # Make sure we have at least 10 valid pieces
     if len(pieces) > 10:
