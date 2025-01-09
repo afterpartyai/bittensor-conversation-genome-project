@@ -10,7 +10,7 @@ class c:
     state = {
         "validator" : {
             "miners_per_window": 6,
-            "num_convos_per_buffer": 3,
+            "num_convos_per_buffer": 10,
             "num_windows_per_convo": 5,
         },
         "system" : {
