@@ -78,21 +78,27 @@ class Validator(BaseValidatorNeuron):
             pieces = []
             for idx_convo in range(num_convos_per_buffer):
                 batch_num = random.randint(100000, 9999999)
-                full_conversation = await vl.reserve_conversation(batch_num=batch_num)
+                full_conversation = await vl.reserve_conversation(batch_num=batch_num, return_indexed_windows=True)
                 if not full_conversation:
                     continue
                 conversation_guid = str(Utils.get(full_conversation, "guid"))
                 bufferedConvos[conversation_guid] = full_conversation
                 participants = Utils.get(full_conversation, "participants")
-                windows = Utils.get(full_conversation, "windows")
+                indexed_windows = Utils.get(full_conversation, "indexed_windows")
                 # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
-                windows = windows[0:num_windows_per_convo]
-                # Add each window to the pieces array
-                for idx, window in enumerate(windows):
-                    pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants, "batch_num":batch_num})
+                indexed_windows_subset = random.sample(indexed_windows, num_windows_per_convo)
+                for idx, indexed_window in enumerate(indexed_windows_subset):
+                    piece_data = {
+                        "cguid": conversation_guid,
+                        "window_idx": indexed_window[0],
+                        "window": indexed_window[1],
+                        "participants": participants,
+                        "batch_num": batch_num
+                    }
+                    pieces.append(piece_data)
 
-            # Randomly shuffle all of the pieces
             bt.logging.info(f"Generating metadata for {len(pieces)} pieces")
+            # Randomly shuffle all of the pieces
             random.shuffle(pieces)
 
             # Make sure we have at least 10 valid pieces
@@ -103,7 +109,6 @@ class Validator(BaseValidatorNeuron):
                     window_idx = piece['window_idx']
                     batch_num = piece['batch_num']
                     full_conversation = bufferedConvos[conversation_guid]
-                    conversation_windows = Utils.get(full_conversation, "windows")
                     if not "metadata" in full_conversation:
                         if test_mode:
                             print(f"No metadata cached for {conversation_guid}. Processing metadata...")
@@ -141,7 +146,7 @@ class Validator(BaseValidatorNeuron):
                                    "full_convo_tag_count": full_conversation_tag_count,
                                    "num_lines": len(lines),
                                    "num_participants": len(participants),
-                                   "num_convo_windows": len(conversation_windows),
+                                   "num_convo_windows": -1, #len(conversation_windows),
                                    "convo_windows_min_lines": min_lines,
                                    "convo_windows_max_lines": max_lines,
                                    "convo_windows_overlap_lines": overlap_lines,

@@ -103,7 +103,10 @@ class ValidatorLib:
             else:
                 bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
                 out = None
-            full_conversation['windows'] = convoWindows
+            if return_indexed_windows:
+                full_conversation['indexed_windows'] = convoWindows
+            else:
+                full_conversation['windows'] = convoWindows
             return out
         else:
             bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
@@ -342,7 +345,11 @@ class ValidatorLib:
 
         # Scatter rewards (matching PyTorch scatter behavior)
         scattered_rewards = np.copy(ema_scores)
-        scattered_rewards[uids_array] = rewards
+        try:
+            scattered_rewards[uids_array] = rewards
+        except Exception as e:
+            bt.logging.error(f"ERROR:43879432: Error assigning scattered_rewards: {e}.")
+
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update EMA scores
