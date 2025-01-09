@@ -77,7 +77,7 @@ class ValidatorLib:
             return
         self.readyai_api_key = data['api_key']
 
-    async def reserve_conversation(self, minConvWindows = 1, batch_num=None):
+    async def reserve_conversation(self, minConvWindows = 1, batch_num=None, return_indexed_windows=False):
         import time
         out = None
         # Validator requests a full conversation from the API
@@ -97,13 +97,16 @@ class ValidatorLib:
 
             bt.logging.info(f"Reserved conversation with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
             # Break the full conversation up into overlapping conversation windows
-            convoWindows = self.getConvoWindows(full_conversation)
+            convoWindows = self.getConvoWindows(full_conversation, return_indexed_windows=return_indexed_windows)
             if len(convoWindows) > minConvWindows:
                 out = full_conversation
             else:
                 bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
                 out = None
-            full_conversation['windows'] = convoWindows
+            if return_indexed_windows:
+                full_conversation['indexed_windows'] = convoWindows
+            else:
+                full_conversation['windows'] = convoWindows
             return out
         else:
             bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
@@ -151,7 +154,7 @@ class ValidatorLib:
         return convo
 
 
-    def getConvoWindows(self, fullConvo):
+    def getConvoWindows(self, fullConvo, return_indexed_windows=False):
         minLines = c.get("convo_window", "min_lines", 5)
         maxLines = c.get("convo_window", "max_lines", 10)
         overlapLines = c.get("convo_window", "overlap_lines", 2)
@@ -161,6 +164,12 @@ class ValidatorLib:
             windows = Utils.split_overlap_array(fullConvo['lines'], size=minLines, overlap=overlapLines)
 
         # TODO: Write convo windows into local database with full convo metadata
+        if return_indexed_windows:
+            indexed_windows = []
+            for idx, window in enumerate(windows):
+                indexed_windows.append((idx, window))
+            windows = indexed_windows
+
         return windows
 
     async def filter_valid_tags(self, tags):
@@ -336,7 +345,11 @@ class ValidatorLib:
 
         # Scatter rewards (matching PyTorch scatter behavior)
         scattered_rewards = np.copy(ema_scores)
-        scattered_rewards[uids_array] = rewards
+        try:
+            scattered_rewards[uids_array] = rewards
+        except Exception as e:
+            bt.logging.error(f"ERROR:43879432: Error assigning scattered_rewards: {e}.")
+
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update EMA scores

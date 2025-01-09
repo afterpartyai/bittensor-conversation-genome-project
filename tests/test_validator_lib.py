@@ -48,7 +48,6 @@ async def test_full():
 
     # Create test set of miner IDs so minimum miner checker doesn't error out
     miner_uids = [1,2,3,4,5,6,7,8,9]
-    batch_num = random.randint(100000, 9999999)
 
     vl = ValidatorLib()
     el = Evaluator()
@@ -56,26 +55,35 @@ async def test_full():
     num_windows_per_convo = c.get("validator", "num_windows_per_convo", 5)
     bufferedConvos = {}
     pieces = []
-    for i in range(num_convos_per_buffer):
-        full_conversation = await vl.reserve_conversation(batch_num=batch_num)
+    for idx_convo in range(num_convos_per_buffer):
+        batch_num = random.randint(100000, 9999999)
+        full_conversation = await vl.reserve_conversation(batch_num=batch_num, return_indexed_windows=True)
         if not full_conversation:
             continue
         conversation_guid = str(Utils.get(full_conversation, "guid"))
         bufferedConvos[conversation_guid] = full_conversation
         participants = Utils.get(full_conversation, "participants")
-        windows = Utils.get(full_conversation, "windows")
+        indexed_windows = Utils.get(full_conversation, "indexed_windows")
         # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
-        windows = windows[0:num_windows_per_convo]
-        full_conversation["windows"] = windows
-        for idx, window in enumerate(windows):
-            pieces.append({"cguid":conversation_guid, "window_idx":idx, "window":window, "participants":participants})
+        indexed_windows_subset = random.sample(indexed_windows, num_windows_per_convo)
+        for idx, indexed_window in enumerate(indexed_windows_subset):
+            piece_data = {
+                "cguid":conversation_guid,
+                "window_idx":indexed_window[0],
+                "window":indexed_window[1],
+                "participants":participants,
+                "batch_num":batch_num
+            }
+            pieces.append(piece_data)
+        #full_conversation["windows"] = indexed_windows_subset
 
     bt.logging.info(f"Generating metadata for {len(pieces)} pieces")
+    # Randomly shuffle all of the pieces
     random.shuffle(pieces)
     if False:
-        print(f"Number of pieces: {len(pieces)} windows from last convo:{len(windows)}")
+        print(f"Number of pieces: {len(pieces)} windows from last convo:{len(indexed_windows)}")
         for piece in pieces[0:5]:
-            print(piece['window_idx'], piece['cguid'])
+            print(f"Window piece: {piece['cguid']} / {piece['window_idx']}")
     test_mode = True
     # Make sure we have at least 10 valid pieces
     if len(pieces) > 10:
@@ -89,7 +97,8 @@ async def test_full():
             window_idx = piece['window_idx']
             full_conversation = bufferedConvos[conversation_guid]
             if not "metadata" in full_conversation:
-                print(f"No metadata for {conversation_guid}")
+                if test_mode:
+                    print(f"No metadata cached for {conversation_guid}. Processing metadata...")
                 full_conversation_metadata = await vl.get_convo_metadata(conversation_guid, full_conversation, batch_num=batch_num)
                 if full_conversation_metadata:
                     full_conversation["metadata"] = full_conversation_metadata
@@ -112,7 +121,6 @@ async def test_full():
                     validatorHotkey = "VHK-0"
 
                     #await vl.put_convo(validatorHotkey, conversation_guid, {"tags":tags, "vectors":vectors}, type="validator", batch_num=batch_num, window=999)
-                    conversation_windows = Utils.get(full_conversation, "windows")
 
                     if wandb_enabled:
                         wl.log({
@@ -122,7 +130,7 @@ async def test_full():
                            "full_convo_tag_count": full_conversation_tag_count,
                            "num_lines": len(lines),
                            "num_participants": len(participants),
-                           "num_convo_windows": len(conversation_windows),
+                           "num_convo_windows": -1, #len(conversation_windows),
                            "convo_windows_min_lines": min_lines,
                            "convo_windows_max_lines": max_lines,
                            "convo_windows_overlap_lines": overlap_lines,
@@ -134,8 +142,6 @@ async def test_full():
                         # This "generates" more unique tags found for the miners
                         half = int(len(full_conversation_metadata['tags'])/2)
                         full_conversation_metadata['tags'] = full_conversation_metadata['tags'][0:half]
-
-                    bt.logging.info(f"Found {len(conversation_windows)} conversation windows. Sequentially sending to batches of {miners_per_window} miners")
             else:
                 print(f"FOUND metadata for {conversation_guid}")
                 full_conversation_metadata = full_conversation["metadata"]
