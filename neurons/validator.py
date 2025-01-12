@@ -181,7 +181,9 @@ class Validator(BaseValidatorNeuron):
                 bt.logging.info(f"miner_uid pool {miner_uids}")
                 # Create a synapse to distribute to miners
                 bt.logging.info(f"Sending convo window {window_idx} of {len(conversation_window)} lines to miners...")
-                window_packet = {"guid":conversation_guid, "window_idx":window_idx, "lines":conversation_window}
+
+                # To prevent potential miner tracking of conversations, send meaningless guid and idx
+                window_packet = {"guid":"HIDDEN", "window_idx":-1, "lines":conversation_window}
 
                 synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
 
