@@ -13,3 +13,4 @@ pytest-asyncio
 # Dependencies for compatibility
 pydantic==2.7.1
 typing-extensions==4.8.0
+httpx==0.27.2

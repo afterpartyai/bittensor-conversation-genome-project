@@ -64,7 +64,7 @@ class Miner(BaseMinerNeuron):
         window_idx = Utils.get(window, "window_idx")
         lines = Utils.get(window, "lines")
 
-        bt.logging.info(f"Miner received {conversation_guid} / {window_idx} with {len(lines)} conversation lines")
+        bt.logging.info(f"Miner received window {window_idx} with {len(lines)} conversation lines")
 
         ml = MinerLib()
         result = await ml.do_mining(conversation_guid, window_idx, lines, 17)
@@ -153,7 +153,7 @@ class Miner(BaseMinerNeuron):
             self.metagraph.S[caller_uid]
         )  # Return the stake as the priority.
         bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority
+            f"Prioritizing {synapse.dendrite.hotkey} with value: {prirority}"
         )
         return prirority
 
@@ -162,5 +162,5 @@ class Miner(BaseMinerNeuron):
 if __name__ == "__main__":
     with Miner() as miner:
         while True:
-            bt.logging.info("CGP Miner running...", time.time())
+            bt.logging.info(f"CGP Miner running... {time.time()}")
             time.sleep(5)
