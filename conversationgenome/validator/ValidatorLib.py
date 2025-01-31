@@ -77,12 +77,12 @@ class ValidatorLib:
             return
         self.readyai_api_key = data['api_key']
 
-    async def reserve_conversation(self, minConvWindows = 1, batch_num=None, return_indexed_windows=False):
+    async def reserve_conversation(self, minConvWindows = 1, batch_num=None, return_indexed_windows=False, verbose=False):
         import time
         out = None
         # Validator requests a full conversation from the API
         full_conversation = await self.getConvo()
-        if self.verbose:
+        if self.verbose or verbose:
             bt.logging.info(f"full_conversation: {full_conversation}")
 
         if full_conversation:
@@ -98,6 +98,9 @@ class ValidatorLib:
             bt.logging.info(f"Reserved conversation with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
             # Break the full conversation up into overlapping conversation windows
             convoWindows = self.getConvoWindows(full_conversation, return_indexed_windows=return_indexed_windows)
+            if "min_convo_windows" in full_conversation:
+                bt.logging.info(f"Change in minimum required convo windows from API from {minConvWindows} to {full_conversation['min_convo_windows']}.")
+                minConvWindows = full_conversation['min_convo_windows']
             if len(convoWindows) > minConvWindows:
                 out = full_conversation
             else:
