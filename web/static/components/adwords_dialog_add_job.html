@@ -1,0 +1,44 @@
+<div class="adwords_dialog_add_job">
+    <div class="fcolumn" style="margin-bottom:20px;">
+        <input type="hidden" data-field="id" />
+        <div>
+            <div style="margin:12px;padding:12px;background:lightgray;color:black;border-radius:12px;">
+                Be sure to download a sample file to make sure your data is in the proper format:
+                <a target="_target" style="border:none;text-decoration:underline;" href="/static/html/index.html?route=sample_files">Sample Files</a>
+            </div>
+        </div>
+        <table>
+        <tbody>
+            <tr><td>Title (required)</td><td><input data-field="title" data-len-min="5" /></td></tr>
+            <tr><td>Tags</td><td><input data-field="tags"  /></td></tr>
+            <tr><td>Status</td><td><input data-field="status" /></td></tr>
+            <tr><td>Data Source Type</td>
+                <td><select data-field="data_source_type_id" >
+                    <option value="1">Local File</option>
+                    <option value="2">Hugging Face</option>
+                    <option value="3">S3</option>
+                    <option value="4">Web Url</option>
+                </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Local File Upload</td>
+                <td>
+                    <form id="upload-form">
+                        <input type="file" id="files" multiple="">
+                        <div class="frow">
+                            Dataset Name: <input name="dataset-directory" /><div onclick="app.upload(this)" class="btn btn-orange">Upload</button>
+                        </div>
+                    </form>
+
+                </td>
+            </tr>
+            <tr><td>Data Source URL</td><td><input data-field="url" data-len-min="5" /></td></tr>
+        </tbody>
+        </table>
+    </div>
+
+    <div class="frow" style="justify-content: flex-end;">
+        <div onclick="saveJob(this)" class="btn btn-red">Save</div>
+    </div>
+</div>

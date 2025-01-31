@@ -1,0 +1,18 @@
+<div class="dialog_user">
+    <div class="fcolumn" style="margin-bottom:20px;">
+        <input type="hidden" data-field="id" />
+        <table>
+        <tbody>
+            <tr><td>Username (required)</td><td><input data-field="username" data-len-min="3" /></td></tr>
+            <tr><td>Status</td><td><input data-field="status" /></td></tr>
+            <tr><td>API Key</td><td><input data-field="api_key" /></td></tr>
+            <tr><td>User level</td><td><input data-field="user_level" /></td></tr>
+            <tr><td>Tags</td><td><input data-field="tags"  /></td></tr>
+        </tbody>
+        </table>
+    </div>
+
+    <div class="frow" style="justify-content: flex-end;">
+        <div onclick="saveRow(this, 'user')" class="btn btn-red">Save</div>
+    </div>
+</div>

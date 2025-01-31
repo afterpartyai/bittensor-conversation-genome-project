@@ -2,8 +2,11 @@ import json
 import random
 import os
 import time
+import shutil
 
 import hashlib
+import binascii
+
 import sqlite3
 
 from Utils import Utils
@@ -30,107 +33,14 @@ DIVIDER = '_' * 120
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from Db import Db
 
 app = FastAPI()
 
-class Db:
-    source_type = 2 # Non-CGP
-    db_name = None
-    table_name = None
-    sql_create_results = """CREATE TABLE IF NOT EXISTS cgp_results (
-	"id"	INTEGER UNIQUE,
-	"status"	INTEGER DEFAULT 1,
-	"batch_num"	INTEGER,
-	"c_guid"	TEXT,
-	"convo_window_index"	INTEGER DEFAULT 1,
-	"source_type"	INTEGER DEFAULT 2,
-	"mode"	TEXT,
-	"hotkey"	TEXT,
-	"coldkey"	TEXT,
-	"uid"	INTEGER,
-	"llm_type"	TEXT,
-	"model"	TEXT,
-	"tags"	JSON,
-	"marker_id"	INTEGER,
-	"json"	JSON,
-	"created_at"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	"cgp_version"	TEXT
-	"updated_at"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	"updated_by"	INTEGER,
-	"created_by"	INTEGER,
-	PRIMARY KEY("id" AUTOINCREMENT)
-)"""
-
-    def __init__(self, db_name, table_name):
-        self.db_name = db_name
-        self.table_name = table_name
-
-    def get_cursor(self):
-        db_name = "conversations.sqlite"
-        conn = sqlite3.connect(db_name)
-        conn.row_factory = Db.dict_factory
-        cursor = conn.cursor()
-
-        return cursor
-
-
-    def insert_into_table(self, c_guid, content):
-        today = Utils.get_time("%Y.%m.%d")
-        db_name = f"{self.db_name}_{today}.sqlite"
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
-        cursor.execute(self.sql_create_results)
-        updateRow = {
-            "c_guid": c_guid,
-            "mode": Utils.get(content, "mode"),
-            "model": Utils.get(content, "model"),
-            "llm_type": Utils.get(content, "llm_type"),
-            "convo_window_index": Utils.get(content, "convo_window_index"),
-            "marker_id": Utils.get(content, "marker_id"),
-            "source_type": self.source_type,
-            "hotkey": Utils.get(content, "hotkey"),
-            "coldkey": Utils.get(content, "coldkey"),
-            "batch_num": Utils.get(content, "batch_num"),
-            "tags": Utils.get(content, "tags"),
-            "cgp_version": Utils.get(content, "cgp_version"),
-            "json": json.dumps(content)
-        }
-        fields = []
-        questions = []
-        values = []
-        for field, val in updateRow.items():
-            fields.append(field)
-            questions.append("?")
-            values.append(val)
-        fields_str = ",".join(fields)
-        questions_str = ",".join(questions)
-        cursor.execute(f"INSERT INTO cgp_results ({fields_str}) VALUES ({questions_str})", (values))
-        conn.commit()
-        conn.close()
-
-    def get_random_conversation(self):
-        cursor = self.get_cursor()
-        sql = 'SELECT * FROM conversations ORDER BY RANDOM() LIMIT 1'
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-        if rows and len(rows) == 1:
-            return rows[0]
-        else:
-            return None
-
-    @staticmethod
-    def dict_factory(cursor, row):
-        d = {}
-        for idx, col in enumerate(cursor.description):
-            if col[0] == "json":
-                try:
-                    d["data"] = json.loads(row[idx])
-                except:
-                   d["data"] = json.loads("{}")
-            else:
-                d[col[0]] = row[idx]
-        return d
 
 # Get account functionality for decrypting public key
 def get_account_from_coldkey(ss58_coldkey):
@@ -146,9 +56,33 @@ def get_account():
     print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
 
 
+@app.get("/favicon.ico")
+async def favicon():
+    favicon_data = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect x="10" y="10" width="80" height="80" rx="15" fill="#5bc0de"></rect>
+        </svg>""".encode("utf-8")
+    return Response(content=favicon_data, media_type="image/svg+xml")
+
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/user_data", StaticFiles(directory="user_data"), name="user_data")
+
+
 @app.get("/")
 def get_request():
     return {"message": "Forbidden"}
+
+@app.get("/login")
+async def do_login(request: Request):
+    if not Utils.empty(request.query_params.get("api_key")):
+        expiry = 30*24*60*60 # 30 days
+        response = RedirectResponse(url="/static/html/index.html", status_code=302)
+        response.set_cookie(key="api_key", value=request.query_params.get("api_key"), max_age=expiry)
+    else:
+        return "Error"
+    return response
+
 
 @app.post("/api/v1/conversation/reserve")
 def post_request():
@@ -201,8 +135,6 @@ def put_record_request(c_guid, data: dict):
         out['errors'].append([9893843, "Missing hotkey",])
     return out
 
-import hashlib
-import binascii
 
 def hashReadyAiMessage(password):
     salt = "THIS IS MY SALT"
@@ -252,4 +184,364 @@ def post_get_api_generate_key(data: dict):
             out['errors'].append([9893846, "Keypair not installed",])
     return out
 
+def get_default_json():
+    return {"success": 0, "data":{}, "errors":[], "warnings":[], }
+
+
+@app.get("/api/v1/profile")
+def get_api_get_profile(request: Request):
+    out = get_default_json()
+    db = Db("cgp_tags.sqlite", "users")
+    # TODO: Remove when session or JWT is adopted
+    apiKey = request.cookies.get("api_key")
+    print(Utils.guid(returnInt=False))
+    if not Utils.empty(apiKey):
+        sql = f"SELECT id, username, credits FROM users WHERE api_key = '{apiKey}' LIMIT 1"
+        userRow = db.get_row(sql)
+        if userRow:
+            out['data'] = userRow
+            out['success'] = 1
+    else:
+        out['warnings'].append([23421211, "User not logged in"])
+    return out
+
+
+@app.get("/api/v1/job")
+def get_api_get_jobs():
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "jobs")
+    sql = 'SELECT * FROM jobs ORDER BY updated_at DESC LIMIT 25'
+    out['data'] = db.get_all(sql)
+    out['checksum'] = Utils.dictToCrc(out['data'])
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/job/{id}")
+def get_api_get_job(id: int):
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "jobs")
+    sql = f'SELECT * FROM jobs WHERE id = {id} LIMIT 1'
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/task")
+def get_api_get_tasks(request: Request):
+    out = get_default_json()
+    taskType = "ad"
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "tasks")
+    limit = 100
+    where = ' 1=1 '
+    if jobId:
+        where += f' AND job_id = {jobId} '
+    sql = f'SELECT id, status, job_id, data_url, lock_value, locked_at, locked_by, updated_at FROM tasks WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    out['data'] = db.get_all(sql)
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/task/{id}")
+def get_api_get_task(id: int):
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "jobs")
+    sql = f'SELECT * FROM tasks WHERE id = {id} LIMIT 1'
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+
+@app.post("/api/v1/task/{id}/results")
+def post_api_workproduct(id:int=None, data: dict=None ):
+    out = get_default_json()
+    userId = 1
+    rootPath = f"user_data/{userId}/contacts_20241105/results"
+    import time
+    unix_timestamp = int(time.time())
+    print("ID", id)
+    fname = f"/{id}.{unix_timestamp}.json"
+    path = rootPath + fname
+    dataStr = json.dumps(data)
+    f = open(path, 'w')
+    f.write(dataStr)
+    f.close()
+    return out
+
+
+
+@app.post("/api/v1/job")
+@app.put("/api/v1/job/{id}")
+def post_put_api_create_job(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "jobs")
+    db.save("jobs", data)
+
+    out['data'] = data
+    return out
+
+@app.get("/api/v1/prompt_chain")
+def get_api_get_prompt_chains(request: Request):
+    out = get_default_json()
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    limit = 100
+    where = ' 1=1 '
+    if jobId:
+        where += f' AND job_id = {jobId} '
+    sql = f'SELECT id, status, title, description, updated_at FROM prompt_chains WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    out['data'] = db.get_all(sql)
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/prompt_chain/{id}")
+def get_api_get_prompt_chain(id: int, request: Request):
+    out = get_default_json()
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    where = ' 1=1 '
+    where += f' AND id = {id} '
+    sql = f'SELECT id, status, title, description, updated_at FROM prompt_chains WHERE {where} ORDER BY updated_at DESC'
+    print(sql)
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+
+@app.post("/api/v1/prompt_chain")
+@app.put("/api/v1/prompt_chain/{id}")
+def post_put_api_prompt_chain(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    db.save("prompt_chains", data)
+
+    out['data'] = data
+    return out
+
+
+
+
+@app.get("/api/v1/prompt")
+def get_api_get_prompts(request: Request):
+    out = get_default_json()
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "prompts")
+    limit = 100
+    where = ' 1=1 '
+    if jobId:
+        where += f' AND job_id = {jobId} '
+    sql = f'SELECT id, status, prompt_chain_id, title, description, updated_at FROM prompts WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    out['data'] = db.get_all(sql)
+
+    out['success'] = 1
+    return out
+
+@app.get("/api/v1/prompt/{id}")
+def get_api_get_prompts(id: int, request: Request):
+    out = get_default_json()
+    db = Db("cgp_tags.sqlite", "prompts")
+    where = ' 1=1 '
+    where += f' AND id = {id} '
+    sql = f'SELECT id, status, prompt_chain_id, prompt, title, description, updated_at FROM prompts WHERE {where} ORDER BY updated_at DESC'
+    print(sql)
+    out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.post("/api/v1/prompt")
+@app.put("/api/v1/prompt/{id}")
+def post_put_api_prompt(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "prompts")
+    db.save("prompts", data)
+
+    out['data'] = data
+    return out
+
+
+@app.get("/api/v1/job_type")
+@app.get("/api/v1/job_type/{id}")
+def get_api_get_job_types(request: Request, id: int = None):
+    out = get_default_json()
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "job_types")
+    limit = 100
+    where = ' 1=1 '
+    if id:
+        where += f' AND id = {id} '
+    sql = f'SELECT id, status, title, prompt_chain_id, description, updated_at FROM job_types WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    if not id:
+        out['data'] = db.get_all(sql)
+    else:
+        out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.post("/api/v1/job_type")
+@app.put("/api/v1/job_type/{id}")
+def post_put_api_job_type(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "job_types")
+    db.save("job_types", data)
+
+    out['data'] = data
+    return out
+
+@app.get("/api/v1/user")
+@app.get("/api/v1/user/{id}")
+def get_api_get_job_types(request: Request, id: int = None):
+    out = get_default_json()
+    jobId = request.query_params.get("job_id", default=0)
+    db = Db("cgp_tags.sqlite", "users")
+    limit = 100
+    where = ' 1=1 '
+    if id:
+        where += f' AND id = {id} '
+    sql = f'SELECT id, status, username, user_level, api_key, credits FROM users WHERE {where} ORDER BY updated_at DESC LIMIT {limit}'
+    print(sql)
+    if not id:
+        out['data'] = db.get_all(sql)
+    else:
+        out['data'] = db.get_row(sql)
+
+    out['success'] = 1
+    return out
+
+@app.post("/api/v1/user")
+@app.put("/api/v1/user/{id}")
+def post_put_api_job_type(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "users")
+    db.save("users", data)
+
+    out['data'] = data
+    return out
+
+
+
+@app.post("/api/v1/prompt_chain")
+@app.put("/api/v1/prompt_chain/{id}")
+def post_put_api_prompt_chain(data: dict, id=None):
+    out = get_default_json()
+    if id:
+        data['id'] = id
+    else:
+        if 'id' in data:
+            del(data['id'])
+        data['status'] = 1
+    db = Db("cgp_tags.sqlite", "prompt_chains")
+    db.save("prompt_chains", data)
+
+    out['data'] = data
+    return out
+
+
+
+
+def random_sqlite_integer():
+    return random.randint(1, 9223372036854775807)
+
+
+@app.get("/api/v1/reserve_task")
+def get_api_get_reserve_task():
+    out = get_default_json()
+    taskType = "ad"
+    db = Db("cgp_tags.sqlite", "tasks")
+
+    # Get lock value so we can lock it in one operation and then get the locked row subsequently
+    lock_value = random_sqlite_integer()
+    userId = 1
+    debug = False
+    if not debug:
+        update_query = f"UPDATE tasks SET lock_value = {lock_value}, status = 3,  locked_at = STRFTIME('%s', 'NOW'), locked_by = {userId} WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
+    else:
+        update_query = f"UPDATE tasks SET lock_value = {lock_value}, locked_at = STRFTIME('%s', 'NOW'), locked_by = {userId} WHERE status = 2 AND id = (SELECT id FROM tasks WHERE status = 2 ORDER BY updated_at ASC, id ASC LIMIT 1); "
+    cursor = db.execute(update_query)
+    if cursor.rowcount < 1:
+        print("No rows were updated.", cursor.rowcount)
+    else:
+        print(f"{cursor.rowcount} row(s) were updated.")
+        sql = f"SELECT tasks.*, job_types.prompt_chain_id from tasks LEFT JOIN jobs ON jobs.id = tasks.job_id LEFT JOIN job_types ON jobs.job_type_id = job_types.id WHERE lock_value = {lock_value} LIMIT 1"
+        taskRow = db.get_row(sql)
+        if taskRow:
+            promptChainId = taskRow['prompt_chain_id']
+            if promptChainId:
+                sqlPromptChain = f"SELECT * FROM prompt_chains WHERE id = {promptChainId} LIMIT 1"
+                print("sqlPromptChain", sqlPromptChain)
+                prompt_chain_row = db.get_row(sqlPromptChain)
+                promptChainId = prompt_chain_row["id"]
+                promptRows = db.get_all(f"SELECT id, prompt_type, prompt, output_variable_name FROM prompts WHERE prompt_chain_id = {promptChainId}")
+
+                data = {"task": taskRow, "prompt_chain":prompt_chain_row, "prompts":promptRows}
+                out['data'] = data
+
+                out['success'] = 1
+            else:
+                print("No prompt chain")
+        else:
+            print("Task row not found", sql)
+    return out
+
+@app.post("/api/v1/upload")
+async def upload_files(request: Request):
+    form = await request.form()
+    files = form.getlist('files')
+    datasetName =  form.get('dataset_name')
+    UPLOAD_DIR = "user_data/1/"+datasetName
+
+    for file in files:
+        # Create the upload directory if it doesn't exist
+        if not os.path.exists(UPLOAD_DIR):
+            os.makedirs(UPLOAD_DIR)
+
+        # Copy the file to the upload directory
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        with open(file_path, 'wb') as f:
+            shutil.copyfileobj(file.file, f)
+
+        print(f"File '{file.filename}' to dir {UPLOAD_DIR} uploaded successfully!")
+
+    return JSONResponse({"message": "Files uploaded successfully"}, status_code=201)
 

@@ -1,0 +1,26 @@
+<div class="dialog_task">
+    <div class="fcolumn" style="margin-bottom:20px;">
+        <input type="hidden" data-field="id" />
+        <table>
+        <tbody>
+            <tr><td>Status</td><td><input data-field="status" /></td></tr>
+            <tr><td>Job ID</td><td><input data-field="job_id" /></td></tr>
+            <tr><td>Title</td><td><input data-field="title" /></td></tr>
+            <tr><td>Name</td><td><input data-field="name" /></td></tr>
+            <tr><td>URL</td><td><input data-field="url" /></td></tr>
+            <tr><td>Header Row</td><td><input data-field="header_row" /></td></tr>
+            <tr><td>Begin Row</td><td><input data-field="begin_row" /></td></tr>
+            <tr><td>End Row</td><td><input data-field="end_row" /></td></tr>
+            <tr><td>Data Type</td><td><input data-field="data_type" /></td></tr>
+            <tr><td>Data URL</td><td><input data-field="data_url" /></td></tr>
+            <tr><td>Retries</td><td><input data-field="retries" /></td></tr>
+            <tr><td>Rows Processed</td><td><input data-field="rows_processed" /></td></tr>
+            <tr><td>Locked At</td><td><input data-field="locked_at" /></td></tr>
+        </tbody>
+        </table>
+    </div>
+
+    <div class="frow" style="justify-content: flex-end;">
+        <div onclick="saveRow(this, 'user')" class="btn btn-red">Save</div>
+    </div>
+</div>
