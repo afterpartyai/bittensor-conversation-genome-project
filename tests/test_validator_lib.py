@@ -65,7 +65,7 @@ async def test_full():
         participants = Utils.get(full_conversation, "participants")
         indexed_windows = Utils.get(full_conversation, "indexed_windows")
         # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
-        if len(indexed_windows) > 1:
+        if len(indexed_windows) >= num_windows_per_convo:
             indexed_windows_subset = random.sample(indexed_windows, num_windows_per_convo)
         else:
             indexed_windows_subset = indexed_windows
