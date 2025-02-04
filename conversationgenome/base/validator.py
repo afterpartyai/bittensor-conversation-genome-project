@@ -336,12 +336,18 @@ class BaseValidatorNeuron(BaseNeuron):
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
         if len(self.hotkeys) < len(self.metagraph.hotkeys):
-            # Update the size of the moving average scores.
+            # Update the size of the moving average scores & scores
             new_moving_average = np.zeros((self.metagraph.n))
             new_scores = np.zeros((self.metagraph.n))
-            min_len = min(len(self.hotkeys), len(self.scores))
-            new_scores[:min_len] = self.scores[:min_len]
-            new_moving_average = self.ema_scores[:min_len]
+
+            # set old length
+            old_len = min(len(self.hotkeys), len(self.scores))
+
+            # populate new_scores and new_moving_average with the scores from the prior to resync, leaving zeros for newly registered UIDS
+            new_scores[:old_len] = self.scores[:old_len]
+            new_moving_average[:old_len] = self.ema_scores[:old_len]
+
+            # set self.scores and self.ema_scores
             self.scores = new_scores
             self.ema_scores = new_moving_average
 
