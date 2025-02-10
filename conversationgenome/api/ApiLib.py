@@ -49,7 +49,13 @@ class ApiLib:
             read_host_url = c.get('env', 'CGP_API_READ_HOST', 'https://api.conversations.xyz')
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
             http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+            options_str = c.get('env', 'CGP_API_OPTIONS', '')
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
+            if len(options_str) > 0:
+                options = options_str.split(",")
+                bt.logging.info(f"Read API options: {options}")
+                if "22" in options:
+                    url += "?options=22"
             response = None
             try:
                 response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=http_timeout)
@@ -69,6 +75,8 @@ class ApiLib:
                 "participants": Utils.get(selectedConvo, "participants", ["p1","p2"]),
                 "lines":Utils.get(selectedConvo, "lines", [])[0:maxLines],
             }
+            if 'min_convo_windows' in selectedConvo:
+                convo['min_convo_windows'] = Utils._int(Utils.get(selectedConvo, "min_convo_windows"))
         return convo
 
     async def completeConversation(self, hotkey, guid, dryrun=False):

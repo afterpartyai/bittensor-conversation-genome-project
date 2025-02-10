@@ -65,7 +65,10 @@ async def test_full():
         participants = Utils.get(full_conversation, "participants")
         indexed_windows = Utils.get(full_conversation, "indexed_windows")
         # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
-        indexed_windows_subset = random.sample(indexed_windows, num_windows_per_convo)
+        if len(indexed_windows) >= num_windows_per_convo:
+            indexed_windows_subset = random.sample(indexed_windows, num_windows_per_convo)
+        else:
+            indexed_windows_subset = indexed_windows
         for idx, indexed_window in enumerate(indexed_windows_subset):
             piece_data = {
                 "cguid":conversation_guid,
@@ -85,8 +88,8 @@ async def test_full():
         for piece in pieces[0:5]:
             print(f"Window piece: {piece['cguid']} / {piece['window_idx']}")
     test_mode = True
-    # Make sure we have at least 10 valid pieces
-    if len(pieces) > 10:
+    # Make sure we have at least 6 valid pieces
+    if len(pieces) > 6:
         miners_per_window = c.get("validator", "miners_per_window", 6)
 
         # Loop through conversation window pieces. Send each window piece to multiple miners
@@ -194,7 +197,7 @@ async def test_full():
                             "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
                         })
 
-            #break
+            break
     if wandb_enabled:
         wl.end_log_wandb()
 
