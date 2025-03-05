@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  cgp_miner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NETWORK: ${NETWORK}
+
+    env_file:
+      - .env
+
+    environment:
+      - NETWORK=${NETWORK}
+
+    ports:
+      - "60000:60000"
+
+    restart: unless-stopped
+
+    command:
+      - python3
+      - "-m"
+      - "neurons.miner"
+      - "--netuid"
+      - "33"
+      - "--wallet.name"
+      - "default"
+      - "--wallet.hotkey"
+      - "default"
+      - "--axon.port"
+      - "60000"
+      - "--network"
+      - "${NETWORK}"
+
+    volumes:
+      - ${HOME}/.bittensor/wallets:/root/.bittensor/wallets
