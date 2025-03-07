@@ -1,4 +1,6 @@
-FROM python:3.11-slim-bullseye
+ARG BASE_IMAGE="python:3.11-slim-bullseye"
+
+FROM ${BASE_IMAGE} AS base
 
 ARG NETWORK=test
 
