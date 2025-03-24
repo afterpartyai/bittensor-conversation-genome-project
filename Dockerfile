@@ -51,7 +51,8 @@ COPY . ./
 USER appuser
 
 # Define different targets for different networks
-# Mainnet target
+
+# ________ Miner targets ________
 FROM base AS miner_mainnet
 CMD ["python3", "-m", "neurons.miner_mainnet"]
 
@@ -62,6 +63,21 @@ CMD ["python3", "-m", "neurons.miner_testnet"]
 # Local target
 FROM base AS miner_local
 CMD ["python3", "-m", "neurons.miner_local"]
+
+
+# ________ Miner CPU-only targets ________
+FROM base AS miner_mainnet
+CMD ["python3", "-m", "neurons.miner_mainnet"]
+
+# Testnet target
+FROM base AS miner_testnet
+CMD ["python3", "-m", "neurons.miner_testnet"]
+
+# Local target
+FROM base AS miner_local
+CMD ["python3", "-m", "neurons.miner_local"]
+
+# ________ Validator targets ________
 
 # Mainnet target
 FROM base AS validator_mainnet
@@ -74,3 +90,4 @@ CMD ["python3", "-m", "neurons.validator_testnet"]
 # Local target
 FROM base AS validator_local
 CMD ["python3", "-m", "neurons.validator_local"]
+
