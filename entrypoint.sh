@@ -32,7 +32,8 @@ case "$NETWORK" in
 esac
 
 # Construct arguments
-ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --axon.port $PORT --subtensor.network $SUBTENSOR_NETWORK --subtensor.chain_endpoint $CHAIN_ENDPOINT"
+ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP \
+--subtensor.network $SUBTENSOR_NETWORK --subtensor.chain_endpoint $CHAIN_ENDPOINT"
 
 # Add debug mode if enabled
 [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
