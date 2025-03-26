@@ -215,6 +215,8 @@ To run with pm2 please see instructions [here](#Running-a-Miner-with-PM2)
 
 If you are running on runpod, please read instructions [here](#Using-Runpod).
 
+To setup and run a miner with Docker, see instructions [here](#Running-a-Miner-with-Docker).
+
 ```
 python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
@@ -235,6 +237,9 @@ You can launch your validator on testnet using the following command.
 To run with pm2 please see instructions [here](#Running-a-Validator-with-PM2)
 
 If you are running on runpod, please read instructions [here](#Using-Runpod)
+
+To setup and run a validator with Docker, see instructions [here](#Running-a-Miner-or-a-Validator-with-Docker).
+
 
 ```
 python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
@@ -443,6 +448,65 @@ pm2 stop <pid> # stops your pid
 pm2 del <pid> # deletes your pid
 pm2 describe <pid> # prints out metadata on the process
 ```
+
+## Running a Miner or a Validator with Docker  
+
+Follow these steps to set up and run a **miner** or **validator** using Docker:  
+
+### 1. Configure Your Wallet  
+Ensure that your **coldkey** and **hotkey** are properly set up on the machine you intend to use. These should be stored in:  
+
+```bash
+~/home/.bitensor/wallets
+```
+
+### 2. Set Up Environment Variables  
+At the root of the repository, create a copy of the environment variables file:  
+
+```bash
+cp env.example .env
+```
+
+### 3. Update Configuration  
+Modify the `.env` file to include your specific values and ensure all required fields are set:  
+
+```bash
+export COLDKEY_NAME=default  # Name of your Coldkey  
+export HOTKEY_NAME=default   # Name of your Hotkey  
+export TYPE=miner|validator  # Type of node to run ("miner" for mining, "validator" for validating)  
+
+export NETWORK=finney|test   # Network to deploy the node (options: finney or test)  
+export PORT=60000            # Axon service port  
+export IP=0.0.0.0            # Axon service IP  
+
+export OPENAI_API_KEY=       # Your OpenAI API Key  
+export WANDB_API_KEY=        # Your Weights & Biases API Key  
+```
+
+- Set `TYPE=miner` to run a miner, or `TYPE=validator` to run a validator.
+- Set `NETWORK=finney` to run on the main net, or `NETWORK=test` to run on the test net.
+
+### 4. Start the Node  
+Once the configuration is complete, start the node using:  
+
+```bash
+docker compose up -d
+```
+
+### 5. Monitor Logs  
+To check the node logs:  
+
+1. List running containers:  
+   ```bash
+   docker ps
+   ```  
+2. Find the **CONTAINER ID** of your node.  
+3. Stream the logs:  
+   ```bash
+   docker logs CONTAINER_ID --follow
+   ```  
+
+This setup ensures that your miner or validator runs smoothly within a Docker environment. 🚀
 
 
 # ReadyAI Overview
