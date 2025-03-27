@@ -485,6 +485,8 @@ export WANDB_API_KEY=        # Your Weights & Biases API Key
 
 - Set `TYPE=miner` to run a miner, or `TYPE=validator` to run a validator.
 - Set `NETWORK=finney` to run on the main net, or `NETWORK=test` to run on the test net.
+- <u>Important</u>: If you are a validator **on finney**, do not forget to setup your ReadyAI API key by following the steps [here](https://github.com/afterpartyai/bittensor-conversation-genome-project/blob/main/docs/generate-validator-api-key.md) and overriding the default test net key.
+  - For test net users, the key is pre-loaded in the Docker so there is nothing to do.
 
 ### 4. Start the Node  
 Once the configuration is complete, start the node using:  
