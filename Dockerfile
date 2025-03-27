@@ -11,6 +11,30 @@ WORKDIR .
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# Install necessary packages and clean up
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    gcc \
+    binutils \
+    pkg-config \
+    libsoup2.4-dev \
+    libjavascriptcoregtk-4.0-dev \
+    libpango1.0-dev \
+    libgtk-3-dev \
+    libwebkit2gtk-4.0-dev \
+    libssl-dev
+
+# Install rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Cleanup
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*
+
+# Set the PATH to include cargo
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Copy only requirements first for better caching
 COPY requirements.txt ./
 
