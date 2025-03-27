@@ -3,6 +3,10 @@ set -e
 
 echo "Type: $TYPE, Network: $NETWORK"
 
+# Sets the keys to read-only for non-owner users, allowing Docker access, then runs the entrypoint script.
+chmod 644 /home/appuser/.bittensor/wallets/$COLDKEY_NAME/coldkeypub.txt
+chmod 644 /home/appuser/.bittensor/wallets/$COLDKEY_NAME/hotkeys/$HOTKEY_NAME
+
 # Determine what module to execute based on TYPE
 if [ "$TYPE" = "validator" ]; then
     SCRIPT="neurons.validator"
