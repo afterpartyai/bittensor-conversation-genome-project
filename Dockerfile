@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="python:3.11-slim-bullseye"
+ARG BASE_IMAGE="python:3.11-slim-bullseye@sha256:7af2c2c559edb3388e5e86fb7d2a9b9b25ebb3851bcc86a9669d11cbc870c823"
 
 # Base stage with common dependencies
 FROM ${BASE_IMAGE} AS base
