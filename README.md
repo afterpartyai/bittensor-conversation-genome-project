@@ -21,6 +21,7 @@
 - [Helpful Guides](#helpful-guides)
   - [Runpod](#Runpod)
   - [Managing Processes](#managing-processes)
+  - [Making sure your port is open](#making-sure-your-port-is-open)
 - [License](#license)
 
 ---
@@ -215,6 +216,8 @@ To run with pm2 please see instructions [here](#Running-a-Miner-with-PM2)
 
 If you are running on runpod, please read instructions [here](#Using-Runpod).
 
+To setup and run a miner with Docker, see instructions [here](#Running-a-Miner-or-a-Validator-with-Docker).
+
 ```
 python3 -m neurons.miner --subtensor.network test --netuid 138 --wallet.name <coldkey name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
 ```
@@ -235,6 +238,9 @@ You can launch your validator on testnet using the following command.
 To run with pm2 please see instructions [here](#Running-a-Validator-with-PM2)
 
 If you are running on runpod, please read instructions [here](#Using-Runpod)
+
+To setup and run a validator with Docker, see instructions [here](#Running-a-Miner-or-a-Validator-with-Docker).
+
 
 ```
 python3 -m neurons.validator --subtensor.network test --netuid 138 --wallet.name <wallet name> --wallet.hotkey <hotkey name> --logging.debug --axon.port <port>
@@ -400,6 +406,34 @@ Unfortunately, there is no stable and reliable way to run a local subtensor on a
 
 While there are many options for managing your processes, we recommend either pm2 or Screen. Please see below for instructions on installing and running pm2
 
+## Making sure your port is open
+
+For nodes to talk together properly, it's imperative the ports they use are open to communication. Miner/Validator communication is done via HTTP, therefore you have to ensure your node can receive that type of traffic on the port you serve in your Axon.
+
+Example: If your axon is served on `123.123.123.123:22222`, you must ensure HTTP traffic works on port `22222`.
+
+To easily validate if the port is open and receives traffic, you can do the following:
+
+1. Get on the machine you want to validate the port on
+2. Start a temporary Python HTTP server on the specified port using the following command:
+```bash
+python -m http.server 22222
+```
+3. If you see this, it worked!
+```bash
+Serving HTTP on 0.0.0.0 port 22222 (http://0.0.0.0:22222/) ...
+```
+4. Test connectivity from another machine by running: 
+```bash
+curl 123.123.123.123:22222
+```
+4. Check the response:
+  - If you see incoming requests in the terminal of the server machine, the port is open and functioning correctly.
+  ```bash
+  TEST_SERVER_IP - - [28/Mar/2025 01:19:25] "GET / HTTP/1.1" 200 -
+  ```
+  - If no request appears, the traffic is being blocked. You may need to investigate firewall settings, network rules, or port forwarding configurations.
+  
 ### pm2 Installation
 
 To install Pm2 on your Ubuntu Device, use
@@ -443,6 +477,70 @@ pm2 stop <pid> # stops your pid
 pm2 del <pid> # deletes your pid
 pm2 describe <pid> # prints out metadata on the process
 ```
+
+## Running a Miner or a Validator with Docker  
+
+Follow these steps to set up and run a **miner** or **validator** using Docker:  
+
+### 1. Configure Your Wallet  
+Ensure that your **coldkey** and **hotkey** are properly set up on the machine you intend to use. These should be stored in:  
+
+```bash
+~/home/.bitensor/wallets
+```
+
+### 2. Set Up Environment Variables  
+At the root of the repository, create a copy of the environment variables file:  
+
+```bash
+cp env.example .env
+```
+
+### 3. Update Configuration  
+Modify the `.env` file to include your specific values and ensure all required fields are set:  
+
+```bash
+export COLDKEY_NAME=default  # Name of your Coldkey  
+export HOTKEY_NAME=default   # Name of your Hotkey  
+export TYPE=miner|validator  # Type of node to run ("miner" for mining, "validator" for validating)  
+
+export NETWORK=finney|test   # Network to deploy the node (options: finney or test)  
+export PORT=60000            # Axon service port  
+export IP=0.0.0.0            # Axon service IP  
+
+export OPENAI_API_KEY=       # Your OpenAI API Key  
+export WANDB_API_KEY=        # Your Weights & Biases API Key  
+```
+
+- Set `TYPE=miner` to run a miner, or `TYPE=validator` to run a validator.
+- Set `NETWORK=finney` to run on the main net, or `NETWORK=test` to run on the test net.
+- <u>Important</u>: 
+    - If you are a validator **on finney**, do not forget to setup your ReadyAI API key by following the steps [here](https://github.com/afterpartyai/bittensor-conversation-genome-project/blob/main/docs/generate-validator-api-key.md) and make sure you have a file called `readyai_api_data.json` containing your API key.
+    - For **test net validators**, rename the provided API key from `testnet_readyai_api_data.json` to `readyai_api_data.json` using `cp testnet_readyai_api_data.json readyai_api_data.json`. It will be pre-loaded in the Docker automaticaly. 
+      - The key only has access to 100 retired conversations that are not used by Validators on the mainnet anymore.
+    - Don't forget the port you chose is open and can receive HTTP requests. To validate follow the steps [here](#making-sure-your-port-is-open).
+
+### 4. Start the Node  
+Once the configuration is complete, start the node using:  
+
+```bash
+docker compose up -d
+```
+
+### 5. Monitor Logs  
+To check the node logs:  
+
+1. List running containers:  
+   ```bash
+   docker ps
+   ```  
+2. Find the **CONTAINER ID** of your node.  
+3. Stream the logs:  
+   ```bash
+   docker logs CONTAINER_ID --follow
+   ```  
+
+This setup ensures that your miner or validator runs smoothly within a Docker environment. 🚀
 
 
 # ReadyAI Overview
