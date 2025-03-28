@@ -1,43 +1,57 @@
-ARG BASE_IMAGE="python:3.11-slim-bullseye"
+ARG BASE_IMAGE="python:3.11-slim-bullseye@sha256:7af2c2c559edb3388e5e86fb7d2a9b9b25ebb3851bcc86a9669d11cbc870c823"
 
+# Base stage with common dependencies
 FROM ${BASE_IMAGE} AS base
 
-ARG NETWORK=test
+# Create a non-root user
+RUN useradd -ms /bin/bash appuser
 
-ENV NETWORK=${NETWORK}
-
-WORKDIR /app
+WORKDIR .
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y \
+# Install necessary packages and clean up
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     build-essential \
+    gcc \
+    binutils \
     pkg-config \
-    libssl-dev \
-    libglib2.0-dev \
-    libgirepository1.0-dev \
-    libgtk-3-dev \
-    libgdk-pixbuf2.0-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
     libsoup2.4-dev \
-    libwebkit2gtk-4.0-dev \
     libjavascriptcoregtk-4.0-dev \
-    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && apt-get clean
+    libpango1.0-dev \
+    libgtk-3-dev \
+    libwebkit2gtk-4.0-dev \
+    libssl-dev
 
+# Install rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Cleanup
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*
+
+# Set the PATH to include cargo
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN rustc --version && cargo --version
-
+# Copy only requirements first for better caching
 COPY requirements.txt ./
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . ./
+# Copy the rest of the application code
+COPY . .
 
-RUN echo "Running on NETWORK=${NETWORK}" && cat /dev/null
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-CMD ["python3", "-m", "neurons.miner"]
+# Switch to non-root user
+USER appuser
+
+# Create the miners bittensor directory
+RUN mkdir -p ~/.bittensor/miners
+
+# Use the entrypoint script to decide which target to run
+ENTRYPOINT ["/entrypoint.sh"]

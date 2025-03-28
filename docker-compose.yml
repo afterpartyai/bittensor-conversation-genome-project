@@ -1,36 +1,14 @@
-version: "3.8"
-
 services:
   cgp_miner:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        NETWORK: ${NETWORK}
-
     env_file:
       - .env
-
-    environment:
-      - NETWORK=${NETWORK}
-      - ENDPOINT=${ENDPOINT}
-      - DEBUG_MODE=${DEBUG_MODE}
-
     ports:
-      - "60000:60000"
-
+      - "${PORT}:${PORT}"
     restart: on-failure
-
-    entrypoint: >
-      sh -c 'exec python3 -m neurons.miner 
-      --netuid 33 
-      --wallet.name default 
-      --wallet.hotkey default 
-      --axon.port 60000 
-      --subtensor.network "$NETWORK" 
-      --subtensor.chain_endpoint "$ENDPOINT" 
-      ${DEBUG_MODE:+--logging.debug}'
-
     volumes:
-      - ${HOME}/.bittensor/wallets:/root/.bittensor/wallets
-      - ${HOME}/.bittensor/logs:/root/.bittensor/logs
+      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt:/home/appuser/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt
+      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}:/home/appuser/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}
+      - ${HOME}/.bittensor/logs:/home/appuser/.bittensor/logs
