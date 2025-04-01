@@ -153,7 +153,7 @@ class Miner(BaseMinerNeuron):
             self.metagraph.S[caller_uid]
         )  # Return the stake as the priority.
         bt.logging.trace(
-            f"Priority {synapse.dendrite.hotkey} with value: {priority}"
+            f"Prioritizing {synapse.dendrite.hotkey} with value: {priority}"
         )
         return priority
 
