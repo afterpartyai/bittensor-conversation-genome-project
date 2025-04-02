@@ -33,7 +33,7 @@ case "$TYPE" in
     CMD="python3 -m neurons.miner"
     ;;
   register)
-    CMD="btcli s register"
+    CMD="btcli s register -y"
     ;;
   *)
     echo "Unknown type: $TYPE"
