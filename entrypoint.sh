@@ -3,10 +3,6 @@ set -e
 
 echo "Type: $TYPE, Network: $NETWORK"
 
-# Sets the keys to read-only for non-owner users, allowing Docker access, then runs the entrypoint script.
-[ -f "/home/appuser/.bittensor/wallets/$COLDKEY_NAME/coldkeypub.txt" ] && chmod 644 "/home/appuser/.bittensor/wallets/$COLDKEY_NAME/coldkeypub.txt"
-[ -f "/home/appuser/.bittensor/wallets/$COLDKEY_NAME/hotkeys/$HOTKEY_NAME" ] && chmod 644 "/home/appuser/.bittensor/wallets/$COLDKEY_NAME/hotkeys/$HOTKEY_NAME"
-
 # Set network parameters
 case "$NETWORK" in
   finney)

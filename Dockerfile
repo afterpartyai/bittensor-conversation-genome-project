@@ -3,9 +3,6 @@ ARG BASE_IMAGE="python:3.11-slim-bullseye@sha256:7af2c2c559edb3388e5e86fb7d2a9b9
 # Base stage with common dependencies
 FROM ${BASE_IMAGE} AS base
 
-# Create a non-root user
-RUN useradd -ms /bin/bash appuser
-
 WORKDIR .
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -46,9 +43,6 @@ COPY . .
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# Switch to non-root user
-USER appuser
 
 # Create the miners bittensor directory
 RUN mkdir -p ~/.bittensor/miners
