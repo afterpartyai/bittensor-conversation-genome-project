@@ -22,7 +22,7 @@ case "$NETWORK" in
 esac
 
 # Default arguments
-ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --subtensor.network $SUBTENSOR_NETWORK --subtensor.chain_endpoint $CHAIN_ENDPOINT"
+ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --subtensor.network $SUBTENSOR_NETWORK"
 
 # Determine the command to execute
 case "$TYPE" in
@@ -43,7 +43,7 @@ esac
 
 # Append extra arguments for miner/validator
 if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
-    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP
+    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
 
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
 fi
