@@ -9,6 +9,6 @@ services:
       - "${PORT}:${PORT}"
     restart: on-failure
     volumes:
-      - ~/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt:~/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt
-      - ~/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}:~/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}
-      - ~/.bittensor/logs:~/.bittensor/logs
+      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt:/root/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt
+      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}:/root/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}
+      - ${HOME}/.bittensor/logs:/root/.bittensor/logs
