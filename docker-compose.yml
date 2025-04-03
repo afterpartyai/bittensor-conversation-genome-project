@@ -12,3 +12,4 @@ services:
       - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt:/home/appuser/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt
       - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}:/home/appuser/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}
       - ${HOME}/.bittensor/logs:/home/appuser/.bittensor/logs
+      - ./readyai_api_data.json:/readyai_api_data.json
