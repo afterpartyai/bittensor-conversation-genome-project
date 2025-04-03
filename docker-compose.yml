@@ -9,6 +9,7 @@ services:
       - "${PORT}:${PORT}"
     restart: on-failure
     volumes:
-      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt:/root/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt
-      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}:/root/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}
-      - ${HOME}/.bittensor/logs:/root/.bittensor/logs
+      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt:/home/appuser/.bittensor/wallets/${COLDKEY_NAME}/coldkeypub.txt
+      - ${HOME}/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}:/home/appuser/.bittensor/wallets/${COLDKEY_NAME}/hotkeys/${HOTKEY_NAME}
+      - ${HOME}/.bittensor/logs:/home/appuser/.bittensor/logs
+      - ./readyai_api_data.json:/readyai_api_data.json
