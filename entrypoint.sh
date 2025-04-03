@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "Type: $TYPE, Network: $NETWORK"
+echo "Type: $TYPE, Network: $NETWORK, Coldkey: $COLDKEY_NAME, Hotkey: $HOTKEY_NAME, Port: $PORT, IP: $IP"
 
 # Set network parameters
 case "$NETWORK" in
@@ -31,9 +31,6 @@ case "$TYPE" in
     ;;
   miner)
     CMD="python3 -m neurons.miner"
-    ;;
-  register)
-    CMD="btcli s register -y"
     ;;
   *)
     echo "Unknown type: $TYPE"
