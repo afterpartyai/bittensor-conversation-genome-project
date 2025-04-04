@@ -43,6 +43,8 @@ if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
     ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
 
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
+
+    [ "$NETWORK" = "test"] && ARGS="$ARGS --blacklist.allow_non_registered"
 fi
 
 # Print the final command for debugging
