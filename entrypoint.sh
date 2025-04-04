@@ -44,7 +44,7 @@ if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
 
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
 
-    [ "$NETWORK" = "test"] && ARGS="$ARGS --blacklist.allow_non_registered"
+    [ "$NETWORK" = "test" ] && ARGS="$ARGS --blacklist.allow_non_registered"
 fi
 
 # Print the final command for debugging
