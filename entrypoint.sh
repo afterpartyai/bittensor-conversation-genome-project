@@ -1,21 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "Type: $TYPE, Network: $NETWORK"
-
-# Sets the keys to read-only for non-owner users, allowing Docker access, then runs the entrypoint script.
-chmod 644 /home/appuser/.bittensor/wallets/$COLDKEY_NAME/coldkeypub.txt
-chmod 644 /home/appuser/.bittensor/wallets/$COLDKEY_NAME/hotkeys/$HOTKEY_NAME
-
-# Determine what module to execute based on TYPE
-if [ "$TYPE" = "validator" ]; then
-    SCRIPT="neurons.validator"
-elif [ "$TYPE" = "miner" ]; then
-    SCRIPT="neurons.miner"
-else
-    echo "Unknown type: $TYPE"
-    exit 1
-fi
+echo "Type: $TYPE, Network: $NETWORK, Coldkey: $COLDKEY_NAME, Hotkey: $HOTKEY_NAME, Port: $PORT, IP: $IP"
 
 # Set network parameters
 case "$NETWORK" in
@@ -35,12 +21,32 @@ case "$NETWORK" in
     ;;
 esac
 
-# Construct arguments
-ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP \
---subtensor.network $SUBTENSOR_NETWORK --subtensor.chain_endpoint $CHAIN_ENDPOINT"
+# Default arguments
+ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --subtensor.network $SUBTENSOR_NETWORK"
 
-# Add debug mode if enabled
-[ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
+# Determine the command to execute
+case "$TYPE" in
+  validator)
+    CMD="python3 -m neurons.validator"
+    ;;
+  miner)
+    CMD="python3 -m neurons.miner"
+    ;;
+  *)
+    echo "Unknown type: $TYPE"
+    exit 1
+    ;;
+esac
+
+# Append extra arguments for miner/validator
+if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
+    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
+
+    [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
+fi
+
+# Print the final command for debugging
+echo "Executing: $CMD $ARGS"
 
 # Execute the command
-exec python3 -m $SCRIPT $ARGS
+exec $CMD $ARGS
