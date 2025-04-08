@@ -1,14 +1,23 @@
-group "default" {
-  targets = ["multiarch"]
-}
-
-target "multiarch" {
+target "miner_arm" {
   context = "."
   dockerfile = "Dockerfile"
-  platforms = ["linux/amd64", "linux/arm64"]
+
+  platforms = ["linux/arm64"]
   tags = [
-    "readyai/bittensor-readyai-sn33:latest",
-    "readyai/bittensor-readyai-sn33:v2.9.38",
+    "readyai/bittensor-readyai-sn33:arm64",
   ]
+
+  push = true
+}
+
+target "miner_x86" {
+  context = "."
+  dockerfile = "Dockerfile"
+
+  platforms = ["linux/amd64"]
+  tags = [
+    "readyai/bittensor-readyai-sn33:amd64",
+  ]
+  
   push = true
 }
