@@ -519,17 +519,21 @@ export NETWORK=finney|test   # Network to deploy the node (options: finney or te
 export PORT=60000            # Axon service port  
 export IP=0.0.0.0            # Axon service IP -- If not changed, will be set to your node's public IP
 
-export OPENAI_API_KEY=       # Your OpenAI API Key  
+export OPENAI_API_KEY=       # Your OpenAI API Key
+
+# --- For Validators ---
+export WANDB_API_KEY=        # Your WandB API Key
+export WAND_ENABLED=0        # Enable or disable WandB (Validators NEED to set this to 1)
 ```
 
 - Do not forget to set your OpenAI API Key
 - Set `TYPE=miner` to run a miner, or `TYPE=validator` to run a validator.
 - Set `NETWORK=finney` to run on the main net, or `NETWORK=test` to run on the test net.
-- <u>Important</u>: 
-    - If you are a validator **on finney**, do not forget to setup your ReadyAI API key by following the steps [here](https://github.com/afterpartyai/bittensor-conversation-genome-project/blob/main/docs/generate-validator-api-key.md) and make sure you have a file called `readyai_api_data.json` containing your API key.
-    - For **test net validators**, rename the provided API key from `testnet_readyai_api_data.json` to `readyai_api_data.json` using `cp testnet_readyai_api_data.json readyai_api_data.json`. It will be pre-loaded in the Docker automaticaly. 
-      - The key only has access to 100 retired conversations that are not used by Validators on the mainnet anymore.
-    - Don't forget the port you chose is open and can receive HTTP requests. To validate follow the steps [here](#making-sure-your-port-is-open).
+- Don't forget the port you chose has to be open and be able to receive HTTP requests. To validate follow the steps [here](#making-sure-your-port-is-open).
+- ***If you are a validator:***
+  - Do not forget to set your `WANDB_API_KEY` and to set `WAND_ENABLED` to 1
+  - **On Finney**, do not forget to setup your ReadyAI API key by following the steps [here](https://github.com/afterpartyai/bittensor-conversation-genome-project/blob/main/docs/generate-validator-api-key.md) and make sure you have a file called `readyai_api_data.json` containing your API key.
+  - **On Test net**, rename the provided API key in the root of the repository from `testnet_readyai_api_data.json` to `readyai_api_data.json` using `cp testnet_readyai_api_data.json readyai_api_data.json`. It will be pre-loaded in the Docker automaticaly.
 
 #### 4. Start the Node  
 Once the configuration is complete, start the node using:  

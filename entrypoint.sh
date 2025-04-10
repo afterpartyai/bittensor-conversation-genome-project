@@ -28,9 +28,11 @@ ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME 
 case "$TYPE" in
   validator)
     CMD="python3 -m neurons.validator"
+    export WAND_ENABLED=1
     ;;
   miner)
     CMD="python3 -m neurons.miner"
+    export WAND_ENABLED=0
     ;;
   *)
     echo "Unknown type: $TYPE"
