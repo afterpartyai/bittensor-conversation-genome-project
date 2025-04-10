@@ -28,9 +28,11 @@ ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME 
 case "$TYPE" in
   validator)
     CMD="python3 -m neurons.validator"
+    export WAND_ENABLED=1
     ;;
   miner)
     CMD="python3 -m neurons.miner"
+    export WAND_ENABLED=0
     ;;
   *)
     echo "Unknown type: $TYPE"
@@ -40,6 +42,14 @@ esac
 
 # Append extra arguments for miner/validator
 if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
+    # Make sure the Axon is served on the public IP of the node
+    # 0.0.0.0 or nothing means the .env was not updated so we do it here
+    if [ "$IP" = "0.0.0.0" ] || [ -z "$IP" ]; then
+      IP=$(curl -s ifconfig.me)
+      echo "Using fecthed IP to serve axon: $IP"
+      export IP
+    fi
+
     ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
 
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
