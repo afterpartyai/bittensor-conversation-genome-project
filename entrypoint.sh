@@ -41,7 +41,7 @@ esac
 # Append extra arguments for miner/validator
 if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
     # Make sure the Axon is served on the public IP of the node
-    # 0.0.0.0 means the .env was not updated so we do it here
+    # 0.0.0.0 or nothing means the .env was not updated so we do it here
     if [ "$IP" = "0.0.0.0" ] || [ -z "$IP" ]; then
       IP=$(curl -s ifconfig.me)
       echo "Using fecthed IP to serve axon: $IP"
