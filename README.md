@@ -15,6 +15,7 @@
   - [LLM Selection](#LLM-Selection)
   - [Quickstart - Running the tests](#running-the-tests)
   - [Registration](#Registration)
+  - [Get Running Quickly with the Docker Image!](#Running-a-Miner-or-a-Validator-with-Docker)
 - [Subnet Roles](#subnet-roles)
   - [Mining](#mining)
   - [Validating](#validating)
@@ -480,23 +481,33 @@ pm2 describe <pid> # prints out metadata on the process
 
 ## Running a Miner or a Validator with Docker  
 
+### Requirements
+
+- An [OpenAI API Key](https://platform.openai.com/api-keys)
+- A [Bittensor wallet](https://docs.bittensor.com/working-with-keys#creating-a-wallet-with-btcli)
+- [Registering](https://docs.bittensor.com/miners/#miner-registration) the hotkey on the subnet 33 
+  - or 138 if you want to run on the test network
+
+### Getting up and running
+
 Follow these steps to set up and run a **miner** or **validator** using Docker:  
 
-### 1. Configure Your Wallet  
+#### 1. Configure Your Wallet  
 Ensure that your **coldkey** and **hotkey** are properly set up on the machine you intend to use. These should be stored in:  
 
 ```bash
 ~/home/.bitensor/wallets
 ```
+- It is best practices when you regenerate your coldkey on a machine to mine or validate, to regenerate only the public coldkey using the following command: `btcli w regen-coldkeypub`
 
-### 2. Set Up Environment Variables  
+#### 2. Set Up Environment Variables  
 At the root of the repository, create a copy of the environment variables file:  
 
 ```bash
 cp env.example .env
 ```
 
-### 3. Update Configuration  
+#### 3. Update Configuration  
 Modify the `.env` file to include your specific values and ensure all required fields are set:  
 
 ```bash
@@ -506,12 +517,12 @@ export TYPE=miner|validator  # Type of node to run ("miner" for mining, "validat
 
 export NETWORK=finney|test   # Network to deploy the node (options: finney or test)  
 export PORT=60000            # Axon service port  
-export IP=0.0.0.0            # Axon service IP  
+export IP=0.0.0.0            # Axon service IP -- If not changed, will be set to your node's public IP
 
 export OPENAI_API_KEY=       # Your OpenAI API Key  
-export WANDB_API_KEY=        # Your Weights & Biases API Key  
 ```
 
+- Do not forget to set your OpenAI API Key
 - Set `TYPE=miner` to run a miner, or `TYPE=validator` to run a validator.
 - Set `NETWORK=finney` to run on the main net, or `NETWORK=test` to run on the test net.
 - <u>Important</u>: 
@@ -520,14 +531,14 @@ export WANDB_API_KEY=        # Your Weights & Biases API Key
       - The key only has access to 100 retired conversations that are not used by Validators on the mainnet anymore.
     - Don't forget the port you chose is open and can receive HTTP requests. To validate follow the steps [here](#making-sure-your-port-is-open).
 
-### 4. Start the Node  
+#### 4. Start the Node  
 Once the configuration is complete, start the node using:  
 
 ```bash
 docker compose up -d
 ```
 
-### 5. Monitor Logs  
+#### 5. Monitor Logs  
 To check the node logs:  
 
 1. List running containers:  
