@@ -62,6 +62,13 @@ prepare_command() {
       export IP
     fi
 
+    # If you run on Runpod, the port is mapped to a random port and therefore need to be set accordingly
+    if [ "$RUNPOD" = "true" ]; then
+      PORT=$(echo $RUNPOD_TCP_PORT_60000)
+      echo "Using port from Runpod: $PORT"
+      export PORT
+    fi
+
     ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
   fi
