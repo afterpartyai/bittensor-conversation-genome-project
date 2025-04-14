@@ -73,7 +73,7 @@ prepare_command() {
     # If you run on Runpod, the port is mapped to a random port and therefore need to be set accordingly
     # The keys are also kept in a persistent volume at /workspace/wallets so it needs to be passed to the launch command
     if [ "$RUNPOD" = "true" ]; then
-      PORT=$(echo $RUNPOD_TCP_PORT_60000)
+      PORT=$(echo $RUNPOD_TCP_PORT_70033)
       echo "Using port from Runpod: $PORT"
       export PORT
 
