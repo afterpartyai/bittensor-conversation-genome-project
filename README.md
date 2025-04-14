@@ -15,6 +15,8 @@
   - [LLM Selection](#LLM-Selection)
   - [Quickstart - Running the tests](#running-the-tests)
   - [Registration](#Registration)
+  - [Get Running Quickly with the Docker Image!](#Running-a-Miner-or-a-Validator-with-Docker)
+  - [Get a miner Running on Runpod](#Running-a-Miner-on-Runpod)
 - [Subnet Roles](#subnet-roles)
   - [Mining](#mining)
   - [Validating](#validating)
@@ -480,23 +482,33 @@ pm2 describe <pid> # prints out metadata on the process
 
 ## Running a Miner or a Validator with Docker  
 
+### Requirements
+
+- An [OpenAI API Key](https://platform.openai.com/api-keys)
+- A [Bittensor wallet](https://docs.bittensor.com/working-with-keys#creating-a-wallet-with-btcli)
+- [Registering](https://docs.bittensor.com/miners/#miner-registration) the hotkey on the subnet 33 
+  - or 138 if you want to run on the test network
+
+### Getting up and running
+
 Follow these steps to set up and run a **miner** or **validator** using Docker:  
 
-### 1. Configure Your Wallet  
+#### 1. Configure Your Wallet  
 Ensure that your **coldkey** and **hotkey** are properly set up on the machine you intend to use. These should be stored in:  
 
 ```bash
 ~/home/.bitensor/wallets
 ```
+- It is best practices when you regenerate your coldkey on a machine to mine or validate, to regenerate only the public coldkey using the following command: `btcli w regen-coldkeypub`
 
-### 2. Set Up Environment Variables  
+#### 2. Set Up Environment Variables  
 At the root of the repository, create a copy of the environment variables file:  
 
 ```bash
 cp env.example .env
 ```
 
-### 3. Update Configuration  
+#### 3. Update Configuration  
 Modify the `.env` file to include your specific values and ensure all required fields are set:  
 
 ```bash
@@ -506,28 +518,32 @@ export TYPE=miner|validator  # Type of node to run ("miner" for mining, "validat
 
 export NETWORK=finney|test   # Network to deploy the node (options: finney or test)  
 export PORT=60000            # Axon service port  
-export IP=0.0.0.0            # Axon service IP  
+export IP=0.0.0.0            # Axon service IP -- If not changed, will be set to your node's public IP
 
-export OPENAI_API_KEY=       # Your OpenAI API Key  
-export WANDB_API_KEY=        # Your Weights & Biases API Key  
+export OPENAI_API_KEY=       # Your OpenAI API Key
+
+# --- For Validators ---
+export WANDB_API_KEY=        # Your WandB API Key
+export WAND_ENABLED=0        # Enable or disable WandB (Validators NEED to set this to 1)
 ```
 
+- Do not forget to set your OpenAI API Key
 - Set `TYPE=miner` to run a miner, or `TYPE=validator` to run a validator.
 - Set `NETWORK=finney` to run on the main net, or `NETWORK=test` to run on the test net.
-- <u>Important</u>: 
-    - If you are a validator **on finney**, do not forget to setup your ReadyAI API key by following the steps [here](https://github.com/afterpartyai/bittensor-conversation-genome-project/blob/main/docs/generate-validator-api-key.md) and make sure you have a file called `readyai_api_data.json` containing your API key.
-    - For **test net validators**, rename the provided API key from `testnet_readyai_api_data.json` to `readyai_api_data.json` using `cp testnet_readyai_api_data.json readyai_api_data.json`. It will be pre-loaded in the Docker automaticaly. 
-      - The key only has access to 100 retired conversations that are not used by Validators on the mainnet anymore.
-    - Don't forget the port you chose is open and can receive HTTP requests. To validate follow the steps [here](#making-sure-your-port-is-open).
+- Don't forget the port you chose has to be open and be able to receive HTTP requests. To validate follow the steps [here](#making-sure-your-port-is-open).
+- ***If you are a validator:***
+  - Do not forget to set your `WANDB_API_KEY` and to set `WAND_ENABLED` to 1
+  - **On Finney**, do not forget to setup your ReadyAI API key by following the steps [here](https://github.com/afterpartyai/bittensor-conversation-genome-project/blob/main/docs/generate-validator-api-key.md) and make sure you have a file called `readyai_api_data.json` containing your API key.
+  - **On Test net**, rename the provided API key in the root of the repository from `testnet_readyai_api_data.json` to `readyai_api_data.json` using `cp testnet_readyai_api_data.json readyai_api_data.json`. It will be pre-loaded in the Docker automaticaly.
 
-### 4. Start the Node  
+#### 4. Start the Node  
 Once the configuration is complete, start the node using:  
 
 ```bash
 docker compose up -d
 ```
 
-### 5. Monitor Logs  
+#### 5. Monitor Logs  
 To check the node logs:  
 
 1. List running containers:  
@@ -542,6 +558,168 @@ To check the node logs:
 
 This setup ensures that your miner or validator runs smoothly within a Docker environment. 🚀
 
+
+## How to Run a Bittensor Miner on Subnet 33 Using Runpod
+
+This guide walks you through the process of deploying a Bittensor miner on Subnet 33 using [Runpod](https://runpod.io). In a few simple steps, you’ll go from zero to mining on the testnet or mainnet.
+
+---
+
+## ✅ Requirements
+
+- A [Runpod.io](https://runpod.io) account  
+- An OpenAI API key
+
+---
+
+## 🔐 Generate Your SSH Key
+
+You’ll use SSH to access your miner. On your local machine, run the following:
+
+```
+ssh-keygen -t ed25519 -C "your_email@example.com"
+```
+
+Then, add your key to the SSH agent:
+
+```
+eval "$(ssh-agent -s)"  
+ssh-add ~/.ssh/id_ed25519
+```
+
+---
+
+## 🚀 Deploy the Pod on Runpod
+
+1. **Click the template link to start deploying**  
+   👉 [Launch Template](https://runpod.io/console/deploy?template=z1cctk4sdl&ref=fgpcs8kw)
+
+2. **Create a Network Volume**  
+    ![Create Network Volume Button](docs/deploy-miner-on-runpod/runpod-create-network-volume-button.png)
+   This is your miner’s persistent storage.
+   - Choose a data center with available CPU instances.
+      ![Choose Network Volume Datacenter](docs/deploy-miner-on-runpod/runpod-choose-network-volume-datacenter.png)
+   - Set a volume name and allocate 10 GB (enough for typical usage).
+
+   > ✅ Tip: Make sure the volume is selected before creating the pod.
+
+3. **Choose a Pod Configuration**  
+   - Select the cheapest available CPU option — it’s sufficient for this subnet.
+
+4. **Edit the Template and Set Environment Variables**
+  ![alt text](docs/deploy-miner-on-runpod/runpod-edit-template-button.png)
+
+    | Variable         | Value                                                                 |
+    |------------------|-----------------------------------------------------------------------|
+    | `NETWORK`        | Use `test` for testnet or `finney` for mainnet.                      |
+    | `OPENAI_API_KEY` | Create a Runpod secret named `openai_key` containing your API key.   |
+    | `SSH_PUBLIC_KEY` | Paste the contents of your public SSH key (Usually in: `~/.ssh/id_ed25519.pub`). |
+
+---
+
+## 🧳 First Boot: Create Your Wallet
+
+Once the pod starts, it will download the Docker image and initialize. You’ll see an error if your wallet isn't yet created — that's expected.
+
+### Connect via SSH
+
+In your pod's **Connect** section, you'll find the SSH command to access the miner. Use that to SSH in:
+
+```
+ssh -i ~/.ssh/id_ed25519 root@<YOUR_POD_IP>
+```
+
+### Create Your Wallet (if you don’t already have one) or recreate your wallet if you do!
+
+> Your wallet must be in `/workspace/wallets` in order be picked up by the miner and be persisted.
+
+#### Option 1: Create your wallet
+
+We will create both the hotkey and coldkey at the same time:
+```
+cd /workspace  
+mkdir wallets  
+cd wallets  
+btcli w create --wallet.path .
+```
+
+> 🔒 **IMPORTANT**: Backup your wallet to your local machine using `scp`:
+
+```
+scp -r root@<YOUR_POD_IP>:/workspace/wallets ./wallets
+```
+
+#### Option 2: Recreate your wallet
+
+First recreate your public coldkey:
+
+```
+cd /workspace
+mkdir wallets
+cd wallets
+btcli w regen-coldkeypub --wallet.path .
+```
+
+Then recreate your hotkey:
+
+```
+btcli w regen-coldkeypub --wallet.path .
+```
+
+---
+
+## 🌍 Make Sure Your Miner is Reachable
+
+Validators need to be able to reach your miner's Axon port.
+
+1. Click **Connect** on your pod.
+    ![Miner Connect Button](docs/deploy-miner-on-runpod/runpod-miner-connect-button.png)
+2. Note the **Direct TCP** port (not port 22). This is your Axon port and **must** be publicly accessible.
+    ![Miner Axon Port](docs/deploy-miner-on-runpod/runpod-miner-axon-port.png)
+
+To test if it's reachable:
+
+```
+curl <YOUR_POD_IP>:<AXON_PORT>
+```
+
+You should:
+- Get a JSON-like response in your terminal
+    ![Axon reachable curl](docs/deploy-miner-on-runpod/runpod-miner-reachable-curl.png)
+- See logs in your miner indicating it received a connection
+    ![Axon reached in miner](docs/deploy-miner-on-runpod/runpod-miner-axon-reached.png)
+
+---
+
+## 🔑 Registering your miner
+
+You will need:
+- Enough Tao to pay the registration fee
+
+You can register by following these steps:
+1. Connect via SSH into your miner as explained [here](#Connect-via-SSH)
+2. Run the following command and complete the prompts:
+```
+btcli s register --netuid 138 --wallet.name default --wallet.hotkey default --network test --wallet.path /workspace/wallets
+```
+
+You can change the `--netuid` to `33` and the `--network` to `finney` if you want to register on the main Bittensor network
+
+---
+
+## 🎉 Your Miner Is Live!
+
+You should now see logs indicating that the miner is running and active. When it actually handles validator requests, you will see logs like this:
+![Miner is working](docs/deploy-miner-on-runpod/runpod-miner-is-working.png)
+> It can take up to 1 hour before validators send requests to your miner.
+
+---
+
+## 📌 Final Notes
+
+- If you're using testnet, you can get TAO from the faucet.
+- Keep an eye on your pod’s logs to monitor performance and connection health.
+- Don’t forget to monitor your wallet, especially if you're switching to mainnet!
 
 # ReadyAI Overview
 

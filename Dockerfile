@@ -3,13 +3,14 @@ ARG BASE_IMAGE="python:3.11-slim-bullseye@sha256:7af2c2c559edb3388e5e86fb7d2a9b9
 # Base stage with common dependencies
 FROM ${BASE_IMAGE} AS base
 
-WORKDIR .
+WORKDIR /
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install necessary packages and clean up
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update && apt-get install -y --no-install-recommends \
     curl \
     build-essential \
     gcc \
@@ -20,7 +21,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango1.0-dev \
     libgtk-3-dev \
     libwebkit2gtk-4.0-dev \
-    libssl-dev
+    libssl-dev \
+    openssh-server \
+    net-tools \
+    bash \
+    ca-certificates \
+    sudo
+
+RUN mkdir /var/run/sshd
 
 # Install rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
