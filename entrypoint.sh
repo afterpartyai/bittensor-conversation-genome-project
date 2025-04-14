@@ -3,17 +3,25 @@
 echo "Type: $TYPE, Network: $NETWORK, Coldkey: $COLDKEY_NAME, Hotkey: $HOTKEY_NAME, Port: $PORT, IP: $IP"
 
 start_services() {
-  if [ "$RUNPOD" = "true" ] && [ -n "$SSH_PASSWORD" ]; then
-    echo "Setting SSH password for root..."
-    echo "root:$SSH_PASSWORD" | chpasswd
+  if [ "$RUNPOD" = "true" ] && [ -n "$SSH_PUBLIC_KEY" ]; then
+    echo "Setting up SSH key-based access for root..."
+
+    # Ensure SSH config allows key-based login
+    mkdir -p /root/.ssh
+    echo "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+    chmod 700 /root/.ssh
+    chown -R root:root /root/.ssh
+
+    # Configure SSH to allow key-based login and disable password login
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 
     echo "Starting SSH..."
-    # Start SSH in the background
     /usr/sbin/sshd &
 
-    echo "SSH started with PID $!"
+    echo "SSH started with key-based authentication"
   fi
 }
 
@@ -63,10 +71,13 @@ prepare_command() {
     fi
 
     # If you run on Runpod, the port is mapped to a random port and therefore need to be set accordingly
+    # The keys are also kept in a persistent volume at /workspace/wallets so it needs to be passed to the launch command
     if [ "$RUNPOD" = "true" ]; then
       PORT=$(echo $RUNPOD_TCP_PORT_60000)
       echo "Using port from Runpod: $PORT"
       export PORT
+
+      ARGS="$ARGS --wallet.path /workspace/wallets"
     fi
 
     ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
