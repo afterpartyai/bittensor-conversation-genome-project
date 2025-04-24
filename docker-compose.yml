@@ -1,0 +1,13 @@
+services:
+  cgp_miner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    restart: on-failure
+    volumes:
+      - ${HOME}/.bittensor:/root/.bittensor
+      - ./readyai_api_data.json:/readyai_api_data.json
