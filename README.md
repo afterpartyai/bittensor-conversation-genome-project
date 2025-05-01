@@ -266,14 +266,12 @@ In the web/ folder, you will find a sample implementation of a Custom Server set
 
 The relevant code files in the web/ folder include:
 
-- `readyai_conversation_data_importer.py` -- An example processor that reads[ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset](https://huggingface.co/datasets/ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset) and processes a subset of it and inserts it into the `conversations.sqlite` data store
+- `readyai_conversation_data_importer.py` -- An example processor that reads [ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset](https://huggingface.co/datasets/ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset) and processes a subset of it and inserts it into the `conversations.sqlite` data store
 - `facebook_conversation_data_importer.py` -- An example processor that reads the subset of the Facebook conversation data and processes it into the `conversations.sqlite` data store
 - `app.py` -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
 
 Data files include:
 
-- `conversations.sqlite` -- Database of the processed Facebook data subset
-- `cgp_tags_YYYY.MM.DD.sqlite` -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
 - `facebook-chat-data_2000rows.csv` -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
 
 Additional files included:
