@@ -67,7 +67,7 @@ flowchart TD
 
 ## Installation & Compute Requirements
 
-This repository requires python3.8 or higher. To install the subnet code, simply clone this repository and install the dependencies:
+This repository requires Python version greater than 3.8 and up to 3.11. To get started, clone the repository and install the required dependencies:
 
 ```console
 git clone https://github.com/afterpartyai/bittensor-conversation-genome-project.git cgp-subnet
