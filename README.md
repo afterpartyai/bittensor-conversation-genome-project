@@ -67,7 +67,7 @@ flowchart TD
 
 ## Installation & Compute Requirements
 
-This repository requires python3.8 or higher. To install the subnet code, simply clone this repository and install the dependencies:
+This repository requires Python version greater than 3.8 and up to 3.11. To get started, clone the repository and install the required dependencies:
 
 ```console
 git clone https://github.com/afterpartyai/bittensor-conversation-genome-project.git cgp-subnet
@@ -266,33 +266,53 @@ In the web/ folder, you will find a sample implementation of a Custom Server set
 
 The relevant code files in the web/ folder include:
 
-- conversation_data_importer.py -- An example processor that reads the subset of the Facebook conversation data and processes it into the conversations.sqlite data store
-- app.py -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
+- `readyai_conversation_data_importer.py` -- An example processor that reads[ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset](https://huggingface.co/datasets/ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset) and processes a subset of it and inserts it into the `conversations.sqlite` data store
+- `facebook_conversation_data_importer.py` -- An example processor that reads the subset of the Facebook conversation data and processes it into the `conversations.sqlite` data store
+- `app.py` -- A FastAPI-based web server that provides both the read and write endpoints for conversation server.
 
 Data files include:
 
-- facebook-chat-data_2000rows.csv -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
-- conversations.sqlite -- Database of the processed Facebook data subset
-- cgp_tags_YYYY.MM.DD.sqlite -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
+- `conversations.sqlite` -- Database of the processed Facebook data subset
+- `cgp_tags_YYYY.MM.DD.sqlite` -- Daily rotating SQLite data file that holds the tag and vector embeddings results of the validator and miners
+- `facebook-chat-data_2000rows.csv` -- A 128 conversation subset of the Facebook conversation data (full data available here: https://www.kaggle.com/datasets/atharvjairath/personachat/data)
 
-Additional files include:
+Additional files included:
 
-- start_conversation_store.sh -- Convenient bash file to start the server
+- `start_conversation_store.sh` -- Convenient bash file to start the server
 
 ### Converting the Example Data
 
-Run the converter script:
-
+Install dependencies and navigate to the proper folder:
 ```console
-python conversation_data_importer.py
+cd web/
+pip install -r requirements.txt
 ```
 
-This will process the `facebook-chat-data_2000rows.csv` and insert the conversations into the `conversations.sqlite` database. If you delete the `conversations.sqlite` then it will create a new one and insert the data. You should see progress like this:
-
+Now you will run the data importer script:Sqlite database:
 ```console
-22:58:44 Starting data insert of max_rows=1200...
-22:58:45 Committing 100 rows. Total count: 100
-22:58:45 Insert complete. Total count: 128
+python readyai_conversation_data_importer.py
+```
+
+This will download the training data from [ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset](https://huggingface.co/datasets/ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset) and insert the conversations into the `conversations.sqlite` database. If you delete the `conversations.sqlite` then it will create a new one and insert the data. 
+  - You can also use `facebook_conversation_data_importer.py` if you want another dataset!
+
+After launching the command, should see progress like this:
+```console
+21:55:22 Loading Hugging Face dataset: ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset
+21:55:23 Dataset loaded. Total rows: 4888
+21:55:23 Committing 100 rows...
+21:55:23 Committing 200 rows...
+21:55:24 Committing 300 rows...
+21:55:24 Committing 400 rows...
+21:55:24 Committing 500 rows...
+21:55:24 Committing 600 rows...
+21:55:25 Committing 700 rows...
+21:55:25 Committing 800 rows...
+21:55:25 Committing 900 rows...
+21:55:26 Committing 1000 rows...
+21:55:26 Committing 1100 rows...
+21:55:27 Committing 1200 rows...
+21:55:27 Done. Inserted 1200 rows.
 ```
 
 If you have `sqlite3` installed, you can open the database file and see the inserted data like like:
@@ -306,7 +326,7 @@ SELECT * FROM conversations LIMIT 1;
 That will show you the tables in the database (only 1 -- `conversations`) and then you will see one of the conversations like this:
 
 ```console
-1|1|81087215704299650220210175538345752183|0|i like to remodel homes.... !"], [0, ""]], "participant": {"0": {"idx": 0, "guid": 81099766792120672433284180456245507719, "title": "Leslie Brown"}, "1": {"idx": 1, "guid": 81099927942203226444412726509314455175, "title": "Jason Mckenzie MD"}}}|2024-05-29 23:50:33|2024-05-29 23:50:33
+1|1|123|10000||{"id": 10000, "guid": 123, "topic": "", "lines": [[0, "Hey, Jordan Harbinger here from the Art of Charm."], [0, "Welcome to Minnesota Monday."], [0, "I m happy to be here with you kicking off the w...}|2025-04-30 21:54:16|2025-04-30 21:54:16
 ```
 
 With the data populated, you're ready to start running the server.
