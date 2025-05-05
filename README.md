@@ -345,6 +345,11 @@ To run this in pm2, please following installation instructions [here](#pm2-Insta
 pm2 start "bash start_conversation_store.sh" --name <process name>
 ```
 
+> *Important:* By default, the API will return random conversations from the database. If you want it to return a specific conversation for testing purposes, you can adjust the endpoint in the API file: `web/app.py`.
+  - You just have to comment the following line: `conversation = db.get_random_conversation()`
+  - Uncomment this one: `# conversation = db.get_conversation(c_guid="123412")`
+  - Pass the `c_guid` of the conversation you want the API to always return.
+
 Finally, modify the .env of your Validator to point at the web server. Comment out the lines: 
 
 ```

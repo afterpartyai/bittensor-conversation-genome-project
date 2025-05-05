@@ -14,7 +14,6 @@ class ConversationDbProcessor:
     table_name = 'conversations'
     huggingface_dataset = 'ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset'
     source_id = 1
-    max_rows = 1200
 
     def __init__(self):
         self.conn = sqlite3.connect(self.db_name)
@@ -40,9 +39,6 @@ class ConversationDbProcessor:
         fake = Faker()
 
         for row in dataset:
-            if row_count >= self.max_rows:
-                break
-
             c_guid = row["c_guid"]
             transcript = row["transcript"]
             participants = row["participants"]
