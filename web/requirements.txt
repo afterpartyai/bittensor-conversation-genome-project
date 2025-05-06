@@ -1,3 +1,4 @@
 fastapi
 faker
 python-dotenv==1.0.1
+datasets==3.5.1

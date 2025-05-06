@@ -1,9 +1,8 @@
 import requests
 
-from conversationgenome.utils.Utils import Utils
-from conversationgenome.ConfigLib import c
-
 from conversationgenome.api.ApiLib import ApiLib
+from conversationgenome.ConfigLib import c
+from conversationgenome.utils.Utils import Utils
 
 
 class ConvoLib:
@@ -37,9 +36,9 @@ class ConvoLib:
             "marker_id": c.get('env', 'MARKER_ID'),
             "convo_window_index": window,
             "hotkey": hotkey,
-            "llm_type" : c.get('env', 'LLM_TYPE'),
-            "scoring_version" : c.get('system', 'scoring_version'),
-            "batch_num" : batch_num,
+            "llm_type": c.get('env', 'LLM_TYPE'),
+            "scoring_version": c.get('system', 'scoring_version'),
+            "batch_num": batch_num,
             "cgp_version": "0.2.0",
             "netuid": c.get("system", "netuid"),
         }
