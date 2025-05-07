@@ -55,6 +55,9 @@ prepare_command() {
       CMD="python3 -m neurons.miner"
       export WAND_ENABLED=0
       ;;
+    api)
+      echo "Only starting the API"
+      ;;
     *)
       echo "Unknown type: $TYPE"
       exit 1
@@ -85,18 +88,35 @@ prepare_command() {
   fi
 }
 
+start_api() {
+  if [ "$TYPE" = "api" ] || { [ "$START_LOCAL_CGP_API" = "true" ] && [ "$TYPE" != "miner" ]; }; then
+    echo "Starting local API on port ${LOCAL_CGP_API_PORT}..."
+    cd /web || { echo "Failed to change to /web directory"; exit 1; }
+    uvicorn app:app --host 0.0.0.0 --port "$LOCAL_CGP_API_PORT" &
+    cd / || { echo "Failed to return to root directory"; exit 1; }
+    echo "Local API started."
+
+    # Override API env variables
+    export CGP_API_READ_HOST=http://localhost
+    export CGP_API_READ_PORT=${LOCAL_CGP_API_PORT}
+  fi
+}
+
 run_main_loop() {
-  while true; do
-    echo "[$(date)] Running command: $CMD $ARGS"
-    $CMD $ARGS
-    EXIT_CODE=$?
-    echo "[$(date)] Command exited with code $EXIT_CODE. Retrying in 10 seconds..."
-    sleep 10
-  done
+  if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
+    while true; do
+      echo "[$(date)] Running command: $CMD $ARGS"
+      $CMD $ARGS
+      EXIT_CODE=$?
+      echo "[$(date)] Command exited with code $EXIT_CODE. Retrying in 10 seconds..."
+      sleep 10
+    done
+  fi
 }
 
 start_services
 prepare_command
+start_api
 run_main_loop
 
 # Failsafe
