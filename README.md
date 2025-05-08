@@ -232,13 +232,20 @@ After these changes, the `DB Read/Write Configuration` section of the .env file 
 #export CGP_API_READ_PORT=443
 
 # For Validators. Write to db.conversations.xyz
-export CGP_API_WRITE_HOST=https://db.conversations.xyz
-export CGP_API_WRITE_PORT=443
+#export CGP_API_WRITE_HOST=https://db.conversations.xyz
+#export CGP_API_WRITE_PORT=443
 
-# For Validators. Commented out by default. Used for local DB Configuration
+# For Validators. Used for local DB Configuration
+# If you want to run a local API you can adjust the following variables:
+export START_LOCAL_CGP_API=false
+export LOCAL_CGP_API_PORT=8000
+# You will also need to uncomment lines below
 # See "Validating with a Custom Conversation Server" in the Readme.md for further information
 export CGP_API_READ_HOST=http://localhost
-export CGP_API_READ_PORT=8000
+export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
+
+export CGP_API_WRITE_HOST=http://localhost
+export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
 ```
 
 Now you can run the test script and see the data written properly (replace the filename with your database file).
@@ -254,7 +261,7 @@ Or from the Docker:
 > docker ps
   - It will return your running Dockers find your Docker ID (The name contains: cgp_miner-1)
 
-> docker exec DOCKER_ID ls web/ | grep cgp_tagsls web/*.sqlite
+> docker exec DOCKER_ID ls web/ | grep cgp_tags 
   - It will return the list of the tables (Ex: cgp_tags_2025.05.08.sqlite)
 
 > docker exec -it DOCKER_ID sqlite3 web/TAGS_TABLE_NAME.sqlite
