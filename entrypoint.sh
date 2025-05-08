@@ -2,6 +2,8 @@
 
 echo "Type: $TYPE, Network: $NETWORK, Coldkey: $COLDKEY_NAME, Hotkey: $HOTKEY_NAME, Port: $PORT, IP: $IP"
 
+[ "$TYPE" != "miner" ] && export WAND_ENABLED=1
+
 start_services() {
   if [ "$RUNPOD" = "true" ] && [ -n "$SSH_PUBLIC_KEY" ]; then
     echo "Setting up SSH key-based access for root..."
