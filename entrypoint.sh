@@ -2,8 +2,6 @@
 
 echo "Type: $TYPE, Network: $NETWORK, Coldkey: $COLDKEY_NAME, Hotkey: $HOTKEY_NAME, Port: $PORT, IP: $IP"
 
-[ "$TYPE" != "miner" ] && export WAND_ENABLED=1
-
 start_services() {
   if [ "$RUNPOD" = "true" ] && [ -n "$SSH_PUBLIC_KEY" ]; then
     echo "Setting up SSH key-based access for root..."
@@ -51,15 +49,12 @@ prepare_command() {
   case "$TYPE" in
     validator)
       CMD="python3 -m neurons.validator"
-      export WAND_ENABLED=1
       ;;
     miner)
       CMD="python3 -m neurons.miner"
-      export WAND_ENABLED=0
       ;;
     api)
       echo "Only starting the API"
-      export WAND_ENABLED=1
       ;;
     *)
       echo "Unknown type: $TYPE"
