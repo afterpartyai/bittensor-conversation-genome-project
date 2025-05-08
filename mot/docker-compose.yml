@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   cgp_miner:
-    image: duotang123/test:latest
+    image: readyai/bittensor-readyai-sn33:latest 
     ports:
       - "${PORT}:${PORT}"
       - "${LOCAL_CGP_API_PORT}:${LOCAL_CGP_API_PORT}"
