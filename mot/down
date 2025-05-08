@@ -1,0 +1,3 @@
+# bin/bash
+
+docker compose -f mot/docker-compose.yml --env-file .env down
