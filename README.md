@@ -334,48 +334,6 @@ Validators, by default, access the ReadyAI API to retrieve conversations and sto
 
 > Make sure the raw data source is reasonably large. We recommend 50,000 input items at a minimum to prevent miners re-using previous results.
 
-When your API is up and running, do not forget to adjust your `.env` to use it!
-
-```
-#export CGP_API_READ_HOST=https://api.conversations.xyz
-#export CGP_API_READ_PORT=443
-```
-
-Uncomment the lines: 
-```
-export CGP_API_READ_HOST=http://localhost
-export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
-```
-For your runs to be uploaded to WandB, set `WAND_ENABLED=1`
-
-After these changes, the `DB Read/Write Configuration` section of the `.env` file should look like this:
-
-```console
-# ____________ DB Read/Write Configuration: ____________
-# For Validators. Read from api.conversations.xyz
-#export CGP_API_READ_HOST=https://api.conversations.xyz
-#export CGP_API_READ_PORT=443
-
-# For Validators. Write to db.conversations.xyz
-export CGP_API_WRITE_HOST=https://db.conversations.xyz
-export CGP_API_WRITE_PORT=443
-
-# For Validators. Used for local DB Configuration
-# If you want to run a local API you can adjust the following variables:
-export START_LOCAL_CGP_API=true
-export LOCAL_CGP_API_PORT=8000
-
-# You will also need to uncomment lines below
-# See "Validating with a Custom Conversation Server" in the Readme.md for further information
-export CGP_API_READ_HOST=http://localhost
-export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
-
-# Only uncomment this for local testing
-#export CGP_API_WRITE_HOST=http://localhost
-#export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
-```
-
-Now you are good to go!
 
 ### The Code
 
@@ -471,9 +429,10 @@ The image comes preloaded with a `conversations.sqlite` database containing **4,
    ```
    TYPE=api
    ```
+   You will also need to adjust the endpoints for your needs as explained [here](#for-testing-with-a-local-api)
 
    > [!IMPORTANT]  
-   > **If you are a validator**: you have to set `TYPE=validator` and `START_LOCAL_CGP_API=true` instead
+   > **If you are a validator** and you want to use the local api and test dataset to send conversations to miners, you have to set `TYPE=validator` and `START_LOCAL_CGP_API=true` instead
 
 
 3. **Start the Server**
