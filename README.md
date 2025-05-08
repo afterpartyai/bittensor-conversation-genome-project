@@ -204,7 +204,7 @@ bash testnet_start_miner.sh
 If you want to use the local API instead, you need to follow the steps [here](#-running-the-conversation-server-locally)
 
 
-Then modify the `.env` of your Validator to point at the web server. Comment out the lines: 
+Then modify the `.env` to point at the web server. Comment out the lines: 
 
 ```
 #export CGP_API_READ_HOST=https://api.conversations.xyz
@@ -222,6 +222,7 @@ export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
 export CGP_API_WRITE_HOST=http://localhost
 export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
 ```
+If you want your run to be uploaded to WandB, set `WAND_ENABLED=1`
 
 After these changes, the `DB Read/Write Configuration` section of the .env file should look like this:
 
@@ -239,11 +240,13 @@ After these changes, the `DB Read/Write Configuration` section of the .env file 
 # If you want to run a local API you can adjust the following variables:
 export START_LOCAL_CGP_API=false
 export LOCAL_CGP_API_PORT=8000
+
 # You will also need to uncomment lines below
 # See "Validating with a Custom Conversation Server" in the Readme.md for further information
 export CGP_API_READ_HOST=http://localhost
 export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
 
+# Only uncomment this for local testing
 export CGP_API_WRITE_HOST=http://localhost
 export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
 ```
@@ -253,7 +256,7 @@ Now you can run the test script and see the data written properly (replace the f
 ```console
 sqlite3 cgp_tags_YYYY.MM.DD.sqlite
 .tables
-SELECT id,c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
+SELECT id, c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
 ```
 
 Or from the Docker:
@@ -266,7 +269,7 @@ Or from the Docker:
 
 > docker exec -it DOCKER_ID sqlite3 web/TAGS_TABLE_NAME.sqlite
   - Will start an interactive sqlite3 session that you can query as you wish!
-  - You can run: SELECT id,c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
+  - You can run: SELECT id, c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
 ```
 
 That will provide some of the data inserted into the results table.
@@ -330,6 +333,49 @@ python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.ho
 Validators, by default, access the ReadyAI API to retrieve conversations and store results. However, the subnet is designed to be a decentralized “Scale AI” where each validator can sell access to their bandwidth for structuring raw data. The validator can run against any of its own data sources and process custom or even proprietary data.
 
 > Make sure the raw data source is reasonably large. We recommend 50,000 input items at a minimum to prevent miners re-using previous results.
+
+When your API is up and running, do not forget to adjust your `.env` to use it!
+
+```
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+```
+
+Uncomment the lines: 
+```
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
+```
+For your runs to be uploaded to WandB, set `WAND_ENABLED=1`
+
+After these changes, the `DB Read/Write Configuration` section of the `.env` file should look like this:
+
+```console
+# ____________ DB Read/Write Configuration: ____________
+# For Validators. Read from api.conversations.xyz
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+
+# For Validators. Write to db.conversations.xyz
+export CGP_API_WRITE_HOST=https://db.conversations.xyz
+export CGP_API_WRITE_PORT=443
+
+# For Validators. Used for local DB Configuration
+# If you want to run a local API you can adjust the following variables:
+export START_LOCAL_CGP_API=true
+export LOCAL_CGP_API_PORT=8000
+
+# You will also need to uncomment lines below
+# See "Validating with a Custom Conversation Server" in the Readme.md for further information
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
+
+# Only uncomment this for local testing
+#export CGP_API_WRITE_HOST=http://localhost
+#export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
+```
+
+Now you are good to go!
 
 ### The Code
 
@@ -426,7 +472,9 @@ The image comes preloaded with a `conversations.sqlite` database containing **4,
    TYPE=api
    ```
 
-   Optional: Change the API port by setting the `LOCAL_CGP_API_PORT` variable (e.g., `8000`).
+   > [!IMPORTANT]  
+   > **If you are a validator**: you have to set `TYPE=validator` and `START_LOCAL_CGP_API=true` instead
+
 
 3. **Start the Server**
 
