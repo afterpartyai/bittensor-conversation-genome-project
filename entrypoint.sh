@@ -89,11 +89,6 @@ prepare_command() {
 start_api() {
   if [ "$TYPE" = "api" ] || { [ "$START_LOCAL_CGP_API" = "true" ] && [ "$TYPE" != "miner" ]; }; then
     echo "Starting local API on port ${LOCAL_CGP_API_PORT}..."
-  
-    # Override API env variables
-    export CGP_API_READ_HOST=http://localhost
-    export CGP_API_READ_PORT=${LOCAL_CGP_API_PORT}
-  
     cd /web || { echo "Failed to change to /web directory"; exit 1; }
     uvicorn app:app --host 0.0.0.0 --port "$LOCAL_CGP_API_PORT" &
     cd / || { echo "Failed to return to root directory"; exit 1; }
