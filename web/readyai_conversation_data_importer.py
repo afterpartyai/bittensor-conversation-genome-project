@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 import sqlite3
 import time
 import uuid
@@ -10,7 +11,7 @@ from Utils import Utils
 
 
 class ConversationDbProcessor:
-    db_name = 'conversations.sqlite'
+    db_name = os.path.join(os.path.dirname(__file__), 'conversations.sqlite')
     table_name = 'conversations'
     huggingface_dataset = 'ReadyAi/5000-podcast-conversations-with-metadata-and-embedding-dataset'
     source_id = 1

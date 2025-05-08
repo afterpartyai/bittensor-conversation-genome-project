@@ -1,4 +1,7 @@
-fastapi
-faker
+fastapi==0.115.12
+faker==37.1.0
 python-dotenv==1.0.1
 datasets==3.5.1
+uvicorn==0.34.2
+scalecodec==1.2.11
+substrateinterface==1.0.0

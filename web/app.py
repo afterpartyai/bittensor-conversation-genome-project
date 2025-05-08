@@ -67,7 +67,7 @@ class Db:
         self.table_name = table_name
 
     def get_cursor(self):
-        db_name = "conversations.sqlite"
+        db_name = os.path.join(os.path.dirname(__file__), 'conversations.sqlite')
         conn = sqlite3.connect(db_name)
         conn.row_factory = Db.dict_factory
         cursor = conn.cursor()
@@ -210,7 +210,8 @@ def post_openai_mock_request():
 def put_record_request(c_guid, data: dict):
     out = {"success": 0, "errors": [], "data": {}}
     if data:
-        db = Db("cgp_tags", "tags")
+        db_name = os.path.join(os.path.dirname(__file__), 'cgp_tags')
+        db = Db(db_name, "tags")
         db.insert_into_table(c_guid, data)
         out['data']['msg'] = {"message": f"Stored tag data for {c_guid}"}
         out['success'] = 1

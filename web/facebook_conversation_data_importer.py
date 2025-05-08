@@ -1,15 +1,17 @@
 import csv
+import datetime
 import json
+import os
+import sqlite3
 import time
 import uuid
-from faker import Faker
-import sqlite3
-import datetime
 
+from faker import Faker
 from Utils import Utils
 
+
 class ConversationDbProcessor:
-    db_name = 'conversations.sqlite'
+    db_name = os.path.join(os.path.dirname(__file__), 'conversations.sqlite')
     table_name = 'conversations'
     # This 2000 row subset is from the 140K row Kaggle Facebook conversation data:
     #     https://www.kaggle.com/datasets/atharvjairath/personachat/data
@@ -47,17 +49,23 @@ class ConversationDbProcessor:
                 fake = Faker()
                 # Data doesn't have participant names, so generate fake ones
                 participantGuids = {
-                    "0": {"idx": 0, "guid":Utils.guid(), "title":fake.name()},
-                    "1": {"idx": 1, "guid":Utils.guid(), "title":fake.name()},
+                    "0": {"idx": 0, "guid": Utils.guid(), "title": fake.name()},
+                    "1": {"idx": 1, "guid": Utils.guid(), "title": fake.name()},
                 }
                 numParticipant = len(participantGuids)
                 cycle = 0
                 for line in chat_lines:
-                    lines.append([ cycle, line.strip() ])
+                    lines.append([cycle, line.strip()])
                     cycle = (cycle + 1) % numParticipant
 
                 # Create an row of the data. If you have a DAL, you could simply insert
-                row_dict = {"id": id, "guid": guid, "topic": topic, "lines": lines, "participant": participantGuids, }
+                row_dict = {
+                    "id": id,
+                    "guid": guid,
+                    "topic": topic,
+                    "lines": lines,
+                    "participant": participantGuids,
+                }
                 now = datetime.datetime.now()
                 created_at = now.strftime("%Y-%m-%d %H:%M:%S")
                 jsonData = json.dumps(row_dict)
@@ -70,7 +78,7 @@ class ConversationDbProcessor:
                 row_count += 1
                 # Commit every 100 rows and report progress
                 if row_count % 100 == 0:
-                    print(Utils.get_time() + " Committing 100 rows. Total count: "+str(row_count))
+                    print(Utils.get_time() + " Committing 100 rows. Total count: " + str(row_count))
                     self.conn.commit()
                     try:
                         self.conn.commit()
@@ -79,12 +87,13 @@ class ConversationDbProcessor:
 
                 # Convenience max_rows so small amount of data can be tested
                 if max_rows and row_count > max_rows:
-                    print(Utils.get_time() + " Reached max rows. Total count: "+str(row_count-1))
+                    print(Utils.get_time() + " Reached max rows. Total count: " + str(row_count - 1))
                     break
 
         self.conn.commit()
         self.conn.close()
-        print(Utils.get_time() + " Insert complete. Total count: "+str(row_count-1))
+        print(Utils.get_time() + " Insert complete. Total count: " + str(row_count - 1))
+
 
 cdp = ConversationDbProcessor()
 cdp.process_conversation_csv()
