@@ -331,7 +331,73 @@ With the data populated, you're ready to start running the server.
 
 > *Important:* Do not run your validator against this example dataset on mainnet. Please use a custom dataset of at least 50,000 raw data sources at a minimum to prevent miners from re-using previous results. Modify this script to process and load the data from a more robust data store that you've selected.
 
-### Running the Conversation Server locally
+### 🚀 Running the Conversation Server Locally
+
+#### Using the Prebuilt Docker Image
+
+This section shows you how to quickly run the API server using a prebuilt Docker image—**no build step required**!
+
+The image comes preloaded with a `conversations.sqlite` database containing **4,888 podcast conversations** ready for training or testing.
+
+**Steps**
+
+1. **Create Your `.env` File**
+
+   Copy the example environment file and create your own configuration:  
+   ```
+   cp env.example .env
+   ```
+
+2. **Configure the Environment**
+
+   Open the `.env` file and set the `TYPE` variable to `api`:  
+   ```
+   TYPE=api
+   ```
+
+   Optional: Change the API port by setting the `LOCAL_CGP_API_PORT` variable (e.g., `8000`).
+
+3. **Start the Server**
+
+   Run the following script to launch the server:  
+   ```
+   mot/up
+   ```
+
+   This will:
+   - Download the Docker image if not already present
+   - Start the API using Docker Compose
+
+   **To build the image yourself** instead of using the prebuilt one:  
+   ```
+   docker compose build  
+   docker compose up
+   ```
+
+**Verifying the Server**
+
+If the server starts correctly, your logs should show something like:  
+```
+cgp_miner-1  | INFO:     Started server process [7]  
+cgp_miner-1  | INFO:     Waiting for application startup.  
+cgp_miner-1  | INFO:     Application startup complete.  
+cgp_miner-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+**Test the API**
+
+Make a test request to verify it’s running:  
+```
+curl -X POST localhost:8000/api/v1/conversation/reserve
+```
+
+Expected output:  
+```
+{"guid":11388,"lines":[[1,"Welcome to the Sell or Die podcast."],[1,"I...
+```
+
+## From the Python Code 
+This section will walk you through how to get the server up and running from the available Python code.
 
 To get the server up and running, you can use the bash file:
 
