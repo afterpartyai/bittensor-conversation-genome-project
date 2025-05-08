@@ -26,7 +26,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     net-tools \
     bash \
     ca-certificates \
-    sudo
+    sudo \
+    sqlite3 \
+    vim
 
 RUN mkdir /var/run/sshd
 
