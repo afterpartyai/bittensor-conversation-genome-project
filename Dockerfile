@@ -54,6 +54,8 @@ RUN python web/readyai_conversation_data_importer.py
 # Copy the rest of the application code
 COPY . .
 
+RUN pip install --no-cache-dir .
+
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

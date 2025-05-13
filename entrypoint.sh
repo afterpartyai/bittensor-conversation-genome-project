@@ -37,11 +37,19 @@ prepare_command() {
       SUBTENSOR_NETWORK="test"
       CHAIN_ENDPOINT="wss://entrypoint-test.opentensor.ai:443"
       ;;
+    local)
+      NETUID=$LOCAL_NETUID
+      SUBTENSOR_NETWORK="local"
+      CHAIN_ENDPOINT=$LOCAL_CHAIN
+      ;;
     *)
       echo "Unknown network: $NETWORK"
       exit 1
       ;;
   esac
+
+  export BT_SUBTENSOR_CHAIN_ENDPOINT=$CHAIN_ENDPOINT
+  export BT_SUBTENSOR_NETWORK=$SUBTENSOR_NETWORK
 
   # Default arguments
   ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --subtensor.network $SUBTENSOR_NETWORK"
@@ -81,7 +89,7 @@ prepare_command() {
       ARGS="$ARGS --wallet.path /workspace/wallets"
     fi
 
-    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
+    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint=$CHAIN_ENDPOINT"
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
   fi
 }
