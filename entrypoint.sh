@@ -37,11 +37,19 @@ prepare_command() {
       SUBTENSOR_NETWORK="test"
       CHAIN_ENDPOINT="wss://entrypoint-test.opentensor.ai:443"
       ;;
+    local)
+      NETUID=$LOCAL_NETUID
+      SUBTENSOR_NETWORK="local"
+      CHAIN_ENDPOINT=$LOCAL_CHAIN
+      ;;
     *)
       echo "Unknown network: $NETWORK"
       exit 1
       ;;
   esac
+
+  export BT_SUBTENSOR_CHAIN_ENDPOINT=$CHAIN_ENDPOINT
+  export BT_SUBTENSOR_NETWORK=$SUBTENSOR_NETWORK
 
   # Default arguments
   ARGS="--netuid $NETUID --wallet.name $COLDKEY_NAME --wallet.hotkey $HOTKEY_NAME --subtensor.network $SUBTENSOR_NETWORK"
@@ -49,11 +57,12 @@ prepare_command() {
   case "$TYPE" in
     validator)
       CMD="python3 -m neurons.validator"
-      export WAND_ENABLED=1
       ;;
     miner)
       CMD="python3 -m neurons.miner"
-      export WAND_ENABLED=0
+      ;;
+    api)
+      echo "Only starting the API"
       ;;
     *)
       echo "Unknown type: $TYPE"
@@ -80,23 +89,36 @@ prepare_command() {
       ARGS="$ARGS --wallet.path /workspace/wallets"
     fi
 
-    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint $CHAIN_ENDPOINT"
+    ARGS="$ARGS --axon.port $PORT --axon.external_port $PORT --axon.ip $IP --axon.external_ip $IP --subtensor.chain_endpoint=$CHAIN_ENDPOINT"
     [ -n "$DEBUG_MODE" ] && ARGS="$ARGS --logging.debug"
   fi
 }
 
+start_api() {
+  if [ "$TYPE" = "api" ] || { [ "$START_LOCAL_CGP_API" = "true" ] && [ "$TYPE" != "miner" ]; }; then
+    echo "Starting local API on port ${LOCAL_CGP_API_PORT}..."
+    cd /web || { echo "Failed to change to /web directory"; exit 1; }
+    uvicorn app:app --host 0.0.0.0 --port "$LOCAL_CGP_API_PORT" &
+    cd / || { echo "Failed to return to root directory"; exit 1; }
+    echo "Local API started."
+  fi
+}
+
 run_main_loop() {
-  while true; do
-    echo "[$(date)] Running command: $CMD $ARGS"
-    $CMD $ARGS
-    EXIT_CODE=$?
-    echo "[$(date)] Command exited with code $EXIT_CODE. Retrying in 10 seconds..."
-    sleep 10
-  done
+  if [ "$TYPE" = "validator" ] || [ "$TYPE" = "miner" ]; then
+    while true; do
+      echo "[$(date)] Running command: $CMD $ARGS"
+      $CMD $ARGS
+      EXIT_CODE=$?
+      echo "[$(date)] Command exited with code $EXIT_CODE. Retrying in 10 seconds..."
+      sleep 10
+    done
+  fi
 }
 
 start_services
 prepare_command
+start_api
 run_main_loop
 
 # Failsafe

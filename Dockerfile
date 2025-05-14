@@ -26,7 +26,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     net-tools \
     bash \
     ca-certificates \
-    sudo
+    sudo \
+    sqlite3 \
+    vim
 
 RUN mkdir /var/run/sshd
 
@@ -42,11 +44,17 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy only requirements first for better caching
 COPY requirements.txt ./
-
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY web/ web/
+RUN pip install --no-cache-dir -r web/requirements.txt
+
+RUN python web/readyai_conversation_data_importer.py
 
 # Copy the rest of the application code
 COPY . .
+
+RUN pip install --no-cache-dir .
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh

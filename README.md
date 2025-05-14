@@ -199,6 +199,80 @@ Once you are registered, run `nano testnet_start_miner.sh` to edit the start com
 bash testnet_start_miner.sh
 ```
 
+#### For testing with a local API
+
+If you want to use the local API instead, you need to follow the steps [here](#-running-the-conversation-server-locally)
+
+
+Then modify the `.env` to point at the web server. Comment out the lines: 
+
+```
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+
+#export CGP_API_WRITE_HOST=https://db.conversations.xyz
+#export CGP_API_WRITE_PORT=443
+```
+
+Uncomment the lines: 
+```
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
+
+export CGP_API_WRITE_HOST=http://localhost
+export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
+```
+If you want your run to be uploaded to WandB, set `WAND_ENABLED=1`
+
+After these changes, the `DB Read/Write Configuration` section of the .env file should look like this:
+
+```console
+# ____________ DB Read/Write Configuration: ____________
+# For Validators. Read from api.conversations.xyz
+#export CGP_API_READ_HOST=https://api.conversations.xyz
+#export CGP_API_READ_PORT=443
+
+# For Validators. Write to db.conversations.xyz
+#export CGP_API_WRITE_HOST=https://db.conversations.xyz
+#export CGP_API_WRITE_PORT=443
+
+# For Validators. Used for local DB Configuration
+# If you want to run a local API you can adjust the following variables:
+export START_LOCAL_CGP_API=false
+export LOCAL_CGP_API_PORT=8000
+
+# You will also need to uncomment lines below
+# See "Validating with a Custom Conversation Server" in the Readme.md for further information
+export CGP_API_READ_HOST=http://localhost
+export CGP_API_READ_PORT=$LOCAL_CGP_API_PORT
+
+# Only uncomment this for local testing
+export CGP_API_WRITE_HOST=http://localhost
+export CGP_API_WRITE_PORT=$LOCAL_CGP_API_PORT
+```
+
+Now you can run the test script and see the data written properly (replace the filename with your database file).
+
+```console
+sqlite3 cgp_tags_YYYY.MM.DD.sqlite
+.tables
+SELECT id, c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
+```
+
+Or from the Docker:
+```console
+> docker ps
+  - It will return your running Dockers find your Docker ID (The name contains: cgp_miner-1)
+
+> docker exec DOCKER_ID ls web/ | grep cgp_tags 
+  - It will return the list of the tables (Ex: cgp_tags_2025.05.08.sqlite)
+
+> docker exec -it DOCKER_ID sqlite3 web/TAGS_TABLE_NAME.sqlite
+  - Will start an interactive sqlite3 session that you can query as you wish!
+  - You can run: SELECT id, c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
+```
+
+That will provide some of the data inserted into the results table.
 
 ## Registration
 Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website here.
@@ -259,6 +333,7 @@ python3 -m neurons.validator --netuid 33 --wallet.name <wallet name> --wallet.ho
 Validators, by default, access the ReadyAI API to retrieve conversations and store results. However, the subnet is designed to be a decentralized “Scale AI” where each validator can sell access to their bandwidth for structuring raw data. The validator can run against any of its own data sources and process custom or even proprietary data.
 
 > Make sure the raw data source is reasonably large. We recommend 50,000 input items at a minimum to prevent miners re-using previous results.
+
 
 ### The Code
 
@@ -331,7 +406,76 @@ With the data populated, you're ready to start running the server.
 
 > *Important:* Do not run your validator against this example dataset on mainnet. Please use a custom dataset of at least 50,000 raw data sources at a minimum to prevent miners from re-using previous results. Modify this script to process and load the data from a more robust data store that you've selected.
 
-### Running the Conversation Server locally
+### 🚀 Running the Conversation Server Locally
+
+#### Using the Prebuilt Docker Image
+
+This section shows you how to quickly run the API server using a prebuilt Docker image—**no build step required**!
+
+The image comes preloaded with a `conversations.sqlite` database containing **4,888 podcast conversations** ready for training or testing.
+
+**Steps**
+
+1. **Create Your `.env` File**
+
+   Copy the example environment file and create your own configuration:  
+   ```
+   cp env.example .env
+   ```
+
+2. **Configure the Environment**
+
+   Open the `.env` file and set the `TYPE` variable to `api`:  
+   ```
+   TYPE=api
+   ```
+   You will also need to adjust the endpoints for your needs as explained [here](#for-testing-with-a-local-api)
+
+   > [!IMPORTANT]  
+   > **If you are a validator** and you want to use the local api and test dataset to send conversations to miners, you have to set `TYPE=validator` and `START_LOCAL_CGP_API=true` instead
+
+
+3. **Start the Server**
+
+   Run the following script to launch the server:  
+   ```
+   mot/up
+   ```
+
+   This will:
+   - Download the Docker image if not already present
+   - Start the API using Docker Compose
+
+   **To build the image yourself** instead of using the prebuilt one:  
+   ```
+   docker compose build  
+   docker compose up
+   ```
+
+**Verifying the Server**
+
+If the server starts correctly, your logs should show something like:  
+```
+cgp_miner-1  | INFO:     Started server process [7]  
+cgp_miner-1  | INFO:     Waiting for application startup.  
+cgp_miner-1  | INFO:     Application startup complete.  
+cgp_miner-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+**Test the API**
+
+Make a test request to verify it’s running:  
+```
+curl -X POST localhost:8000/api/v1/conversation/reserve
+```
+
+Expected output:  
+```
+{"guid":11388,"lines":[[1,"Welcome to the Sell or Die podcast."],[1,"I...
+```
+
+#### From the Python Code 
+This section will walk you through how to get the server up and running from the available Python code.
 
 To get the server up and running, you can use the bash file:
 
@@ -344,52 +488,11 @@ To run this in pm2, please following installation instructions [here](#pm2-Insta
 ```console
 pm2 start "bash start_conversation_store.sh" --name <process name>
 ```
-
+---
 > *Important:* By default, the API will return random conversations from the database. If you want it to return a specific conversation for testing purposes, you can adjust the endpoint in the API file: `web/app.py`.
   - You just have to comment the following line: `conversation = db.get_random_conversation()`
   - Uncomment this one: `# conversation = db.get_conversation(c_guid="123412")`
   - Pass the `c_guid` of the conversation you want the API to always return.
-
-Finally, modify the .env of your Validator to point at the web server. Comment out the lines: 
-
-```
-#export CGP_API_READ_HOST=https://api.conversations.xyz
-#export CGP_API_READ_PORT=443
-```
-
-Uncomment the lines: 
-```
-export CGP_API_READ_HOST=http://localhost
-export CGP_API_READ_PORT=8000
-```
-
-After these changes, the `DB Read/Write Configuration` section of the .env file should look like this:
-
-```console
-# ____________ DB Read/Write Configuration: ____________
-# For Validators. Read from api.conversations.xyz
-#export CGP_API_READ_HOST=https://api.conversations.xyz
-#export CGP_API_READ_PORT=443
-
-# For Validators. Write to db.conversations.xyz
-export CGP_API_WRITE_HOST=https://db.conversations.xyz
-export CGP_API_WRITE_PORT=443
-
-# For Validators. Commented out by default. Used for local DB Configuration
-# See "Validating with a Custom Conversation Server" in the Readme.md for further information
-export CGP_API_READ_HOST=http://localhost
-export CGP_API_READ_PORT=8000
-```
-
-Now you can run the test script and see the data written properly (replace the filename with your database file).
-
-```console
-sqlite3 cgp_tags_YYYY.MM.DD.sqlite
-.tables
-SELECT id,c_guid, mode, llm_type, model FROM cgp_results LIMIT 10;
-```
-
-That will provide some of the data inserted into the results table.
 
 # Helpful Guides
 

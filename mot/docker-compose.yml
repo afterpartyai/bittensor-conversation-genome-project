@@ -1,14 +1,14 @@
+version: "3.9"
+
 services:
   cgp_miner:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - .env
+    image: readyai/bittensor-readyai-sn33:latest 
     ports:
       - "${PORT}:${PORT}"
       - "${LOCAL_CGP_API_PORT}:${LOCAL_CGP_API_PORT}"
     restart: on-failure
+    env_file:
+      - ../.env
     volumes:
       - ${HOME}/.bittensor:/root/.bittensor
-      - ./readyai_api_data.json:/readyai_api_data.json
+      - ../readyai_api_data.json:/readyai_api_data.json
