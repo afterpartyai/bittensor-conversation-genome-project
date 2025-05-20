@@ -1,13 +1,12 @@
-import random
-import json
+import time
+
 from conversationgenome import __version__ as init_version
 
 verbose = False
 
-
-from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 from conversationgenome.mock.MockBt import MockBt
+from conversationgenome.utils.Utils import Utils
 
 bt = None
 try:
@@ -25,69 +24,88 @@ except:
 
 
 class WandbLib:
-    verbose = False
+    PROJECT_NAME = 'conversationgenome'
+    ENTITY = 'afterparty'
+    MAX_LOG_LINES = 95000
+
+    def __init__(self):
+        self.verbose = False
+        self.log_line_count = 0
+        self.run_config = None
+        self.run_name_prefix = None
+        self.__version__ = "3.3.0"
+        self.run = None
 
     def init_wandb(self, config=None, data=None):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
         if not wandb_enabled:
             bt.logging.debug("Weights and Biases Logging Disabled -- Skipping Initialization")
             return
-        my_hotkey=12345
+
+        my_hotkey = 12345
         my_uid = -1
 
         if config:
-            #initialize data:
+            # initialize data:
             try:
                 wallet = bt.wallet(config=config)
                 subtensor = bt.subtensor(config=config)
                 metagraph = subtensor.metagraph(config.netuid)
-                my_hotkey=wallet.hotkey.ss58_address
+                my_hotkey = wallet.hotkey.ss58_address
                 my_uid = metagraph.hotkeys.index(my_hotkey)
             except Exception as e:
                 print(f"ERROR 8618322 -- WandB init error: {e}")
-                
-        
-        api = wandb.Api()
+
         wandb_api_key = c.get("env", "WANDB_API_KEY")
         if not wandb_api_key:
             raise ValueError("Please log in to wandb using `wandb login` or set the WANDB_API_KEY environment variable.")
 
         bt.logging.info("INIT WANDB", wandb_api_key)
 
-        PROJECT_NAME = 'conversationgenome'
-        __version__ = "3.3.0"
-
-        try: 
-            __version__ = init_version
-        except: 
+        try:
+            self.__version__ = init_version
+        except:
             print(f"ERROR 1277289 -- WandB version init error: {e}")
-        
-        run_name = f'cgp/validator-{my_uid}-{__version__}'
-        config = {
+
+        self.run_name_prefix = f'cgp/validator-{my_uid}-{self.__version__}'
+        self.run_config = {
             "uid": my_uid,
             "hotkey": my_hotkey,
-            "version": __version__,
+            "version": self.__version__,
             "type": 'validator',
         }
-        wandb.init(
-              project=PROJECT_NAME,
-              name=run_name, #f"conversationgenome/cguid_{c_guid}",
-              entity='afterparty',
-              config=config
-        )
 
+        self.start_new_run()
+
+    def start_new_run(self):
+        current_timestamp_ms = int(time.time() * 1000)
+
+        self.run = wandb.init(
+            project=self.PROJECT_NAME,
+            name=f"{self.run_name_prefix}-{current_timestamp_ms}",  # f"conversationgenome/cguid_{c_guid}",
+            entity=self.ENTITY,
+            config=self.run_config,
+            reinit=True,
+        )
 
     def log(self, data):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
         if wandb_enabled:
             if self.verbose:
                 print("WANDB LOG", data)
-            wandb.log(data)
+
+            self.run.log(data)
+
+            self.log_line_count += 1
+
+            if self.log_line_count >= self.MAX_LOG_LINES:
+                self.run.finish()
+                self.log_line_count = 0
+                self.start_new_run()
         else:
             bt.logging.debug("Weights and Biases Logging Disabled -- Skipping Log")
             return
 
     def end_log_wandb(self):
         # Mark the run as finished
-        wandb.finish()
-
+        self.run.finish()
