@@ -1,6 +1,8 @@
+import logging
 import time
 
 from conversationgenome import __version__ as init_version
+from conversationgenome.analytics.WandbCountingHandler import WandbCountingHandler
 
 verbose = False
 
@@ -35,6 +37,7 @@ class WandbLib:
         self.run_name_prefix = None
         self.__version__ = "3.3.0"
         self.run = None
+        self.bt_logger_attached = False
 
     def init_wandb(self, config=None, data=None):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
@@ -44,12 +47,14 @@ class WandbLib:
 
         my_hotkey = 12345
         my_uid = -1
+        netuid = -1
 
         if config:
             # initialize data:
             try:
                 wallet = bt.wallet(config=config)
                 subtensor = bt.subtensor(config=config)
+                netuid = config.netuid
                 metagraph = subtensor.metagraph(config.netuid)
                 my_hotkey = wallet.hotkey.ss58_address
                 my_uid = metagraph.hotkeys.index(my_hotkey)
@@ -73,9 +78,11 @@ class WandbLib:
             "hotkey": my_hotkey,
             "version": self.__version__,
             "type": 'validator',
+            "netuid": netuid,
         }
 
         self.start_new_run()
+        self.attach_bt_logger()
 
     def start_new_run(self):
         current_timestamp_ms = int(time.time() * 1000)
@@ -87,6 +94,24 @@ class WandbLib:
             config=self.run_config,
             reinit=True,
         )
+
+    # this was needed because WandB was logging Bittensor logs in the run, but did not use this class.
+    # It made it impossible to know when to create a new run.
+    # This handler makes sure Bittensor logs are sent to WandB using this class.
+    def attach_bt_logger(self):
+        if self.bt_logger_attached:
+            return  # To make sure we don't attach it twice
+
+        handler = WandbCountingHandler(self)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+
+        bt_logger = logging.getLogger("bittensor")
+        bt_logger.addHandler(handler)
+        bt_logger.setLevel(logging.INFO)
+
+        self.bt_logger_attached = True
 
     def log(self, data):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
