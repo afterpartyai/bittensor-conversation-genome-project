@@ -115,13 +115,11 @@ class WandbLib:
             return  # To make sure we don't attach it twice
 
         handler = WandbCountingHandler(self)
-        handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
 
         bt_logger = logging.getLogger("bittensor")
         bt_logger.addHandler(handler)
-        bt_logger.setLevel(logging.INFO)
 
         self.bt_logger_attached = True
 
