@@ -30,7 +30,17 @@ class WandbLib:
     ENTITY = 'afterparty'
     MAX_LOG_LINES = 95000
 
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(WandbLib, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if self._initialized:
+            return
         self.verbose = False
         self.log_line_count = 0
         self.run_config = None
@@ -38,6 +48,8 @@ class WandbLib:
         self.__version__ = "3.3.0"
         self.run = None
         self.bt_logger_attached = False
+
+        self._initialized = True
 
     def init_wandb(self, config=None, data=None):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
