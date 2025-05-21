@@ -52,7 +52,7 @@ class WandbLib:
         self.log_queue = queue.Queue(maxsize=2000)
 
         self._initialized = True
-        self._buffering_enabled = True
+        self._buffering_enabled = False
 
     def init_wandb(self, config=None, data=None):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
@@ -102,6 +102,7 @@ class WandbLib:
     def start_new_run(self):
         if self.run:
             try:
+                self._buffering_enabled = True
                 self.run.finish()
             except Exception as e:
                 bt.logging.debug(f"Error finishing W&B run: {e}")
@@ -120,18 +121,17 @@ class WandbLib:
 
         # Nothing logged yet
         self.log_line_count = 0
-        
-        # Replay buffered logs
+
+        # We don't want to buffer logs we are replaying them
         self._buffering_enabled = False
-        
+
+        # Replay buffered logs
         while not self.log_queue.empty():
             try:
                 data = self.log_queue.get_nowait()
                 self.run.log(data)
             except Exception as e:
-                bt.logging.debug(f"Failed to flush buffered log: {e}") 
-
-        self._buffering_enabled = True
+                bt.logging.debug(f"Failed to flush buffered log: {e}")
 
     # this was needed because WandB was logging Bittensor logs in the run, but did not use this class.
     # It made it impossible to know when to create a new run.
@@ -154,16 +154,16 @@ class WandbLib:
         if wandb_enabled:
             if self.verbose:
                 print("WANDB LOG", data)
- 
+
             # Log to queue if needed
-            if self.run is None and self._buffering_enabled:
+            if self._buffering_enabled:
                 try:
                     self.log_queue.put_nowait(data)
                 except queue.Full:
                     bt.logging.debug("W&B log queue full — dropping log.")
                 return
 
-            # Log to wandb 
+            # Log to wandb
             try:
                 self.run.log(data)
             except Exception as e:
