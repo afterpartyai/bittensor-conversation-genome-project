@@ -1,4 +1,5 @@
 import logging
+import queue
 import time
 
 from conversationgenome import __version__ as init_version
@@ -48,8 +49,10 @@ class WandbLib:
         self.__version__ = "3.3.0"
         self.run = None
         self.bt_logger_attached = False
+        self.log_queue = queue.Queue(maxsize=2000)
 
         self._initialized = True
+        self._buffering_enabled = True
 
     def init_wandb(self, config=None, data=None):
         wandb_enabled = Utils._int(c.get('env', 'WAND_ENABLED'), 1)
@@ -97,6 +100,14 @@ class WandbLib:
         self.attach_bt_logger()
 
     def start_new_run(self):
+        if self.run:
+            try:
+                self.run.finish()
+            except Exception as e:
+                bt.logging.debug(f"Error finishing W&B run: {e}")
+
+        time.sleep(0.2)  # Give some time for the previous run to finish
+
         current_timestamp_ms = int(time.time() * 1000)
 
         self.run = wandb.init(
@@ -106,6 +117,21 @@ class WandbLib:
             config=self.run_config,
             reinit=True,
         )
+
+        # Nothing logged yet
+        self.log_line_count = 0
+        
+        # Replay buffered logs
+        self._buffering_enabled = False
+        
+        while not self.log_queue.empty():
+            try:
+                data = self.log_queue.get_nowait()
+                self.run.log(data)
+            except Exception as e:
+                bt.logging.debug(f"Failed to flush buffered log: {e}") 
+
+        self._buffering_enabled = True
 
     # this was needed because WandB was logging Bittensor logs in the run, but did not use this class.
     # It made it impossible to know when to create a new run.
@@ -128,25 +154,33 @@ class WandbLib:
         if wandb_enabled:
             if self.verbose:
                 print("WANDB LOG", data)
+ 
+            # Log to queue if needed
+            if self.run is None and self._buffering_enabled:
+                try:
+                    self.log_queue.put_nowait(data)
+                except queue.Full:
+                    bt.logging.debug("W&B log queue full — dropping log.")
+                return
 
-            self.run.log(data)
+            # Log to wandb 
+            try:
+                self.run.log(data)
+            except Exception as e:
+                bt.logging.debug(f"Failed to send W&B log: {e}")
 
-            estimated_lines = 0
-
+            # Count lines in the log
             if "bt_log" in data:
                 try:
                     log_value = data["bt_log"]
                     value_to_count = log_value if isinstance(log_value, str) else str(log_value)
-                    estimated_lines = value_to_count.count('\n') + 1
+                    self.log_line_count = value_to_count.count('\n') + 1
                 except Exception as e:
                     bt.logging.debug(f"Line count fail: {e}")
-                    estimated_lines = 1
+                    self.log_line_count = 1
 
-            self.log_line_count += estimated_lines
-
+            # Trigger restart if over limit
             if self.log_line_count >= self.MAX_LOG_LINES:
-                self.run.finish()
-                self.log_line_count = 0
                 self.start_new_run()
         else:
             bt.logging.debug("Weights and Biases Logging Disabled -- Skipping Log")
