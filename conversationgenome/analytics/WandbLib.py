@@ -1,5 +1,4 @@
 import logging
-import queue
 import time
 
 from conversationgenome import __version__ as init_version
@@ -29,7 +28,7 @@ except:
 class WandbLib:
     PROJECT_NAME = 'conversationgenome'
     ENTITY = 'afterparty'
-    MAX_LOG_LINES = 95000
+    MAX_LOG_LINES = 90000
 
     _instance = None
     _initialized = False
