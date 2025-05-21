@@ -141,7 +141,7 @@ class WandbLib:
                     bt.logging.debug(f"Failed to count log lines for value: {value} — {e}")
                     estimated_lines += 1
 
-            print(f"data: {data}, estimated_lines: {estimated_lines}")
+            print(f"data: {data}, estimated_lines: {estimated_lines}, log_line_count: {self.log_line_count}")
             self.log_line_count += estimated_lines
 
             if self.log_line_count >= self.MAX_LOG_LINES:
