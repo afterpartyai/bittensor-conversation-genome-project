@@ -174,10 +174,10 @@ class WandbLib:
                 try:
                     log_value = data["bt_log"]
                     value_to_count = log_value if isinstance(log_value, str) else str(log_value)
-                    self.log_line_count = value_to_count.count('\n') + 1
+                    self.log_line_count += value_to_count.count('\n') + 1
                 except Exception as e:
                     bt.logging.debug(f"Line count fail: {e}")
-                    self.log_line_count = 1
+                    self.log_line_count += 1
 
             # Trigger restart if over limit
             if self.log_line_count >= self.MAX_LOG_LINES:
