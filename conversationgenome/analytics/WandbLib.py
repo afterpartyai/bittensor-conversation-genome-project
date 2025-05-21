@@ -134,12 +134,16 @@ class WandbLib:
             estimated_lines = 0
 
             for value in data.values():
-                if isinstance(value, str):
-                    estimated_lines += value.count('\n') + 1
-                else:
-                    stringified = str(value)
-                    estimated_lines += stringified.count('\n') + 1
-            print(f"Logged data: {data}, Estimated lines: {estimated_lines}")
+                try:
+                    if isinstance(value, str):
+                        estimated_lines += value.count('\n') + 1
+                    else:
+                        stringified = str(value)
+                        estimated_lines += stringified.count('\n') + 1
+                except Exception as e:
+                    bt.logging.debug(f"Failed to count log lines for value: {value} — {e}")
+                    estimated_lines += 1
+            
             self.log_line_count += estimated_lines
 
             if self.log_line_count >= self.MAX_LOG_LINES:
