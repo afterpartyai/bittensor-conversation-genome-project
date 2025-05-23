@@ -4,7 +4,7 @@ target "miner_arm" {
 
   platforms = ["linux/arm64"]
   tags = [
-    "readyai/bittensor-readyai-sn33:arm64-2.9.43",
+    "readyai/bittensor-readyai-sn33:arm64-2.10.0",
   ]
 
   push = true
@@ -16,7 +16,7 @@ target "miner_x86" {
 
   platforms = ["linux/amd64"]
   tags = [
-    "readyai/bittensor-readyai-sn33:amd64-2.9.43",
+    "readyai/bittensor-readyai-sn33:amd64-2.10.0",
   ]
   
   push = true
