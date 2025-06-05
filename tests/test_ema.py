@@ -5,6 +5,7 @@ import torch
 import numpy as np
 
 from conversationgenome.ConfigLib import c
+from conversationgenome.mock import MockBt
 from conversationgenome.utils.Utils import Utils
 #
 from conversationgenome.validator.ValidatorLib import ValidatorLib
