@@ -363,7 +363,7 @@ class ValidatorLib:
         # if the miner reward is 0, use low_alpha, otherwise use default_alpha 
         ema_scores = np.where(
             scattered_rewards == 0,
-            low_alpha * scattered_rewards + (1 - low_alpha) * ema_scores,
+            (1 - low_alpha) * ema_scores,
             default_alpha * scattered_rewards + (1 - default_alpha) * ema_scores
         )
 
