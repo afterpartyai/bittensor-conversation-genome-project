@@ -355,9 +355,17 @@ class ValidatorLib:
 
         bt.logging.debug(f"Scattered rewards: {rewards}")
 
+        # Dampening factor for scattered rewards equal to 0 
+        default_alpha: float = moving_average_alpha    
+        low_alpha: float = moving_average_alpha / 2
+
         # Update EMA scores
-        alpha: float = moving_average_alpha
-        ema_scores = alpha * scattered_rewards + (1 - alpha) * ema_scores
+        # if the miner reward is 0, use low_alpha, otherwise use default_alpha 
+        ema_scores = np.where(
+            scattered_rewards == 0,
+            (1 - low_alpha) * ema_scores,
+            default_alpha * scattered_rewards + (1 - default_alpha) * ema_scores
+        )
 
         if self.verbose:
             bt.logging.debug(f"Updated moving avg scores: {ema_scores}")
@@ -384,7 +392,6 @@ class ValidatorLib:
             bt.logging.debug(f"Updated final scores: {scores}")
 
         return scores, ema_scores
-
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
         llml = LlmLib()
