@@ -127,12 +127,17 @@ class ConversationDbProcessor:
             f.close()
             markdown = markdownify.markdownify(body, wrap=True, wrap_width=120)
             lines = markdown.split("\n")
-            out = ""
+            out = []
             carryOver = ""
             #lines = lines[0:15]
             for idx, line in enumerate(lines):
                 if Utils.isAlphaNumeric(line):
-                    print(idx, line)
+                    #print(idx, line)
+                    line = line.strip()
+                    firstChar = line[0:1]
+                    # Most bulletted lists with links are menus, hyperlink lists, etc. so skip
+                    if (firstChar == "*" or firstChar == "-" or firstChar == "+") and line.find("[") != -1:
+                        continue
                     # If the line didn't wrap in markdownify, it's probably junk -- truncate
                     if len(line) > 120:
                         line = line[0:120]
@@ -144,13 +149,12 @@ class ConversationDbProcessor:
                         #print("L+CO", carryOver, line)
                         line = carryOver + line 
                         carryOver = ""
-                    out += line.strip() + "\n"
+                    out.append(line.strip())
             # Append any leftover carryOver
             if len(carryOver) > 0:
-                out += carryOver
-            remainingLines = out.split('\n')
-            print(f"{filename} -- {len(remainingLines)} lines")
-            Utils.writeFile(filePath+".md", out)
+                out.append(carryOver.strip())
+            print(f"{filename} -- {len(out)} lines")
+            Utils.writeFile(filePath+".md", "\n".join(out))
         print("fileList", fileList)
         
 
