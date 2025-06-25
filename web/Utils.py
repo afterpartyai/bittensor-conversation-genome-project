@@ -2,6 +2,7 @@ import uuid
 import csv
 import json
 import time
+import os
 
 
 class Utils:
@@ -38,4 +39,13 @@ class Utils:
     def get_time(format_str="%H:%M:%S"):
         import time
         return time.strftime(format_str)
+
+    @staticmethod
+    def getFilesByExtension(filePath, allowedExtensions):
+        foundFiles = []
+        for fileName in os.listdir(filePath):
+            fileExtension = os.path.splitext(fileName)[1][1:]  # remove the dot from the extension
+            if fileExtension.lower() in allowedExtensions:
+                foundFiles.append(fileName)
+        return foundFiles
 

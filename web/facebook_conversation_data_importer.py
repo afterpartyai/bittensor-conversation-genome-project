@@ -97,6 +97,12 @@ class ConversationDbProcessor:
         self.conn.close()
         print(Utils.get_time() + " Insert complete. Total count: " + str(row_count - 1))
 
+    def process_cc_cache(self, path):
+        print(f"{GREEN}Indexing common crawl pages in {path}...{COLOR_END}")
+        fileList = Utils.getFilesByExtension(path, ["html"])
+        print("fileList", fileList)
+        
+
 args = [None] * 20
 for idx, i in enumerate(sys.argv):
     args[idx] = i
@@ -106,6 +112,6 @@ if __name__ == "__main__":
     action = args[1]
     if action == "commoncrawl":
         path = "./page_cache/"
-        print(f"{GREEN}Indexing common crawl pages in {path}...{COLOR_END}")
+        cdp.process_cc_cache(path)
     else:
         cdp.process_conversation_csv()
