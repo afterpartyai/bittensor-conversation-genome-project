@@ -33,9 +33,11 @@ class ConversationDbProcessor:
 
     def process_conversation_dataset(self):
         print(Utils.get_time() + f" Loading Hugging Face dataset: {self.huggingface_dataset}")
-        dataset = load_dataset(self.huggingface_dataset, data_files={"train": "conversations_train.parquet"}, split="train")
+        dataset = load_dataset(self.huggingface_dataset, data_files={"train": "conversations_train.parquet"}, cache_dir="./my_cache", split="train")
+        dataset = load_dataset(self.huggingface_dataset, data_files={"train": "conversations_to_tags.parquet"}, split="train")
+        dataset = load_dataset(self.huggingface_dataset, data_files={"train": "tag_to_id.parquet"}, split="train")
         print(Utils.get_time() + f" Dataset loaded. Total rows: {len(dataset)}")
-
+        return
         row_count = 0
         fake = Faker()
 
@@ -87,6 +89,22 @@ class ConversationDbProcessor:
         self.conn.close()
         print(Utils.get_time() + f" Done. Inserted {row_count} rows.")
 
+import random
+import time
+
+def randomized_sleep(min_minutes=3, max_minutes=30):
+    """
+    Randomly sleep between min_minutes and max_minutes.
+
+    Args:
+    min_minutes (int): Minimum sleep time in minutes (default: 3)
+    max_minutes (int): Maximum sleep time in minutes (default: 30)
+    """
+    sleep_time = random.randint(min_minutes * 60, max_minutes * 60)  # convert minutes to seconds
+    print(f"Sleeping for {sleep_time / 60:.2f} minutes...", flush=True)
+    time.sleep(sleep_time)
+
 
 cdp = ConversationDbProcessor()
+randomized_sleep()
 cdp.process_conversation_dataset()

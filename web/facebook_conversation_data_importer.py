@@ -5,6 +5,9 @@ import os
 import sqlite3
 import time
 import uuid
+import sys
+from constants import *
+
 
 from faker import Faker
 from Utils import Utils
@@ -29,7 +32,7 @@ class ConversationDbProcessor:
         max_rows = self.max_rows
         row_count = 1
 
-        print(Utils.get_time() + " Starting data insert of max_rows=%d..." % (max_rows))
+        print(Utils.get_time() + " Starting Facebook data insert of max_rows=%d..." % (max_rows))
         with open(self.raw_data_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
 
@@ -94,6 +97,15 @@ class ConversationDbProcessor:
         self.conn.close()
         print(Utils.get_time() + " Insert complete. Total count: " + str(row_count - 1))
 
+args = [None] * 20
+for idx, i in enumerate(sys.argv):
+    args[idx] = i
 
-cdp = ConversationDbProcessor()
-cdp.process_conversation_csv()
+if __name__ == "__main__":
+    cdp = ConversationDbProcessor()
+    action = args[1]
+    if action == "commoncrawl":
+        path = "./page_cache/"
+        print(f"{GREEN}Indexing common crawl pages in {path}...{COLOR_END}")
+    else:
+        cdp.process_conversation_csv()
