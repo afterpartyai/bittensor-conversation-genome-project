@@ -9,7 +9,27 @@ import sys
 from constants import *
 
 
-from faker import Faker
+Faker = None
+try:
+    from faker import Faker
+except:
+    print("Faker not installed")
+    
+
+BeautifulSoup = None
+try:
+    from bs4 import BeautifulSoup
+except:
+    print("BeautifulSoup not installed -- python3 -m pip install beautifulsoup4")
+
+from Utils import Utils
+
+markdownify = None
+try:
+    import markdownify
+except:
+    print("markdownify not installed -- python3 -m pip install markdownify")
+
 from Utils import Utils
 
 
@@ -100,6 +120,37 @@ class ConversationDbProcessor:
     def process_cc_cache(self, path):
         print(f"{GREEN}Indexing common crawl pages in {path}...{COLOR_END}")
         fileList = Utils.getFilesByExtension(path, ["html"])
+        for filename in fileList:
+            filePath = os.path.join(path, filename)
+            f =open(filePath)
+            body = f.read()
+            f.close()
+            markdown = markdownify.markdownify(body, wrap=True, wrap_width=120)
+            lines = markdown.split("\n")
+            out = ""
+            carryOver = ""
+            #lines = lines[0:15]
+            for idx, line in enumerate(lines):
+                if Utils.isAlphaNumeric(line):
+                    print(idx, line)
+                    # If the line didn't wrap in markdownify, it's probably junk -- truncate
+                    if len(line) > 120:
+                        line = line[0:120]
+                    elif len(line) < 15 and len(carryOver) < 120:
+                        #print("  CO", line)
+                        carryOver += line + ", "
+                        continue
+                    if len(carryOver) > 0:
+                        #print("L+CO", carryOver, line)
+                        line = carryOver + line 
+                        carryOver = ""
+                    out += line.strip() + "\n"
+            # Append any leftover carryOver
+            if len(carryOver) > 0:
+                out += carryOver
+            remainingLines = out.split('\n')
+            print(f"{filename} -- {len(remainingLines)} lines")
+            Utils.writeFile(filePath+".md", out)
         print("fileList", fileList)
         
 

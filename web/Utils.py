@@ -49,3 +49,29 @@ class Utils:
                 foundFiles.append(fileName)
         return foundFiles
 
+    @staticmethod
+    def readFile(filePath):
+        try:
+            with open(filePath, 'r', encoding='utf-8') as file:
+                return file.read()
+        except FileNotFoundError:
+            print(f"The file {filePath} was not found.")
+            return None
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
+    
+    @staticmethod
+    def writeFile(filePath, body):
+        with open(filePath, 'w', encoding='utf-8') as outputFile:
+            outputFile.write(body)
+        
+    @staticmethod
+    def isAlphaNumeric(input_string):
+        alphanumeric_count = 0
+        
+        for char in input_string:
+            if char.isalnum():
+                alphanumeric_count += 1
+        
+        return alphanumeric_count >= 4
