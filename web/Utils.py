@@ -3,6 +3,8 @@ import csv
 import json
 import time
 import os
+import binascii
+import uuid
 
 
 class Utils:
@@ -75,3 +77,21 @@ class Utils:
                 alphanumeric_count += 1
         
         return alphanumeric_count >= 4
+
+    @staticmethod
+    def getUuid():
+        return str(uuid.uuid4())
+
+
+    @staticmethod
+    def dictToCrc(data=None):
+        if data == None:
+            data = Utils.getUuid()
+            #print("UUID", data)
+        try:
+            dataStr = str(json.dumps(data))
+            crc = binascii.crc32(dataStr.encode('utf8'))
+            return crc
+        except:
+            print("Error converting dictToCrc", data)
+

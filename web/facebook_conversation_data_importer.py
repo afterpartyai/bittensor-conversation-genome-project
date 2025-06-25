@@ -119,15 +119,23 @@ class ConversationDbProcessor:
 
     def process_cc_cache(self, path):
         print(f"{GREEN}Indexing common crawl pages in {path}...{COLOR_END}")
+        row_count = 0
+        max_rows = 10
         fileList = Utils.getFilesByExtension(path, ["html"])
-        for filename in fileList:
+        for idxFileList, filename in enumerate(fileList):
             filePath = os.path.join(path, filename)
             f =open(filePath)
             body = f.read()
             f.close()
+            # Data doesn't have participant names, so generate fake ones
+            participantGuids = {
+                "0": {"idx": 0, "guid": Utils.guid(), "title": "CC"},
+            }
+            
             markdown = markdownify.markdownify(body, wrap=True, wrap_width=120)
             lines = markdown.split("\n")
             out = []
+            outConvo = []
             carryOver = ""
             #lines = lines[0:15]
             for idx, line in enumerate(lines):
@@ -149,13 +157,54 @@ class ConversationDbProcessor:
                         #print("L+CO", carryOver, line)
                         line = carryOver + line 
                         carryOver = ""
-                    out.append(line.strip())
+                    line = line.strip()
+                    out.append(line)
+                    outConvo.append([0, line])
             # Append any leftover carryOver
             if len(carryOver) > 0:
                 out.append(carryOver.strip())
+                outConvo.append([0, carryOver.strip()])
+                
+            guid = Utils.dictToCrc(out)
+            topic = "cc"
+            id = idxFileList
+            # Create an row of the data. If you have a DAL, you could simply insert
+            row_dict = {
+                "id": id,
+                "guid": guid,
+                "topic": topic,
+                "lines": outConvo,
+                "participant": participantGuids,
+            }
+            now = datetime.datetime.now()
+            created_at = now.strftime("%Y-%m-%d %H:%M:%S")
+            jsonData = json.dumps(row_dict)
+
+            # Generate SQLite insert statement
+            sql_insert = f"INSERT INTO {self.table_name} (source_id, json, idx, topic, guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            insert_data = (self.source_id, jsonData, row_dict['id'], row_dict['topic'], str(row_dict['guid']), created_at, created_at)
+            self.cursor.execute(sql_insert, insert_data)
+
+            row_count += 1
+            # Commit every 100 rows and report progress
+            if row_count % 100 == 0:
+                print(Utils.get_time() + " Committing 100 rows. Total count: " + str(row_count))
+                self.conn.commit()
+                try:
+                    self.conn.commit()
+                except:
+                    pass
+
+            # Convenience max_rows so small amount of data can be tested
+            if max_rows and row_count > max_rows:
+                print(Utils.get_time() + " Reached max rows. Total count: " + str(row_count - 1))
+                break
+                
             print(f"{filename} -- {len(out)} lines")
             Utils.writeFile(filePath+".md", "\n".join(out))
-        print("fileList", fileList)
+        self.conn.commit()
+        self.conn.close()
+        print(Utils.get_time() + " Insert complete. Total count: " + str(row_count - 1))
         
 
 args = [None] * 20
