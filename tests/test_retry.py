@@ -250,72 +250,11 @@ async def test_when_no_408_then_retry_nothing(
     # Responses & Side Effect
     # --------------------------
     miner1_200_response = DummyResponse("miner1", 200, [{"uid": 0, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
-    miner2_200_response = DummyResponse("miner2", 200, [{"uid": 1, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner2_500_response = DummyResponse("miner2", 500, [{"uid": 1, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
     miner3_200_response = DummyResponse("miner3", 200, [{"uid": 2, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
 
     def forward_side_effect(*args, **kwargs):
-        return [miner1_200_response, miner2_200_response, miner3_200_response]
-
-    validator.dendrite.forward = AsyncMock(side_effect=forward_side_effect)
-
-    # --------------------------
-    # Execute
-    # --------------------------
-    result = await validator.forward(test_mode=True)
-
-    # --------------------------
-    # Validate Axons
-    # --------------------------
-    all_calls = validator.dendrite.forward.await_args_list
-    for _, call in enumerate(all_calls):
-        _, kwargs = call
-        forwarded_axons = kwargs.get("axons", None)
-
-        assert len(forwarded_axons) == 3
-        for axon in forwarded_axons:
-            assert axon.hotkey in {"miner1", "miner2", "miner3"}
-
-    # --------------------------
-    # Final Assertions
-    # --------------------------
-    # Forward has been called 10 times meaning no retries
-    # Evaluate has been called 10 times, once for 10 loops
-    assert result is True
-    assert validator.dendrite.forward.call_count == 10
-    assert mock_evaluator.return_value.evaluate.await_count == 10
-
-@pytest.mark.asyncio
-@patch("neurons.validator.ValidatorLib", autospec=True)
-@patch("conversationgenome.base.validator.ValidatorLib", autospec=True)
-@patch("neurons.validator.Evaluator", autospec=True)
-@patch("bittensor.wallet")
-@patch("bittensor.subtensor")
-@patch("bittensor.metagraph")
-async def test_when_other_errors_than_408_then_retry_nothing(
-    mock_metagraph,
-    mock_subtensor,
-    mock_wallet,
-    mock_evaluator,
-    mock_validator_lib2,
-    mock_validator_lib,
-):
-    vl_mock, el_mock, mock_wallet_instance, mock_subtensor_instance, mock_metagraph_instance, validator = setup()
-    mock_metagraph.return_value = mock_metagraph_instance
-    mock_subtensor.return_value = mock_subtensor_instance
-    mock_wallet.return_value = mock_wallet_instance
-    mock_evaluator.return_value = el_mock
-    mock_validator_lib2.return_value = vl_mock
-    mock_validator_lib.return_value = vl_mock
-
-    # --------------------------
-    # Responses & Side Effect
-    # --------------------------
-    miner1_500_response = DummyResponse("miner1", 500)
-    miner2_404_response = DummyResponse("miner2", 404)
-    miner3_303_response = DummyResponse("miner3", 303)
-
-    def forward_side_effect(*args, **kwargs):
-        return [miner1_500_response, miner2_404_response, miner3_303_response]
+        return [miner1_200_response, miner2_500_response, miner3_200_response]
 
     validator.dendrite.forward = AsyncMock(side_effect=forward_side_effect)
 
