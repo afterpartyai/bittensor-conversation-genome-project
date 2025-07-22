@@ -1,4 +1,4 @@
-# The MIT License (MIT)
+#s The MIT License (MIT)
 # Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -37,6 +37,7 @@ from conversationgenome.validator.evaluator import Evaluator
 from conversationgenome.protocol import CgSynapse
 
 import bittensor as bt
+import numpy as np
 
 class Validator(BaseValidatorNeuron):
     verbose = False
@@ -197,13 +198,39 @@ class Validator(BaseValidatorNeuron):
                     synapse=synapse,
                     deserialize=False,
                 )
+
                 if self.verbose:
                     print("RAW RESPONSES", len(responses))
+                    print(responses)
+
+                # Generate retry list
+                uids_to_retry = [
+                    miner_uids[i]
+                    for i, r in enumerate(responses)
+                    if getattr(r.dendrite, "status_code", None) in [408]
+                ]
+
+                if uids_to_retry:
+                    bt.logging.debug(f"Retrying requests that timed out for the following UIDs: {uids_to_retry}")
+                    retry_responses = await self.dendrite.forward(
+                        axons=[self.metagraph.axons[uid] for uid in uids_to_retry],
+                        synapse=synapse,
+                        deserialize=False,
+                    )
+
+                    # Overwrite original responses with new responses
+                    for i, uid in enumerate(uids_to_retry):
+                        idx = int(np.where(miner_uids == uid)[0][0])
+                        responses[idx] = retry_responses[i]
+
+                    if self.verbose:
+                        print(f"RETRY RESPONSES: {len(retry_responses)}")
+                        print(retry_responses)
 
                 for response_idx, response in enumerate(responses):
                     if not response.cgp_output:
-                        #bt.logging.error(f"BAD RESPONSE: hotkey: {response.axon.hotkey} output: {response.cgp_output}")
-                        bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey}")
+                        bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey} - status_code: {getattr(response.dendrite, 'status_code', None)}")
+
                         if response.axon.hotkey in hot_key_watchlist:
                             print(f"!!!!!!!!!!! BAD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                         continue
@@ -241,15 +268,14 @@ class Validator(BaseValidatorNeuron):
                         except Exception as e:
                             print(f"ERROR 1162494 -- WandB logging error: {e}")
                         wl.log({
-                            "conversation_guid."+uid: "HIDDEN",
-                            "window_id."+uid: window_idx,
-                            "hotkey."+uid: Utils.get(score, "hotkey"),
-                            "adjusted_score."+uid: Utils.get(score, "adjustedScore"),
-                            "final_miner_score."+uid: Utils.get(score, "final_miner_score"),
+                            f"conversation_guid.{uid}": "HIDDEN",
+                            f"window_id.{uid}": window_idx,
+                            f"hotkey.{uid}": Utils.get(score, "hotkey"),
+                            f"adjusted_score.{uid}": Utils.get(score, "adjustedScore"),
+                            f"final_miner_score.{uid}": Utils.get(score, "final_miner_score"),
                         })
                         if self.verbose:
                             print("^^^^^^RANK", final_scores, rank_scores, len(final_scores), miner_uids)
-
                     # Update the scores based on the rewards.
                     self.update_scores(rank_scores, miner_uids)
             return True
