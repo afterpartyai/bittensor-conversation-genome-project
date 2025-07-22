@@ -1,4 +1,4 @@
-#s The MIT License (MIT)
+# The MIT License (MIT)
 # Copyright © 2024 Conversation Genome Project
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -211,7 +211,7 @@ class Validator(BaseValidatorNeuron):
                 ]
 
                 if uids_to_retry:
-                    bt.logging.debug(f"Retrying requests that timed out for the following UIDs: {uids_to_retry}")
+                    bt.logging.debug(f"Retrying requests for the following UIDs: {uids_to_retry}")
                     retry_responses = await self.dendrite.forward(
                         axons=[self.metagraph.axons[uid] for uid in uids_to_retry],
                         synapse=synapse,

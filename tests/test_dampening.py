@@ -32,7 +32,7 @@ class DampeningTestCase(unittest.TestCase):
         rewards = np.array([0.0, 0.2, 0.0], dtype=np.float32)
         ema_scores = np.array([0.1, 0.2, 0.3, 0.4, 0.5], dtype=np.float32)
         scores = np.array([0.004455, 0.035550, 0.120000, 0.284445, 0.555550], dtype=np.float32)
-        moving_average_alpha = 0.1
+        moving_average_alpha = 0.12
         device = "cuda"
         neurons = 5
         nonlinear_power = 3
