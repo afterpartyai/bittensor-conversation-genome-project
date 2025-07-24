@@ -51,6 +51,9 @@ class Validator(BaseValidatorNeuron):
 
         bt.logging.info("load_state()")
         self.load_state()
+        self.responses = []
+        self.initial_status_codes = {}
+        self.final_status_codes = {}
 
     async def forward(self, test_mode=False):
         try:
@@ -176,6 +179,7 @@ class Validator(BaseValidatorNeuron):
                     self,
                     k= miner_sample_size
                 )
+                
                 if self.verbose:
                     print(f"miner_uid pool {miner_uids}")
                 if len(miner_uids) == 0:
@@ -191,24 +195,25 @@ class Validator(BaseValidatorNeuron):
 
                 synapse = conversationgenome.protocol.CgSynapse(cgp_input = [window_packet])
 
-                rewards = None
-
                 responses = await self.dendrite.forward(
                     axons=[self.metagraph.axons[uid] for uid in miner_uids],
                     synapse=synapse,
                     deserialize=False,
                 )
-
+                
                 if self.verbose:
                     print("RAW RESPONSES", len(responses))
                     print(responses)
 
                 # Generate retry list
-                uids_to_retry = [
-                    miner_uids[i]
-                    for i, r in enumerate(responses)
-                    if getattr(r.dendrite, "status_code", None) in [408]
-                ]
+                uids_to_retry = []
+
+                for i, response in enumerate(responses):
+                    status_code = getattr(response.dendrite, "status_code", None)
+                    if status_code is not None:
+                        self.initial_status_codes[status_code] = self.initial_status_codes.get(status_code, 0) + 1
+                        if status_code in [408, 422]:
+                            uids_to_retry.append(miner_uids[i])
 
                 if uids_to_retry:
                     bt.logging.debug(f"Retrying requests for the following UIDs: {uids_to_retry}")
@@ -218,16 +223,22 @@ class Validator(BaseValidatorNeuron):
                         deserialize=False,
                     )
 
+                    uid_to_index = {uid: idx for idx, uid in enumerate(miner_uids)}
+
                     # Overwrite original responses with new responses
                     for i, uid in enumerate(uids_to_retry):
-                        idx = int(np.where(miner_uids == uid)[0][0])
+                        idx = uid_to_index[uid]
                         responses[idx] = retry_responses[i]
-
+                    
                     if self.verbose:
                         print(f"RETRY RESPONSES: {len(retry_responses)}")
                         print(retry_responses)
 
                 for response_idx, response in enumerate(responses):
+                    status_code = getattr(response.dendrite, "status_code", None)
+                    if status_code is not None:
+                        self.final_status_codes[status_code] = self.final_status_codes.get(status_code, 0) + 1
+
                     if not response.cgp_output:
                         bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey} - status_code: {getattr(response.dendrite, 'status_code', None)}")
 
@@ -238,6 +249,7 @@ class Validator(BaseValidatorNeuron):
                         miner_response = response.cgp_output
                     except:
                         miner_response = response
+
                     miner_result = miner_response[0]
                     miner_result['original_tags'] = miner_result['tags']
 
@@ -245,7 +257,6 @@ class Validator(BaseValidatorNeuron):
                     miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
 
                     miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
-                    #bt.logging.debug(f"GOOD RESPONSE: {response.axon.uuid}, {response.axon.hotkey}, {response.axon}, " )
                     bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner response idx: {response_idx} window idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} original tags: {len(miner_result['original_tags'])}")
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
@@ -256,6 +267,12 @@ class Validator(BaseValidatorNeuron):
 
                 (final_scores, rank_scores) = await el.evaluate(full_convo_metadata=full_conversation_metadata, miner_responses=responses)
 
+                if test_mode and responses:
+                    print(f"TEST MODE: {len(responses)} responses received for window {window_idx} with {len(final_scores)} final scores")
+                    self.responses.append(responses)
+
+                bt.logging.info(f"Initial status codes: {self.initial_status_codes}")
+                bt.logging.info(f"Final status codes: {self.final_status_codes}")
 
                 if final_scores:
                     for idx, score in enumerate(final_scores):
@@ -301,5 +318,8 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         bt.logging.info("Keyboard interrupt detected. Exiting validator.")
     finally:
-        print("Done. Writing final to wandb.")
-        wl.end_log_wandb()
+        try:
+            print("Done. Writing final to wandb.")
+            wl.end_log_wandb()
+        except Exception as e:
+            print(f"ERROR 2294376 -- WandB end log error: {e}")

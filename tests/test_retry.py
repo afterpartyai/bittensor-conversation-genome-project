@@ -1,3 +1,4 @@
+import copy
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -8,10 +9,10 @@ from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.utils import uids
 from neurons.validator import Validator
 
-
 # --------------------------
 # Dummy Test Classes
 # --------------------------
+
 
 class DummyAxon:
     def __init__(self, hotkey):
@@ -60,14 +61,10 @@ def setup():
             "indexed_windows": [(0, ["Hello", "Hi", "How are you?"])],
         }
     )
-    vl_mock.get_convo_metadata = AsyncMock(
-        return_value={"tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}
-    )
+    vl_mock.get_convo_metadata = AsyncMock(return_value={"tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}})
     vl_mock.put_convo = AsyncMock()
     vl_mock.validate_tag_set = AsyncMock(return_value=["tag1", "tag2"])
-    vl_mock.get_vector_embeddings_set = AsyncMock(
-        return_value={"tag1": [0.1], "tag2": [0.2]}
-    )
+    vl_mock.get_vector_embeddings_set = AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})
     vl_mock.update_scores.return_value = (
         np.array([0.5, 0.5]),
         np.array([0.5, 0.5]),
@@ -141,9 +138,11 @@ def setup():
 
     return vl_mock, el_mock, mock_wallet_instance, mock_subtensor_instance, mock_metagraph_instance, validator
 
+
 # --------------------------
 # Main Test
 # --------------------------
+
 
 @pytest.mark.asyncio
 @patch("neurons.validator.ValidatorLib", autospec=True)
@@ -152,7 +151,7 @@ def setup():
 @patch("bittensor.wallet")
 @patch("bittensor.subtensor")
 @patch("bittensor.metagraph")
-async def test_when_receiving_408_responses_then_retry_only_those_requests(
+async def test_when_receiving_retryable_errors_then_retry_only_those_requests(
     mock_metagraph,
     mock_subtensor,
     mock_wallet,
@@ -223,6 +222,7 @@ async def test_when_receiving_408_responses_then_retry_only_those_requests(
     assert validator.dendrite.forward.call_count == 11
     assert mock_evaluator.return_value.evaluate.await_count == 10
 
+
 @pytest.mark.asyncio
 @patch("neurons.validator.ValidatorLib", autospec=True)
 @patch("conversationgenome.base.validator.ValidatorLib", autospec=True)
@@ -230,7 +230,7 @@ async def test_when_receiving_408_responses_then_retry_only_those_requests(
 @patch("bittensor.wallet")
 @patch("bittensor.subtensor")
 @patch("bittensor.metagraph")
-async def test_when_no_408_then_retry_nothing(
+async def test_when_no_retryable_errors_then_retry_nothing(
     mock_metagraph,
     mock_subtensor,
     mock_wallet,
@@ -282,4 +282,86 @@ async def test_when_no_408_then_retry_nothing(
     # Evaluate has been called 10 times, once for 10 loops
     assert result is True
     assert validator.dendrite.forward.call_count == 10
+    assert mock_evaluator.return_value.evaluate.await_count == 10
+
+
+@pytest.mark.asyncio
+@patch("neurons.validator.ValidatorLib", autospec=True)
+@patch("conversationgenome.base.validator.ValidatorLib", autospec=True)
+@patch("neurons.validator.Evaluator", autospec=True)
+@patch("bittensor.wallet")
+@patch("bittensor.subtensor")
+@patch("bittensor.metagraph")
+async def test_when_retrying_requests_then_the_response_array_is_properly_adjusted(
+    mock_metagraph,
+    mock_subtensor,
+    mock_wallet,
+    mock_evaluator,
+    mock_validator_lib2,
+    mock_validator_lib,
+):
+    vl_mock, el_mock, mock_wallet_instance, mock_subtensor_instance, mock_metagraph_instance, validator = setup()
+    mock_metagraph.return_value = mock_metagraph_instance
+    mock_subtensor.return_value = mock_subtensor_instance
+    mock_wallet.return_value = mock_wallet_instance
+    mock_evaluator.return_value = el_mock
+    mock_validator_lib2.return_value = vl_mock
+    mock_validator_lib.return_value = vl_mock
+
+    # --------------------------
+    # Responses & Side Effect
+    # --------------------------
+    miner1_408_response = DummyResponse("miner1", 408)
+    miner1_output = [{"uid": 0, "tags": ["syrup", "crepes", "eating"], "vectors": {"syrup": [1], "crepes": [1], "eating": [1]}}]
+    miner2_output = [{"uid": 1, "tags": ["ok", "bye"], "vectors": {"ok": [0.1], "bye": [0.2]}}]
+    miner3_output = [{"uid": 2, "tags": ["ok", "bye"], "vectors": {"ok": [0.1], "bye": [0.2]}}]
+
+    def forward_side_effect(*args, **kwargs):
+        calls = getattr(forward_side_effect, "calls", 0)
+
+        if calls == 0:
+            result = [
+                miner1_408_response,
+                DummyResponse("miner2", 200, copy.deepcopy(miner2_output)),
+                DummyResponse("miner3", 200, copy.deepcopy(miner3_output)),
+            ]
+        elif calls == 1:
+            result = [
+                DummyResponse("miner1", 200, copy.deepcopy(miner1_output)),
+            ]
+        else:
+            result = [
+                DummyResponse("miner1", 200, copy.deepcopy(miner1_output)),
+                DummyResponse("miner2", 200, copy.deepcopy(miner2_output)),
+                DummyResponse("miner3", 200, copy.deepcopy(miner3_output)),
+            ]
+
+        forward_side_effect.calls = calls + 1
+        return result
+
+    forward_side_effect.calls = 0
+    validator.dendrite.forward = AsyncMock(side_effect=forward_side_effect)
+
+    # --------------------------
+    # Execute
+    # --------------------------
+    result = await validator.forward(test_mode=True)
+    responses_array_with_retried_request = validator.responses[0]
+
+    # Validate Response Array
+    # --------------------------
+    # Responses keep the same order as when they are sent even if retried
+    for idx, call in enumerate(responses_array_with_retried_request):
+        assert call.axon.hotkey == f"miner{idx + 1}"
+        assert call.dendrite.status_code == 200
+        assert call.cgp_output[0]["uid"] == miner1_output[0]["uid"] if idx == 0 else miner2_output[0]["uid"] if idx == 1 else miner3_output[0]["uid"]
+        assert call.cgp_output[0]["original_tags"] == miner1_output[0]["tags"] if idx == 0 else miner2_output[0]["tags"]
+
+    # --------------------------
+    # Final Assertions
+    # --------------------------
+    # Forward has been called 11 times (10 initial + 1 retry)
+    # Evaluate has been called 10 times, once for 10 loops
+    assert result is True
+    assert validator.dendrite.forward.call_count == 11
     assert mock_evaluator.return_value.evaluate.await_count == 10
