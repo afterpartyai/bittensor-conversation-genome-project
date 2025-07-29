@@ -256,13 +256,19 @@ class Utils:
 
     @staticmethod
     def get_clean_tag_set(tags):
-        cleanTags = set()
-        for tag in tags:
-            safeTag = Utils.get_safe_tag(tag)
-            #print("len(safeTag)", len(safeTag), "----", safeTag)
-            if(len(safeTag) < 3 or len(safeTag) > 64):
-                continue
-            cleanTags.add(safeTag)
-        return list(cleanTags)
+        try:
+            cleanTags = set()
+
+            for tag in tags:
+                safeTag = Utils.get_safe_tag(tag)
+
+                if(len(safeTag) < 3 or len(safeTag) > 64):
+                    continue
+
+                cleanTags.add(safeTag)
+
+            return list(cleanTags)
+        except Exception as e:
+            return []
 
 
