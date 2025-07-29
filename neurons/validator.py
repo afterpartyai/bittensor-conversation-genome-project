@@ -257,7 +257,15 @@ class Validator(BaseValidatorNeuron):
                     miner_result['tags'] = await vl.validate_tag_set(miner_result['original_tags'])
 
                     miner_result['vectors'] = await vl.get_vector_embeddings_set(miner_result['tags'])
-                    bt.logging.debug(f"GOOD RESPONSE: hotkey: {response.axon.hotkey} from miner response idx: {response_idx} window idx: {window_idx}  tags: {len(miner_result['tags'])} vector count: {len(miner_result['vectors'])} original tags: {len(miner_result['original_tags'])}")
+
+                    bt.logging.debug(
+                        f"GOOD RESPONSE: hotkey: {getattr(response.axon, 'hotkey', 'N/A')} "
+                        f"from miner response idx: {response_idx} window idx: {window_idx} "
+                        f"tags: {len(miner_result.get('tags', [])) if isinstance(miner_result.get('tags'), (list, dict)) else 0} "
+                        f"vector count: {len(miner_result.get('vectors', [])) if isinstance(miner_result.get('vectors'), (list, dict)) else 0} "
+                        f"original tags: {len(miner_result.get('original_tags', [])) if isinstance(miner_result.get('original_tags'), (list, dict)) else 0}"
+                    )
+
                     if response.axon.hotkey in hot_key_watchlist:
                         print(f"!!!!!!!!!!! GOOD WATCH: {response.axon.hotkey} !!!!!!!!!!!!!")
                     log_path = c.get('env', 'SCORING_DEBUG_LOG')
