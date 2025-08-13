@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from traceback import print_exception
 import pprint
 
+from conversationgenome.api.models.conversation_metadata import ConversationMetadata
+
 verbose = False
 
 
@@ -37,13 +39,13 @@ class Evaluator:
     }
 
     # Tag all the vectors from all the tags and return set of vectors defining the neighborhood
-    async def calculate_semantic_neighborhood(self, conversation_metadata, tag_count_ceiling=None):
+    async def calculate_semantic_neighborhood(self, conversation_metadata: ConversationMetadata, tag_count_ceiling=None):
         all_vectors = []
         count = 0
 
         # Note: conversation_metadata['vectors'] is a dict, so:
         #       numeric_vectors = conversation_metadata['vectors'][tag_name]['vectors']
-        for tag_name, val in conversation_metadata['vectors'].items():
+        for tag_name, val in conversation_metadata.vectors.items():
             all_vectors.append(val['vectors'])
             #all_vectors.append(val)
             count += 1
@@ -109,7 +111,7 @@ class Evaluator:
         return final_score
 
 
-    async def evaluate(self, full_convo_metadata=None, miner_responses=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
+    async def evaluate(self, full_convo_metadata: ConversationMetadata, miner_responses=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
         if verbose == None:
             verbose = self.verbose
         final_scores = []
@@ -219,10 +221,11 @@ class Evaluator:
             rank_scores[idx] = final_scores[idx]['final_miner_score']
         return (final_scores, rank_scores)
 
-    async def calc_scores(self, full_convo_metadata, full_conversation_neighborhood, miner_result):
-        full_convo_tags = full_convo_metadata['tags']
-        tags = miner_result['tags']
-        tag_vector_dict = miner_result['vectors']
+    async def calc_scores(self, full_convo_metadata: ConversationMetadata, full_conversation_neighborhood, miner_result):
+        full_convo_tags = full_convo_metadata.tags
+        tags = miner_result["tags"]
+        tag_vector_dict = miner_result["vectors"]
+
         scores = []
         scores_both = []
         scores_unique = []
@@ -244,6 +247,7 @@ class Evaluator:
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
+                
             #bt.logging.info(example, resp2)
             if not tag in tag_vector_dict:
                 bt.logging.error(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
@@ -253,6 +257,7 @@ class Evaluator:
                 else:
                     scores_both.append(0)
                 continue
+
             tag_vectors = tag_vector_dict[tag]['vectors']
             score = self.score_vector_similarity(full_conversation_neighborhood, tag_vectors, tag)
             scores.append(score)
@@ -260,8 +265,10 @@ class Evaluator:
                 scores_unique.append(score)
             else:
                 scores_both.append(score)
+
             if not Utils.empty(log_path):
                 Utils.append_log(log_path, f"Evaluator Score for '{tag}': {score} -- Unique: {is_unique}")
+
         bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique, diff)

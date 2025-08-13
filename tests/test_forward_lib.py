@@ -1,6 +1,3 @@
-import pytest
-import conversationgenome as cg
-from conversationgenome.Skeleton import Skeleton
 import unittest
 
 class TemplateCgForwardTestCase(unittest.TestCase):

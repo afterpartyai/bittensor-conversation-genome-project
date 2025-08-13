@@ -7,46 +7,9 @@ import pytest
 
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.utils import uids
-from neurons.validator import Validator
-
-# --------------------------
-# Dummy Test Classes
-# --------------------------
-
-
-class DummyAxon:
-    def __init__(self, hotkey):
-        self.hotkey = hotkey
-
-
-class DummyResponse:
-    def __init__(self, hotkey, status_code, output=None):
-        self.axon = DummyAxon(hotkey)
-        self.dendrite = type("Dendrite", (), {"status_code": status_code})()
-        self.cgp_output = output
-
-
-class TestValidator(Validator):
-    def __init__(self, config, *, block_override=None, skip_sync=True):
-        self._skip_sync_flag = skip_sync
-        self._block_override = block_override
-
-        # Temporarily disable sync during init
-        original_sync = self.sync
-        if self._skip_sync_flag:
-            self.sync = lambda: None
-
-        super().__init__(config)
-
-        if self._skip_sync_flag:
-            self.sync = original_sync
-
-    @property
-    def block(self):
-        if hasattr(self, "_block_override") and self._block_override is not None:
-            return self._block_override
-        return super().block
-
+from tests.mocks.DummyAxon import DummyAxon
+from tests.mocks.DummyResponse import DummyResponse
+from tests.mocks.TestValidator import TestValidator
 
 def setup():
     # --------------------------
@@ -70,9 +33,6 @@ def setup():
         np.array([0.5, 0.5]),
     )
 
-    # mock_validator_lib.return_value = vl_mock
-    # mock_validator_lib2.return_value = vl_mock
-
     # --------------------------
     # Mocks: Evaluator
     # --------------------------
@@ -87,25 +47,21 @@ def setup():
             np.array([1.0, 1.0, 1.0], dtype=np.float32),
         )
     )
-    # mock_evaluator.return_value = el_mock
 
     # --------------------------
     # Mocks: Wallet, Subtensor, Metagraph
     # --------------------------
     mock_wallet_instance = MagicMock()
     mock_wallet_instance.hotkey.ss58_address = "mock_hotkey"
-    # mock_wallet.return_value = mock_wallet_instance
 
     mock_subtensor_instance = MagicMock()
     mock_subtensor_instance.is_hotkey_registered.return_value = True
-    # mock_subtensor.return_value = mock_subtensor_instance
 
     mock_metagraph_instance = MagicMock()
     mock_metagraph_instance.hotkeys = ["miner1", "miner2", "miner3"]
     mock_metagraph_instance.axons = [DummyAxon("miner1"), DummyAxon("miner2"), DummyAxon("miner3")]
     mock_metagraph_instance.n.item.return_value = 2
     mock_metagraph_instance.last_update = [50, 50, 50]
-    # mock_metagraph.return_value = mock_metagraph_instance
 
     # --------------------------
     # Config

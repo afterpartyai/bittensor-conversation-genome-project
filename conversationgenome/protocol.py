@@ -18,7 +18,6 @@
 
 import bittensor as bt
 from typing import Optional, List
-import typing
 
 class CgSynapse(bt.Synapse):
     time_elapsed : int = 0

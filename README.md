@@ -274,6 +274,23 @@ Or from the Docker:
 
 That will provide some of the data inserted into the results table.
 
+#### API Metrics
+The API exposes a `/metrics` endpoint that you can scrape with Prometheus to have information about the usage of your API.
+
+By default, the basic metrics are exposed, but there is also a custom one:
+
+- **api_requests_total** is a counter that is increased everytime a requests is received. It is labeled with the `api_key`, `ip`, `path` and `status` of the request.
+
+Feel free to add more and open a PR. If they help you they will help someone else!
+
+To scrape the metric endpoint of the API with a local Prometheus deployment, add this to your `scrape_configs`:
+```yaml
+- job_name: 'conversations_api'
+  static_configs:
+    - targets: ['localhost:8000']
+```
+If you host it somewhere else, adjust the target to use your specific ip and port combination.
+
 ## Registration
 Before mining or validating, you will need a UID, which you can acquire by following documentation on the bittensor website here.
 
