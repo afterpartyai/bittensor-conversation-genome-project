@@ -1,0 +1,3 @@
+# bin/bash
+
+python -m pytest -s --disable-warnings  tests/unit/

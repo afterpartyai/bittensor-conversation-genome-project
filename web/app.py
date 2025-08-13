@@ -4,7 +4,13 @@ import os
 import random
 import sqlite3
 import time
+from typing import Counter
 
+from middlewares.authentication_middleware import AuthMiddleware
+from middlewares.metrics_middleware import MetricsMiddleware
+from models.conversation_record import ConversationRecord
+from models.reserve_conversation_response import ConversationInput, ConversationInputData, PromptChainStep, TaggingExampleOutput, Task
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from Utils import Utils
 
 ss58_decode = None
@@ -28,10 +34,11 @@ DIVIDER = '_' * 120
 # Test convo write endpoint:
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
-
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 
 app = FastAPI()
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(AuthMiddleware)
 
 
 class Db:
@@ -108,13 +115,13 @@ class Db:
         conn.commit()
         conn.close()
 
-    def get_random_conversation(self):
+    def get_random_conversation(self) -> ConversationRecord:
         cursor = self.get_cursor()
         sql = 'SELECT * FROM conversations ORDER BY RANDOM() LIMIT 1'
         cursor.execute(sql)
         rows = cursor.fetchall()
         if rows and len(rows) == 1:
-            return rows[0]
+            return ConversationRecord(**rows[0])
         else:
             return None
 
@@ -151,18 +158,13 @@ def get_account_from_coldkey(ss58_coldkey):
     return ss58_decode(ss58_coldkey, valid_ss58_format=42)
 
 
-def get_account():
-    validator_info['account_id'] = raal.get_account_from_coldkey(validator_info['coldkey'])
-    print(f"The decoded account ID for the address {ss58_hotkey} is: {validator_info['account_id']}")
-
-
 @app.get("/")
 def get_request():
     return {"message": "Forbidden"}
 
 
 @app.post("/api/v1/conversation/reserve")
-def post_request():
+def post_request() -> Task:
     # Used for testing long or bad responses
     if False:
         time.sleep(30)
@@ -170,7 +172,7 @@ def post_request():
     db = Db("conversations", "conversations")
     # By default, the API will return a random conversation from the database
     # Comment it if you want to test a specific conversation
-    conversation = db.get_random_conversation()
+    conversation: ConversationRecord = db.get_random_conversation()
 
     # If you want the API to return a specific conversation for testing purposes
     # Uncomment the line below
@@ -179,22 +181,63 @@ def post_request():
     # conversation = db.get_conversation(guid="6982")
 
     convo = {
-        "guid": Utils.get(conversation, "data.guid"),
-        "lines": Utils.get(conversation, "data.lines"),
+        "guid": conversation.data.guid,
+        "lines": conversation.data.lines,
     }
 
     convo['total'] = len(convo['lines'])
 
     # Anonymize the participants
-    participants = Utils.get(conversation, "data.participant")
+    participants = conversation.data.participants
     out_participants = []
     p_count = 0
+
     for key, participant in participants.items():
-        out_participants.append(f"SPEAKER_{participant['idx']}")
+        out_participants.append(f"SPEAKER_{participant.idx}")
         p_count += 1
+
     convo['participants'] = out_participants
 
-    return convo
+    out = Task(
+        mode="local",
+        job_type="conversation_tagging",
+        scoring_mechanism="ground_truth_tag_similarity_scoring",
+        input=ConversationInput(
+            input_type="conversation",
+            guid=convo.get("guid"),
+            data=ConversationInputData(
+                total=len(convo.get("lines")),
+                participants=convo.get("participants"),
+                lines=convo.get("lines"),
+            ),
+        ),
+        prompt_chain=[
+            PromptChainStep(
+                step=0,
+                id="12346546888",
+                crc=1321321,
+                title="Infer tags from a conversation window",
+                name="infer_tags_from_a_conversation_window",
+                description="Returns tags representing the conversation as a whole from the window received.",
+                type="inference",
+                input_path="conversation",
+                prompt_template="Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers. Return comma-delimited tags. Only return the tags without any English commentary.",
+                output_variable="final_output",
+                output_type="List[str]",
+            )
+        ],
+        example_output=TaggingExampleOutput(tags=["guitar", "barn", "farm", "nashville"], type="List[str]"),
+        total=len(convo.get("lines")),
+        guid=convo.get("guid"),
+        participants=convo.get("participants"),
+        lines=convo.get("lines"),
+        errors=[],
+        warnings=[],
+        prompts={},
+        data_type=1,
+    )
+
+    return out
 
 
 # Mock endpoint for testing OpenAI call failures
@@ -299,3 +342,10 @@ def post_get_api_generate_key(data: dict):
                 ]
             )
     return out
+
+
+@app.get("/metrics")
+def metrics(request: Request):
+    if request.client.host != "127.0.0.1":
+        return Response(status_code=403)
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

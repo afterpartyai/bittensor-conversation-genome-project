@@ -1,2 +1,3 @@
 .env
+.env*
 readyai_api_data.json

@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import numpy as np
 
 from conversationgenome.ConfigLib import c
+from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.mock.MockBt import MockBt
 #from conversationgenome.llm.llm_openai import llm_openai
 
@@ -52,9 +54,10 @@ class LlmLib:
 
         return out
 
-    async def conversation_to_metadata(self,  conversation, generateEmbeddings=False):
+    async def conversation_to_metadata(self, conversation: Conversation, generateEmbeddings=False) -> ConversationMetadata:
         if not self.factory_llm:
             self.factory_llm = await self.generate_llm_instance()
+
             if not self.factory_llm:
                 bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
                 return
@@ -66,7 +69,7 @@ class LlmLib:
         response = await self.factory_llm.get_vector_embeddings_set(tags)
         return response
 
-    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None, partial_prompt_override=None):
         # TODO: Refactor to single generate method
         if not self.factory_llm:
             self.factory_llm = await self.generate_llm_instance()
