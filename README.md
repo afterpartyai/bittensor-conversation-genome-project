@@ -153,7 +153,7 @@ pip install -r requirements_test.txt
 Run the miner loop test:
 
 ```console
-python -m pytest -s --disable-warnings tests/test_miner_loop.py
+python -m pytest -s --disable-warnings tests/test_full_loop.py
 ```
 
 This test will:
