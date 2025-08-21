@@ -76,9 +76,12 @@ class llm_groq:
         if override_prompt:
             prompt = override_prompt
         else:
-            prompt1 = partial_prompt_override if partial_prompt_override else 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+            if partial_prompt_override:
+                prompt1 = partial_prompt_override
+            else:
+                prompt1 = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+                
             prompt = prompt1 + "\n\n\n"
-
             prompt += convoXmlStr
 
 

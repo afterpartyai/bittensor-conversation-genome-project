@@ -73,8 +73,12 @@ class ApiLib:
             maxLines = Utils._int(c.get('env', 'MAX_CONVO_LINES', 300))
 
             if response and response.status_code == 200:
-                task: Task = Task(**response.json())
-                # print("selectedConvo", selectedConvo)
+                data = response.json()
+                task: Task = Task.from_api(data)
+
+                if not task:
+                    bt.logging.error("reserveConversation error. Task is None")
+                    return None
             else:
                 bt.logging.error(f"reserveConversation error. Response: {response}")
                 return None

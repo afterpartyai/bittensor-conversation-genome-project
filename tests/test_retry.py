@@ -5,11 +5,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
+from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.utils import uids
 from tests.mocks.DummyAxon import DummyAxon
 from tests.mocks.DummyResponse import DummyResponse
 from tests.mocks.TestValidator import TestValidator
+
 
 def setup():
     # --------------------------
@@ -17,14 +20,14 @@ def setup():
     # --------------------------
     vl_mock = MagicMock()
     vl_mock.reserve_conversation = AsyncMock(
-        return_value={
-            "guid": "test-guid",
-            "lines": ["Hello", "Hi", "How are you?"],
-            "participants": ["A", "B"],
-            "indexed_windows": [(0, ["Hello", "Hi", "How are you?"])],
-        }
+        return_value=Conversation(
+            guid="test-guid",
+            lines=[(0, "hello"), (1, "hi"), (2, "how are you")],
+            participants=["A", "B"],
+            indexed_windows=[(0, ["Hello", "Hi", "How are you?"])],
+        )
     )
-    vl_mock.get_convo_metadata = AsyncMock(return_value={"tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}})
+    vl_mock.get_convo_metadata = AsyncMock(return_value=ConversationMetadata(tags=["tag1", "tag2"], vectors={"tag1": {"vectors": [0.1]}, "tag2": {"vectors": [0.2]}}))
     vl_mock.put_convo = AsyncMock()
     vl_mock.validate_tag_set = AsyncMock(return_value=["tag1", "tag2"])
     vl_mock.get_vector_embeddings_set = AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})
@@ -59,7 +62,7 @@ def setup():
 
     mock_metagraph_instance = MagicMock()
     mock_metagraph_instance.hotkeys = ["miner1", "miner2", "miner3"]
-    mock_metagraph_instance.axons = [DummyAxon("miner1"), DummyAxon("miner2"), DummyAxon("miner3")]
+    mock_metagraph_instance.axons = [DummyAxon("miner1", "miner1-uuid"), DummyAxon("miner2", "miner2-uuid"), DummyAxon("miner3", "miner3-uuid")]
     mock_metagraph_instance.n.item.return_value = 2
     mock_metagraph_instance.last_update = [50, 50, 50]
 
@@ -126,10 +129,10 @@ async def test_when_receiving_retryable_errors_then_retry_only_those_requests(
     # --------------------------
     # Responses & Side Effect
     # --------------------------
-    miner1_408_response = DummyResponse("miner1", 408)
-    miner1_200_response = DummyResponse("miner1", 200, [{"uid": 0, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
-    miner2_200_response = DummyResponse("miner2", 200, [{"uid": 1, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
-    miner3_200_response = DummyResponse("miner3", 200, [{"uid": 2, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner1_408_response = DummyResponse("miner1", "miner1-uuid", 408)
+    miner1_200_response = DummyResponse("miner1", "miner1-uuid", 200, [{"uid": 0, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner2_200_response = DummyResponse("miner2", "miner2-uuid", 200, [{"uid": 1, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner3_200_response = DummyResponse("miner3", "miner3-uuid", 200, [{"uid": 2, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
 
     def forward_side_effect(*args, **kwargs):
         calls = getattr(forward_side_effect, "calls", 0)
@@ -205,9 +208,9 @@ async def test_when_no_retryable_errors_then_retry_nothing(
     # --------------------------
     # Responses & Side Effect
     # --------------------------
-    miner1_200_response = DummyResponse("miner1", 200, [{"uid": 0, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
-    miner2_500_response = DummyResponse("miner2", 500, [{"uid": 1, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
-    miner3_200_response = DummyResponse("miner3", 200, [{"uid": 2, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner1_200_response = DummyResponse("miner1", "miner1-uuid", 200, [{"uid": 0, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner2_500_response = DummyResponse("miner2", "miner2-uuid", 500, [{"uid": 1, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
+    miner3_200_response = DummyResponse("miner3", "miner3-uuid", 200, [{"uid": 2, "tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1], "tag2": [0.2]}}])
 
     def forward_side_effect(*args, **kwargs):
         return [miner1_200_response, miner2_500_response, miner3_200_response]
@@ -267,7 +270,7 @@ async def test_when_retrying_requests_then_the_response_array_is_properly_adjust
     # --------------------------
     # Responses & Side Effect
     # --------------------------
-    miner1_408_response = DummyResponse("miner1", 408)
+    miner1_408_response = DummyResponse("miner1", "miner1-uuid", 408)
     miner1_output = [{"uid": 0, "tags": ["syrup", "crepes", "eating"], "vectors": {"syrup": [1], "crepes": [1], "eating": [1]}}]
     miner2_output = [{"uid": 1, "tags": ["ok", "bye"], "vectors": {"ok": [0.1], "bye": [0.2]}}]
     miner3_output = [{"uid": 2, "tags": ["ok", "bye"], "vectors": {"ok": [0.1], "bye": [0.2]}}]
@@ -278,18 +281,18 @@ async def test_when_retrying_requests_then_the_response_array_is_properly_adjust
         if calls == 0:
             result = [
                 miner1_408_response,
-                DummyResponse("miner2", 200, copy.deepcopy(miner2_output)),
-                DummyResponse("miner3", 200, copy.deepcopy(miner3_output)),
+                DummyResponse("miner2", "miner2-uuid", 200, copy.deepcopy(miner2_output)),
+                DummyResponse("miner3", "miner3-uuid", 200, copy.deepcopy(miner3_output)),
             ]
         elif calls == 1:
             result = [
-                DummyResponse("miner1", 200, copy.deepcopy(miner1_output)),
+                DummyResponse("miner1", "miner1-uuid", 200, copy.deepcopy(miner1_output)),
             ]
         else:
             result = [
-                DummyResponse("miner1", 200, copy.deepcopy(miner1_output)),
-                DummyResponse("miner2", 200, copy.deepcopy(miner2_output)),
-                DummyResponse("miner3", 200, copy.deepcopy(miner3_output)),
+                DummyResponse("miner1", "miner1-uuid", 200, copy.deepcopy(miner1_output)),
+                DummyResponse("miner2", "miner2-uuid", 200, copy.deepcopy(miner2_output)),
+                DummyResponse("miner3", "miner3-uuid", 200, copy.deepcopy(miner3_output)),
             ]
 
         forward_side_effect.calls = calls + 1

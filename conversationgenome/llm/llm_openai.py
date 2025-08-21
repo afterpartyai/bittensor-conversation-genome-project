@@ -298,7 +298,11 @@ class llm_openai:
         if override_prompt:
             prompt = override_prompt
         else:
-            prompt = partial_prompt_override if partial_prompt_override else "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary."
+            if partial_prompt_override:
+                prompt = partial_prompt_override 
+            else: 
+                prompt = "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary."
+            
             prompt = prompt + "\n\n\n"
 
             if convoXmlStr:
@@ -452,7 +456,10 @@ class llm_openai:
             else:
                 tag_logs.append(f"{tag}={len(vectors)}vs")
 
-            tagVectorSet[tag] = {"vectors": vectors or []}
+            if vectors:
+                tagVectorSet[tag] = {"vectors": vectors}
+            else:
+                tagVectorSet[tag] = {"vectors": []}
 
         if self.verbose:
             print("        Embeddings received: " + ", ".join(tag_logs))

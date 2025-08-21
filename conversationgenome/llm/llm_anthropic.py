@@ -60,7 +60,11 @@ class llm_anthropic:
         if override_prompt:
             prompt = override_prompt
         else:
-            prompt_base = partial_prompt_override if partial_prompt_override else 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+            if partial_prompt_override:
+                prompt_base = partial_prompt_override
+            else:
+                prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+
             prompt = f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"
         try:
             data = {

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 
 class ConversationInputData(BaseModel):
@@ -67,3 +67,13 @@ class Task(BaseModel):
     lines: List[Tuple[int, str]] = []
     prompts: Dict[str, Any] = {}
     data_type: int = 1
+    
+    @classmethod
+    def from_api(cls, payload: Dict[str, Any]) -> Optional["Task"]:
+        try:
+            task = cls.model_validate(payload)
+        except ValidationError as e:
+            print(f"Task payload validation failed: {e}\nPayload: {payload}")
+            return None
+
+        return task

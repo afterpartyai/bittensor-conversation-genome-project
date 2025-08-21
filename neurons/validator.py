@@ -97,7 +97,13 @@ class Validator(BaseValidatorNeuron):
                     indexed_windows_subset = indexed_windows
 
                 for idx, indexed_window in enumerate(indexed_windows_subset):
-                    piece_data = {"cguid": conversation_guid, "window_idx": indexed_window[0], "window": indexed_window[1], "participants": participants, "batch_num": batch_num}
+                    piece_data = {
+                        "cguid": conversation_guid, 
+                        "window_idx": indexed_window[0], 
+                        "window": indexed_window[1], 
+                        "participants": participants, 
+                        "batch_num": batch_num
+                    }
                     pieces.append(piece_data)
 
             bt.logging.info(f"Generating metadata for {len(pieces)} pieces")

@@ -1,4 +1,4 @@
-fastapi~=0.110.1
+fastapi==0.110.3 # Tested with Python 3.11.13
 faker==37.1.0
 python-dotenv==1.0.1
 datasets==3.5.1
