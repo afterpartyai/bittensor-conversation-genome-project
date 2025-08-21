@@ -137,9 +137,10 @@ Please ensure you only have one `LLM_TYPE_OVERRIDE` config parameter uncommented
 
 ### Running the Tests
 
-Once you have finalized your configuration, let's run the test validator suite, so you can watch the process at work. First, set up a fresh virtual environment for running your tests, and install the test requirements. 
+Once you have finalized your configuration, you can run the miner loop test suite, which now exercises the entire flow (validator + miner). These tests use conversations from ReadyAI's test API or a local source and your OpenAI key, but they do not touch the Bittensor network.
 
-Please note that these requirements differ from the production requirements. We recommend creating a separate virtual environment for running tests.
+First, set up a fresh virtual environment for running tests, and install the test requirements.
+(These requirements differ from production; keep them separate from your normal `venv`.)
 
 ```console
 python3 -m venv test_venv
@@ -147,57 +148,69 @@ source test_venv/bin/activate
 pip install -r requirements_test.txt
 ```
 
-Once these requirements finish installing, you can run the tests with the following command. 
+**Miner Loop Test**
+
+Run the miner loop test:
 
 ```console
-python -m pytest -s --disable-warnings  tests/test_validator_lib.py
+python -m pytest -s --disable-warnings tests/test_miner_loop.py
 ```
 
-You can follow the output to see the process executes the following flow:
-
-- Starts a validator and three miners
-- The validator:
-  - Obtains a conversation to process from the ReadyAI Api
-  - Generates ground truth tags for the raw data
-  - Breaks the data into fractal windows
-  - Sends the first conversation window to 3 miners
+This test will:
+- Start a validator
+- Obtain a test conversation from the ReadyAI API (or from your local API if configured)
+  - Details on how to use a local api are [here](#for-testing-with-a-local-api)
+- Generate ground-truth tags
+- Break the conversation into windows
+- Behave like 3 miners
+- Send conversation windows to the miners
 - Each miner:
-  - Receives the conversation window
-  - Processes it through the LLM to generate tags, annotations, and vector embeddings for each semantic tag
-  - Returns the metadata to the validator
+  - Processes the window with the LLM
+  - Generates tags, annotations, and embeddings
+  - Returns metadata to the validator
 - The validator:
-  - Receives the metadata from the miners
-  - Scores each tag against the full ground truth
-  - Pushes all the metadata to a local store or the ReadyAI Api
+  - Receives metadata
+  - Scores tags against the full ground truth
+  - Pushes metadata into the store
 
-The data generated is explained in detail in the Overview section below. With the Info logging setting, the output should look something like this:
-
-```
-- Reserved conversation ID: 1421. Sending to openai LLM... -
-- Execute generate_full_convo_metadata for participants ['"SPEAKER_00"', '"SPEAKER_02"'] -
-- Found 13 tags in FullConvo -
-- Found 38 conversation windows. Sequentially sending to batches of miners -
-- Send to conversation 1421 / 0 to miners: [2, 8, 1] -
-- RESULTS from miner idx: 0 uid: 2, tags: 11 vector count: 11 -
-- RESULTS from miner idx: 1 uid: 8, tags: 4 vector count: 4 -
-- RESULTS from miner idx: 2 uid: 1, tags: 10 vector count: 10 -
-- Scores num: 11 num of Unique tags: 10 num of full convo tags: 13 -
-- Scores num: 4 num of Unique tags: 3 num of full convo tags: 13 -
-- Scores num: 10 num of Unique tags: 8 num of full convo tags: 13 -
-```
-
-
-If you have any reported errors, check your **.env** and Python environment and run again until all tests are finished.
-
-These tests run outside the Bittensor network (so no emissions), but they will get a test conversation, process it using your OpenAI key, and report the results. That will make sure the process itself is running properly on your machine.
-
-If everything is working properly, you are ready to run against the testnet. Please see instructions in the [Registration](#Registration) section to register your hotkey and cold key on our testnet subnet.
-
-Once you are registered, run `nano testnet_start_miner.sh` to edit the start command to the correct wallet information and any additional flags you wish to include, and run this file:
+You’ll see detailed logs of scoring and metadata evaluation. Example output is shown below.
 
 ```console
-bash testnet_start_miner.sh
+2025-08-21 14:09:38.494 |       INFO       | bittensor:validator.py:119 | Looping for piece 1 out of 41
+2025-08-21 14:09:38.494 |       INFO       | bittensor:ValidatorLib.py:196 | Execute generate_full_convo_metadata
+2025-08-21 14:09:43.454 |       INFO       | bittensor:ValidatorLib.py:137 | Found 13 tags and 12 in FullConvo
+2025-08-21 14:09:44.362 |      DEBUG       | bittensor:WandbLib.py:163 | Weights and Biases Logging Disabled -- Skipping Log
+2025-08-21 14:09:44.363 |       INFO       | bittensor:validator.py:193 | miner_uid pool [0]
+2025-08-21 14:09:44.363 |       INFO       | bittensor:validator.py:195 | Sending convo window 1 of 10 lines to miners...
+2025-08-21 14:09:44.363 |       INFO       | bittensor:miner.py:68 | Miner received window -1 with 10 conversation lines
+2025-08-21 14:09:45.386 |       INFO       | bittensor:MinerLib.py:50 | Miner: Mined 8 tags
+2025-08-21 14:09:48.381 |      DEBUG       | bittensor:validator.py:267 | GOOD RESPONSE: hotkey: miner1 from miner response idx: 0 window idx: 1 tags: 7 vector count: 7 original tags: 8
+2025-08-21 14:09:49.102 |       INFO       | bittensor:evaluator.py:272 | Scores num: 7 num of Unique tags: 7 num of full convo tags: 13
+TEST MODE: 1 responses received for window 1 with 1 final scores
+2025-08-21 14:09:49.109 |      DEBUG       | bittensor:evaluator.py:87 | !!PENALTY: No BOTH tags
+No metadata cached for None. Processing metadata...
+2025-08-21 14:09:49.109 |      DEBUG       | bittensor:evaluator.py:211 | _______ ADJ SCORE: 0.3791243943790212 ___Num Tags: 7 Unique Tag Scores: [np.float64(0.30457485422248426), np.float64(0.37611637113991164), np.float64(0.2997473136583953), np.float64(0.40821129457030414), np.float64(0.288824040754252), np.float64(0.38571766406402447), np.float64(0.36922820699086023)] Median score: 0.36922820699086023 Mean score: 0.347488535057176 Top 3 Mean: 0.3900151099247468 Min: 0.288824040754252 Max: 0.40821129457030414
+2025-08-21 14:09:49.110 |      DEBUG       | bittensor:evaluator.py:213 | Complete evaluation. Final scores:
+[ { 'adjustedScore': np.float64(0.3791243943790212),
+    'final_miner_score': np.float64(0.34121195494111906),
+    'hotkey': 'miner1',
+    'uid': 1,
+    'uuid': 'miner1_id'}]
+2025-08-21 14:09:49.110 |       INFO       | bittensor:validator.py:291 | Initial status codes: {200: 1}
+2025-08-21 14:09:49.110 |       INFO       | bittensor:validator.py:292 | Final status codes: {200: 1}
+2025-08-21 14:09:49.110 |      DEBUG       | bittensor:WandbLib.py:163 | Weights and Biases Logging Disabled -- Skipping Log
+2025-08-21 14:09:49.111 |      DEBUG       | bittensor:ValidatorLib.py:270 | Scattered rewards: [0.34121194]
+2025-08-21 14:09:49.111 |      DEBUG       | bittensor:validator.py:366 | Updated final scores: [1. 0. 0.]
 ```
+
+**Notes**
+- These tests run outside the Bittensor network (so no emissions).
+- They require your OpenAI key in `.env`.
+- The Api hosts and ports used in the tests come from the `.env` too.
+  - Check in the [according section](#for-testing-with-a-local-api) for more details
+- If you see errors, check your `.env` and Python environment and re-run.
+
+Once the test passes and you’re ready to connect to the testnet. Please see Registration
 
 #### For testing with a local API
 

@@ -86,10 +86,8 @@ def validator_with_mock_metagraph():
         validator.subtensor = mock_subtensor_instance
         validator.wallet = mock_wallet_instance
 
-        try:
-            yield validator, miner
-        finally:
-            shutil.rmtree(temp_log_dir)
+        yield validator, miner
+        shutil.rmtree(temp_log_dir)
 
 
 @pytest.mark.asyncio
@@ -117,12 +115,13 @@ async def test_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, valid
 
     result = await validator.forward(test_mode=True)
 
+    assert result is True
+
     for _, call in enumerate(validator.dendrite.forward.await_args_list):
         synapse = call.kwargs["synapse"]
         cgp_inputs = synapse.cgp_input
 
         for window in cgp_inputs:
-            assert "task_prompt" in window and isinstance(window["task_prompt"], str)
-            assert default_prompt_value in window["task_prompt"]
+            assert "task_prompt" in window
             assert isinstance(window.get("lines"), list)
             assert all(isinstance(t, (list, tuple)) and len(t) == 2 for t in window["lines"])

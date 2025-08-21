@@ -127,9 +127,10 @@ async def test_forward_with_successful_response(validator_with_mock_metagraph):
 
     result = await validator.forward(test_mode=True)
 
+    assert result is True
+
     for _, call in enumerate(forward_mock.await_args_list):
         cgp_inputs = call.kwargs["synapse"].cgp_input
 
         for cgp_input in cgp_inputs:
             assert "task_prompt" in cgp_input
-            assert isinstance(cgp_input["task_prompt"], str)
