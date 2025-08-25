@@ -2,6 +2,8 @@ import os
 import json
 import asyncio
 
+from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_openai import llm_openai
@@ -53,12 +55,16 @@ class llm_anthropic:
         return response
 
 
-    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None, partial_prompt_override=None):
         out = {"success":0}
         if override_prompt:
             prompt = override_prompt
         else:
-            prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+            if partial_prompt_override:
+                prompt_base = partial_prompt_override
+            else:
+                prompt_base = 'Analyze the following conversation in terms of topic interests of the participants where <p0> has the questions and <p1> has the answers. Response should be only comma-delimited tags in the CSV format.'
+
             prompt = f"\n\nHuman: {prompt_base}\n{convoXmlStr}\n\nAssistant:"
         try:
             data = {
@@ -80,19 +86,19 @@ class llm_anthropic:
         return out
 
 
-    async def call_llm_tag_function(self, convoXmlStr=None, participants=None, call_type="csv"):
+    async def call_llm_tag_function(self, prompt: str, convoXmlStr=None, participants=None, call_type="csv"):
         out = {}
 
-        out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
+        out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants, partial_prompt_override=prompt)
 
         return out
 
-    async def conversation_to_metadata(self,  convo, generateEmbeddings=False):
+    async def conversation_to_metadata(self,  convo: Conversation, generateEmbeddings=False) -> RawMetadata | None:
         (xml, participants) = Utils.generate_convo_xml(convo)
         tags = None
-        out = {"tags":{}}
+        out = {"tags":{}, "success": False}
 
-        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
+        response = await self.call_llm_tag_function(convoXmlStr=xml, prompt=convo.miner_task_prompt, participants=participants)
         if not response:
             print("No tagging response. Aborting")
             return None
@@ -121,15 +127,20 @@ class llm_anthropic:
 
         if len(tags) > 0:
             out['tags'] = tags
-            out['vectors'] = {}
+            out['vectors'] = None
             if generateEmbeddings:
                 if self.verbose:
                     print(f"------- Found tags: {tags}. Getting vectors for tags...")
                 out['vectors'] = await self.get_vector_embeddings_set(tags)
-            out['success'] = 1
+            out['success'] = True
         else:
             print("No tags returned by OpenAI for Anthropic", response)
-        return out
+
+        return RawMetadata(
+            tags=out["tags"],
+            vectors=out["vectors"],
+            success=out["success"]
+        )
 
     async def get_vector_embeddings_set(self,  tags):
         llm_embeddings = llm_openai()

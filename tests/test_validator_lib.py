@@ -25,7 +25,6 @@ class MockAxon:
     uuid = "a"
     hotkey = ""
 
-
 class MockResponse:
     responses = {}
     responses = {}

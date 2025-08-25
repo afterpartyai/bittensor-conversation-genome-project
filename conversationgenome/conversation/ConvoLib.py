@@ -1,30 +1,27 @@
-import requests
-
 from conversationgenome.api.ApiLib import ApiLib
+from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
-from conversationgenome.utils.Utils import Utils
 
 
 class ConvoLib:
     verbose = False
 
-    async def get_conversation(self, hotkey, api_key=None):
+    async def get_conversation(self, hotkey, api_key=None) -> Conversation:
         api = ApiLib()
-        convo = await api.reserveConversation(hotkey, api_key=api_key)
+        convo: Conversation = await api.reserveConversation(hotkey, api_key=api_key)
         return convo
 
     async def put_conversation(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None, verbose=False):
         llm_type = "openai"
-
-        model = "gpt-4o"
         llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+
         if llm_type_override:
             llm_type = llm_type_override
-            model = c.get("env", "OPENAI_MODEL")
-        llm_model = c.get('env', llm_type.upper() + "_MODEL")
 
+        llm_model = c.get('env', llm_type.upper() + "_MODEL")
         embeddings_model = "text-embedding-3-large"
         embeddings_model_override = c.get("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE")
+
         if embeddings_model_override:
             embeddings_model = embeddings_model_override
 
@@ -42,9 +39,12 @@ class ConvoLib:
             "cgp_version": "0.2.0",
             "netuid": c.get("system", "netuid"),
         }
+
         if self.verbose or verbose:
             print("PUT CONFIG", output)
+
         output['data'] = data
         api = ApiLib()
         result = await api.put_conversation_data(c_guid, output)
+
         return result

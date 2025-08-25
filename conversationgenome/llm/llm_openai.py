@@ -1,7 +1,10 @@
 import os
 import json
 import traceback
+from typing import Dict, List
 
+from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 
@@ -109,18 +112,19 @@ class llm_openai:
         return tags
 
 
-    async def conversation_to_metadata(self, convo, generateEmbeddings=False):
+    async def conversation_to_metadata(self, convo: Conversation, generateEmbeddings=False) -> RawMetadata | None:
         (xml, participants) = Utils.generate_convo_xml(convo)
         tags = None
-        out = {"tags":{}}
+        out = {"tags": {}, "success": False}
 
-        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants)
+        response = await self.call_llm_tag_function(convoXmlStr=xml, participants=participants, prompt=convo.miner_task_prompt)
         if not response:
             print("No tagging response. Aborting")
             return None
         elif not response['success']:
             print(f"Tagging failed: {response}. Aborting")
             return response
+
         content = Utils.get(response, 'content')
         if self.return_json:
             tags = self.process_json_tag_return(response)
@@ -135,15 +139,23 @@ class llm_openai:
 
         if not Utils.empty(tags):
             out['tags'] = tags
-            out['vectors'] = {}
+            out['vectors'] = None
             if generateEmbeddings:
                 if self.verbose:
                     print(f"------- Found tags: {tags}. Getting vectors for tags...")
-                out['vectors'] = await self.get_vector_embeddings_set(tags)
-            out['success'] = 1
+
+                out['vectors'] = await self.get_vector_embeddings_set(tags) 
+
+            out['success'] = True
         else:
             print("No tags returned by OpenAI", response)
-        return out
+            return None
+
+        return RawMetadata(
+            tags=out["tags"],
+            vectors=out["vectors"],
+            success=out["success"]
+        )
 
 
     async def openai_prompt_call_function_advanced(self, convoXmlStr=None, participants=None):
@@ -280,13 +292,19 @@ class llm_openai:
         return out
 
 
-    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None, partial_prompt_override=None):
         direct_call = Utils._int(c.get('env', "OPENAI_DIRECT_CALL"))
+
         if override_prompt:
             prompt = override_prompt
         else:
-            prompt1 = 'Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.'
-            prompt = prompt1 + "\n\n\n"
+            if partial_prompt_override:
+                prompt = partial_prompt_override 
+            else: 
+                prompt = "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary."
+            
+            prompt = prompt + "\n\n\n"
+
             if convoXmlStr:
                 prompt += convoXmlStr
             else:
@@ -357,7 +375,7 @@ class llm_openai:
         #print(funcs['location'])
         return funcs
 
-    async def call_llm_tag_function(self, convoXmlStr=None, participants=None, call_type="csv"):
+    async def call_llm_tag_function(self, prompt:str, convoXmlStr=None, participants=None, call_type="csv"):
         out = {}
         direct_call = c.get('env', "OPENAI_DIRECT_CALL")
         if not OpenAI and not direct_call:
@@ -377,7 +395,7 @@ class llm_openai:
         elif call_type == "json":
             out = await self.openai_prompt_call_json(convoXmlStr=convoXmlStr, participants=participants)
         else:
-            out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants)
+            out = await self.prompt_call_csv(convoXmlStr=convoXmlStr, participants=participants, partial_prompt_override=prompt)
 
         return out
 
@@ -392,9 +410,10 @@ class llm_openai:
             print("Conv response", response)
         return response
 
-    async def get_vector_embeddings(self, text, verbose=False, dimensions=1536):
+    async def get_vector_embeddings(self, text, verbose=False, dimensions=1536) -> List[float] | None:
         embedding = None
         text =  text.replace("\n"," ")
+
         if not self.direct_call:
            response = client.embeddings.create(
                model=self.embeddings_model,
@@ -410,32 +429,42 @@ class llm_openai:
            }
            url_path = "/v1/embeddings"
            response = self.do_direct_call(data, url_path=url_path)
+
            if response['code'] == 200:
                responseData = Utils.get(response, 'json.data')
                #print("responseData", responseData)
                embedding = responseData[0]['embedding']
            else:
                print("ERROR getting embedding", response)
+
         if self.verbose or verbose:
             #print("OpenAI embeddings USAGE", response.usage)
             print("OpenAI embeddings generated %d vectors with model %s " % (len(embedding), self.embeddings_model))
+
         return embedding
 
-    async def get_vector_embeddings_set(self, tags):
+    async def get_vector_embeddings_set(self, tags) -> Dict[str, Dict[str, List[float]]]:
         originalTags = tags
         tags = Utils.get_clean_tag_set(originalTags)
         tag_logs = []
         tagVectorSet = {}
+
         for tag in tags:
             vectors = await self.get_vector_embeddings(tag)
             if not vectors:
                 print(f"ERROR -- no vectors for tag: {tag} vector response: {vectors}")
             else:
                 tag_logs.append(f"{tag}={len(vectors)}vs")
-            tagVectorSet[tag] = {"vectors":vectors}
+
+            if vectors:
+                tagVectorSet[tag] = {"vectors": vectors}
+            else:
+                tagVectorSet[tag] = {"vectors": []}
+
         if self.verbose:
             print("        Embeddings received: " + ", ".join(tag_logs))
             print("VECTORS", tag, vectors)
+
         return tagVectorSet
 
 
