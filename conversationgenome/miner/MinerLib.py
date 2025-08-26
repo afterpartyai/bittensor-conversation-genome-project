@@ -2,13 +2,11 @@ verbose = False
 
 import copy
 import random
-import asyncio
+
+from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
 from conversationgenome.mock.MockBt import MockBt
-
-
 from conversationgenome.utils.Utils import Utils
-
 
 bt = None
 try:
@@ -29,9 +27,9 @@ elif c.get('env', 'FORCE_LOG') == 'info':
 class MinerLib:
     verbose = False
 
-    async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, dryrun=False):
-        #bt.logging.debug("MINERCONVO", convoWindow, minerUid)
-        out = {"uid":minerUid, "tags":[], "profiles":[], "convoChecksum":11}
+    async def do_mining(self, conversation_guid, window_idx, conversation_window, minerUid, task_prompt: str, dryrun=False):
+        # bt.logging.debug("MINERCONVO", convoWindow, minerUid)
+        out = {"uid": minerUid, "tags": [], "profiles": [], "convoChecksum": 11}
 
         if not dryrun:
             llml = LlmLib()
@@ -41,10 +39,13 @@ class MinerLib:
             if generateEmbeddings:
                 bt.logging.info(f"Miner: generating embeddings...")
 
-            result = await llml.conversation_to_metadata({"lines":lines}, generateEmbeddings=generateEmbeddings)
-            tags = Utils.get(result, 'tags')
-            out["tags"] = tags
-            out["vectors"] = Utils.get(result, 'vectors', {})
+            conversation = Conversation(guid=conversation_guid, lines=conversation_window, miner_task_prompt=task_prompt)
+
+            result = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=generateEmbeddings)
+
+            out["tags"] = result.tags
+            out["vectors"] = result.vectors
+
             num_tags = len(Utils.get(out, 'tags', []))
             bt.logging.info(f"Miner: Mined {num_tags} tags")
 
@@ -71,9 +72,8 @@ class MinerLib:
             lines = copy.deepcopy(exampleSentences)
             lines.append(random.choice(exampleSentences))
             lines.append(random.choice(exampleSentences))
-            matches_dict = await llml.conversation_to_metadata({"lines":lines})
+            matches_dict = await llml.conversation_to_metadata({"lines": lines})
             tags = list(matches_dict.keys())
             out["tags"] = tags
             out["vectors"] = matches_dict
         return out
-

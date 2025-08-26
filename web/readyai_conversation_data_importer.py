@@ -57,7 +57,7 @@ class ConversationDbProcessor:
                 "id": c_guid,
                 "guid": c_guid,
                 "lines": lines,
-                "participant": participantGuids,
+                "participants": participantGuids,
             }
 
             created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

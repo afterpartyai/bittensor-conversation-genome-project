@@ -1,6 +1,10 @@
-import requests
 import os
 import re
+
+import requests
+
+from conversationgenome.api.models.conversation import Conversation
+
 
 class Utils:
     @staticmethod
@@ -12,14 +16,14 @@ class Utils:
         cur = inDict
         success = True
         for part in parts:
-            #print(part, cur, part in cur, type(cur)==dict)
-            if cur and type(cur)==list:
+            # print(part, cur, part in cur, type(cur)==dict)
+            if cur and type(cur) == list:
                 index = 0
                 try:
                     part = int(part)
                 except:
                     pass
-            if cur and ( (type(cur)==dict and part in cur) or (type(cur)==list and  0 <= part < len(cur)) ):
+            if cur and ((type(cur) == dict and part in cur) or (type(cur) == list and 0 <= part < len(cur))):
                 cur = cur[part]
             else:
                 success = False
@@ -68,13 +72,13 @@ class Utils:
     def split_overlap_array(array, size=10, overlap=2):
         result = []
         lenArray = len(array)
-        num_splits = lenArray//(size-overlap) + 1
+        num_splits = lenArray // (size - overlap) + 1
 
         for i in range(num_splits):
-            start = i*(size-overlap)
+            start = i * (size - overlap)
             end = start + size
             window = array[start:end]
-            #print("Start/end/elements", start, end, window)
+            # print("Start/end/elements", start, end, window)
             result.append(array[start:end])
             if end >= lenArray:
                 break
@@ -83,7 +87,6 @@ class Utils:
     @staticmethod
     def is_empty_vector(vector):
         return all(v == 0.0 for v in vector)
-
 
     @staticmethod
     def sort_dict_list(dict_list, key, ascending=True):
@@ -97,7 +100,7 @@ class Utils:
 
     @staticmethod
     def get_url(url, headers=None, verbose=False, timeout=None):
-        out = {"success":False, "code":-1, "errors":[]}
+        out = {"success": False, "code": -1, "errors": []}
         if not requests:
             print("No requests library")
 
@@ -112,18 +115,18 @@ class Utils:
             except:
                 pass
         else:
-            out['errors'].append({"id":198390129, "msg":response.text})
+            out['errors'].append({"id": 198390129, "msg": response.text})
 
         return out
 
     @staticmethod
     def post_url(url, postData=None, jsonData=None, headers=None, cert=None, key=None, returnContent=False, isPut=False, verbose=False, timeout=None):
-        out = {"success":False, "body":None, "json": None, "code":-1, "errors":[]}
+        out = {"success": False, "body": None, "json": None, "code": -1, "errors": []}
         response = out
         if not requests:
             msg = "No requests library in Utils"
             print(msg)
-            out['errors'].append({"id":142674, "msg":msg})
+            out['errors'].append({"id": 142674, "msg": msg})
             return out
         if not headers:
             headers = {
@@ -140,7 +143,7 @@ class Utils:
             out["code"] = response.status_code
         except requests.exceptions.Timeout as e:
             msg = "TIMEOUT error"
-            out['errors'].append({"id":8329471, "msg":msg})
+            out['errors'].append({"id": 8329471, "msg": msg})
             out['code'] = 500
 
         if out["code"] == 200:
@@ -155,15 +158,14 @@ class Utils:
                 print("CONTENT", response.content)
                 out["body"] = response.content
         else:
-            out['errors'].append({"id":19839009, "msg":f"HTTP FAIL: {url} Response:{response}"})
-
+            out['errors'].append({"id": 19839009, "msg": f"HTTP FAIL: {url} Response:{response}"})
 
         return out
 
     @staticmethod
     def empty(val):
         out = True
-        #print("TYPE", type(val))
+        # print("TYPE", type(val))
         valType = type(val)
         if not val:
             out = True
@@ -174,11 +176,11 @@ class Utils:
             if val != 0:
                 out = False
         elif valType == list:
-            #print("LIST", val)
+            # print("LIST", val)
             if len(val) != 0:
                 out = False
         elif valType == dict:
-            #print("DICT", val)
+            # print("DICT", val)
             if len(val.keys()) != 0:
                 out = False
         else:
@@ -214,12 +216,12 @@ class Utils:
     def datetime_str(date_obj=None, formatStr="%Y-%m-%d %H:%M:%S"):
         out = None
         import time
+
         if not date_obj:
             out = time.strftime(formatStr)
         else:
             out = time.strftime(formatStr, date_obj)
         return out
-
 
     @staticmethod
     def append_log(file_path, text_string):
@@ -232,19 +234,24 @@ class Utils:
             print(f"ERROR append_log :{e}")
 
     @staticmethod
-    def generate_convo_xml(convo):
+    def generate_convo_xml(convo: Conversation):
         xml = "<conversation id='%d'>" % (83945)
-        #print("CONVO OPENAI", convo)
+        # print("CONVO OPENAI", convo)
         participants = {}
-        for line in convo['lines']:
+
+        for line in convo.lines:
             if len(line) != 2:
                 continue
+
             participant = "p%d" % (line[0])
             xml += "<%s>%s</%s>" % (participant, line[1], participant)
+
             if not participant in participants:
                 participants[participant] = 0
+
             # Count number entries for each participant -- may need it later
             participants[participant] += 1
+
         xml += "</conversation>"
         return (xml, participants)
 
