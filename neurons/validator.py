@@ -82,9 +82,9 @@ class Validator(BaseValidatorNeuron):
                 if not full_conversation:
                     continue
 
-                conversation_guid = full_conversation.guid
+                conversation_guid = str(Utils.get(full_conversation, "guid"))
                 bufferedConvos[conversation_guid] = full_conversation
-                participants = full_conversation.participants
+                participants = Utils.get(full_conversation, "participants")
                 indexed_windows = full_conversation.indexed_windows 
                 # Large number of windows were adversely impacting weight sync time, so limit to windows subset until local cache is ready.
 
@@ -123,10 +123,6 @@ class Validator(BaseValidatorNeuron):
                 batch_num = piece['batch_num']
                 full_conversation = bufferedConvos[conversation_guid]
 
-                if not conversation_guid:
-                    bt.logging.error("No conversation GUID found.")
-                    return
-                    
                 if not "metadata" in full_conversation:
                     if test_mode:
                         print(f"No metadata cached for {conversation_guid}. Processing metadata...")
