@@ -166,3 +166,4 @@ testing/
 wandb/*
 virtualenv_*
 web/store
+.vscode/

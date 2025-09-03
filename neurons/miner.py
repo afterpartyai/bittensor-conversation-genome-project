@@ -64,11 +64,12 @@ class Miner(BaseMinerNeuron):
         window_idx = Utils.get(window, "window_idx")
         lines = Utils.get(window, "lines")
         task_prompt = Utils.get(window, "task_prompt")
+        task_type = Utils.get(window, "task_type")
 
         bt.logging.info(f"Miner received window {window_idx} with {len(lines)} conversation lines")
 
         ml = MinerLib()
-        result = await ml.do_mining(conversation_guid=conversation_guid, window_idx=window_idx, conversation_window=lines, minerUid=17, task_prompt=task_prompt)
+        result = await ml.do_mining(conversation_guid=conversation_guid, window_idx=window_idx, conversation_window=lines, minerUid=17, task_prompt=task_prompt, task_type=task_type)
 
         if not Utils.empty(log_path):
             Utils.append_log(log_path, f"Mined vectors and tags: {result['tags']}")

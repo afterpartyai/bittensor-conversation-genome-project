@@ -199,7 +199,7 @@ class Validator(BaseValidatorNeuron):
                 bt.logging.info(f"Sending convo window {window_idx} of {len(conversation_window)} lines to miners...")
 
                 # To prevent potential miner tracking of conversations, send meaningless guid and idx
-                window_packet = {"guid": "HIDDEN", "window_idx": -1, "lines": conversation_window, "task_prompt": full_conversation.miner_task_prompt}
+                window_packet = {"guid": "HIDDEN", "window_idx": -1, "lines": conversation_window, "task_prompt": full_conversation.miner_task_prompt, "task_type": full_conversation.miner_task_type}
 
                 synapse = conversationgenome.protocol.CgSynapse(cgp_input=[window_packet])
 
