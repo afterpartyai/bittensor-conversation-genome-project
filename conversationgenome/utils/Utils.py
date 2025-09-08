@@ -1,6 +1,7 @@
 import os
 import re
 
+import numpy as np
 import requests
 
 from conversationgenome.api.models.conversation import Conversation
@@ -278,4 +279,17 @@ class Utils:
         except Exception as e:
             return []
 
+    @staticmethod
+    def safe_value(val):
+        # If it's a numpy array, return as is, it's ok
+        if isinstance(val, np.ndarray):
+            return val
 
+        if val is None:
+            return 0.0
+
+        if isinstance(val, (float, np.floating)):
+            # Treat NaN/Inf as 0.0
+            if not np.isfinite(val):
+                return 0.0
+        return val
