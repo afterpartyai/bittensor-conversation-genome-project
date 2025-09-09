@@ -174,34 +174,56 @@ class Evaluator:
                 results = await self.calc_scores(full_convo_metadata, full_conversation_neighborhood, miner_result)
 
                 (scores, scores_both, scores_unique, diff) = results
-                mean_score = np.mean(scores)
-                median_score = np.median(scores)
-                min_score = np.min(scores)
-                max_score = np.max(scores)
-                std = np.std(scores)
-                sorted_unique_scores = np.sort(scores_unique)
-                sorted_scores = np.sort(scores)
-                top_3_sorted_unique_scores = sorted_unique_scores[-3:]
-                if len(top_3_sorted_unique_scores) == 1:
-                    num1 = np.float64(0.0)
-                    num2 = np.float64(0.0)
-                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, num1)
-                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, num2)
-                elif len(top_3_sorted_unique_scores) == 2:
-                    num1 = np.float64(0.0)
-                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, num1)
+
+                # Ensure all arrays are valid for statistics
+                if len(scores) == 0:
+                    mean_score = 0.0
+                    median_score = 0.0
+                    min_score = 0.0
+                    max_score = 0.0
+                    std = 0.0
+                    sorted_scores = np.array([0.0])
+                else:
+                    mean_score = np.mean(scores)
+                    median_score = np.median(scores)
+                    min_score = np.min(scores)
+                    max_score = np.max(scores)
+                    std = np.std(scores)
+                    sorted_scores = np.sort(scores)
+
+                if len(scores_unique) == 0:
+                    sorted_unique_scores = np.array([0.0, 0.0, 0.0])
+                else:
+                    sorted_unique_scores = np.sort(scores_unique)
+
+                top_3_sorted_unique_scores = sorted_unique_scores
+
+                if len(sorted_unique_scores) >= 3:
+                    top_3_sorted_unique_scores = sorted_unique_scores[-3:]
+
+                # Pad to 3 elements if needed
+                while len(top_3_sorted_unique_scores) < 3:
+                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, 0.0)
+
                 top_3_mean = np.mean(top_3_sorted_unique_scores)
 
                 if not scoring_factors:
                     scoring_factors = self.scoring_factors
+                
+                top_3_mean = Utils.safe_value(top_3_mean)
+                median_score = Utils.safe_value(median_score)
+                mean_score = Utils.safe_value(mean_score)
+                max_score = Utils.safe_value(max_score)
+                min_score = Utils.safe_value(min_score)
+
                 adjusted_score = (
-                    (scoring_factors['top_3_mean'] * top_3_mean)+
+                    (scoring_factors['top_3_mean'] * top_3_mean) +
                     (scoring_factors['median_score'] * median_score) +
                     (scoring_factors['mean_score'] * mean_score) +
                     (scoring_factors['max_score'] * max_score)
                 )
 
-                final_miner_score = adjusted_score #await calculate_penalty(adjusted_score,both ,unique, min_score, max_score)
+                final_miner_score = adjusted_score
                 both_tags = diff['both']
                 unique_tags = diff['unique_2']
                 total_tag_count = len(both_tags) + len(unique_tags)
