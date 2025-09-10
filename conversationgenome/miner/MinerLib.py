@@ -50,7 +50,11 @@ class MinerLib:
                 if task_prompt is None:
                     task_type = None
 
-            conversation = Conversation(guid=conversation_guid, lines=conversation_window, miner_task_prompt=task_prompt, miner_task_type=task_type)
+            try:
+                conversation = Conversation(guid=conversation_guid, lines=conversation_window, miner_task_prompt=task_prompt, miner_task_type=task_type)
+            except Exception:
+                bt.logging.error(f"Wrong task type {task_type} provided to miner. Falling back to None.")
+                conversation = Conversation(guid=conversation_guid, lines=lines, miner_task_prompt=task_prompt, miner_task_type=None)
 
             result = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=generateEmbeddings)
 

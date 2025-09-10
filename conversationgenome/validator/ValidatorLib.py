@@ -89,7 +89,7 @@ class ValidatorLib:
             bt.logging.info(f"full_conversation: {full_conversation}")
 
         if full_conversation:
-            num_lines = len(Utils.get(full_conversation, 'lines', []))
+            num_lines = len(full_conversation.lines)
             llm_type = "openai"
             model = "gpt-4o"
             llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
