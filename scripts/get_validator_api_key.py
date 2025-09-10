@@ -56,6 +56,7 @@ class ReadyAiApiLib():
 
     def get_validator_info(self, ss58_coldkey=None, ss58_hotkey=None, netuid=1, verbose=False):
         subnet = bt.metagraph(netuid, network=self.network)
+        is_validator = False
         if ss58_coldkey and not ss58_coldkey in subnet.coldkeys:
             print(f"{RED}Coldkey {ss58_coldkey} not registered on subnet. Aborting.{COLOR_END}")
             if self.verbose or verbose:
@@ -67,7 +68,6 @@ class ReadyAiApiLib():
             total_stake = 0.0
             stake = 0.0
             max_stake = 0.0
-            is_validator = False
             for idx, ck in enumerate(subnet.coldkeys):
                 if ss58_coldkey == ck:
                     #self.list_wallets_properties(subnet, uid=my_uid, tensor_len=len(subnet.coldkeys))
