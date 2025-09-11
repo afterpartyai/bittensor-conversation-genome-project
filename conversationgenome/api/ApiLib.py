@@ -7,8 +7,9 @@ import requests
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
-from conversationgenome.api.models.task import Task
 from conversationgenome.mock.MockBt import MockBt
+from conversationgenome.task.Task import Task
+from conversationgenome.task.task_factory import try_parse_task
 from conversationgenome.utils.Utils import Utils
 
 bt = None
@@ -74,7 +75,7 @@ class ApiLib:
 
             if response and response.status_code == 200:
                 data = response.json()
-                task: Task = Task.from_api(data)
+                task: Task = try_parse_task(data)
 
                 if not task:
                     bt.logging.error("reserveConversation error. Task is None")
@@ -93,11 +94,10 @@ class ApiLib:
                 guid=str(task.guid),
                 participants=task.participants,
                 lines=task.lines[0:maxLines],
-                miner_task_prompt=miner_task_prompt
+                miner_task_prompt=miner_task_prompt,
+                miner_task_type=task.job_type,
+                min_convo_windows=task.min_convo_windows,
             )
-
-            if 'min_convo_windows' in selectedConvo:
-                convo.min_convo_windows = Utils._int(Utils.get(selectedConvo, "min_convo_windows"))
 
         return convo
 

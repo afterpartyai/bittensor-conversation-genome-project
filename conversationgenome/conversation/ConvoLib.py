@@ -1,3 +1,4 @@
+from conversationgenome import __version__ as CGP_VERSION
 from conversationgenome.api.ApiLib import ApiLib
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
@@ -36,7 +37,7 @@ class ConvoLib:
             "llm_type": c.get('env', 'LLM_TYPE'),
             "scoring_version": c.get('system', 'scoring_version'),
             "batch_num": batch_num,
-            "cgp_version": "0.2.0",
+            "cgp_version": CGP_VERSION,
             "netuid": c.get("system", "netuid"),
         }
 

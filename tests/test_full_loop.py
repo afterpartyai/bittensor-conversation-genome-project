@@ -80,7 +80,7 @@ def validator_with_mock_metagraph():
         )
 
         validator = TestValidator(config, block_override=100)
-        validator.verbose = False
+        validator.verbose = True
         validator.uid = 1
         validator.metagraph = mock_metagraph_instance
         validator.subtensor = mock_subtensor_instance

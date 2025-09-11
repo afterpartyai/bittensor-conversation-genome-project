@@ -89,7 +89,7 @@ class ValidatorLib:
             bt.logging.info(f"full_conversation: {full_conversation}")
 
         if full_conversation:
-            num_lines = len(Utils.get(full_conversation, 'lines', []))
+            num_lines = len(full_conversation.lines)
             llm_type = "openai"
             model = "gpt-4o"
             llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
@@ -102,9 +102,9 @@ class ValidatorLib:
             # Break the full conversation up into overlapping conversation windows
             convoWindows = self.getConvoWindows(full_conversation, return_indexed_windows=return_indexed_windows)
 
-            if "min_convo_windows" in full_conversation:
-                bt.logging.info(f"Change in minimum required convo windows from API from {minConvWindows} to {full_conversation['min_convo_windows']}.")
-                minConvWindows = full_conversation['min_convo_windows']
+            if full_conversation.min_convo_windows is not None and full_conversation.min_convo_windows >= 0:
+                bt.logging.info(f"Change in minimum required convo windows from API " f"from {minConvWindows} to {full_conversation.min_convo_windows}.")
+                minConvWindows = full_conversation.min_convo_windows
 
             if len(convoWindows) > minConvWindows:
                 out = full_conversation
@@ -236,7 +236,6 @@ class ValidatorLib:
         # TODO: Move to MockBt
         selectedMiners = random.sample(uids, num)
         return selectedMiners
-
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
         if isinstance(uids, np.ndarray):
