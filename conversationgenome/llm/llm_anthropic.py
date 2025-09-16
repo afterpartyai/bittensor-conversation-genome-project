@@ -45,7 +45,7 @@ class llm_anthropic:
         }
         response = {"success":0}
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
-        #print("URL", url, headers, data)
+
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
@@ -76,7 +76,6 @@ class llm_anthropic:
             }
 
             http_response = self.do_direct_call(data)
-            #print("________CSV LLM completion", http_response)
             out['content'] = Utils.get(http_response, 'json.content.0.text')
 
         except Exception as e:
@@ -145,15 +144,3 @@ class llm_anthropic:
     async def get_vector_embeddings_set(self,  tags):
         llm_embeddings = llm_openai()
         return await llm_embeddings.get_vector_embeddings_set(tags)
-
-
-
-if __name__ == "__main__":
-    print("Test Anthropic LLM class")
-    llm = llm_groq()
-
-    example_convo = {
-        "lines": ["hello", "world"],
-    }
-    asyncio.run(llm.conversation_to_metadata(example_convo))
-

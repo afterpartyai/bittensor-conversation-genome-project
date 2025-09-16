@@ -35,7 +35,6 @@ class c:
     def get(section, key, default=None, return_type=None):
         out = default
         if section == "env":
-            #print("env", os.environ.get(key))
             val = os.environ.get(key)
             if val:
                 out = val

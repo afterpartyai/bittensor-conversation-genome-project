@@ -1,5 +1,6 @@
 import os
 import re
+from random import random
 
 import numpy as np
 import requests
@@ -73,13 +74,19 @@ class Utils:
     def split_overlap_array(array, size=10, overlap=2):
         result = []
         lenArray = len(array)
-        num_splits = lenArray // (size - overlap) + 1
+        step = size - overlap
+        if step <= 0:
+            # If step is zero or negative, return the whole array as one window
+            if lenArray > 0:
+                result.append(array)
+            return result
+
+        num_splits = lenArray // step + 1
 
         for i in range(num_splits):
-            start = i * (size - overlap)
+            start = i * step
             end = start + size
-            window = array[start:end]
-            # print("Start/end/elements", start, end, window)
+            # print("Start/end/elements", start, end, array[start:end])
             result.append(array[start:end])
             if end >= lenArray:
                 break
@@ -270,7 +277,7 @@ class Utils:
             for tag in tags:
                 safeTag = Utils.get_safe_tag(tag)
 
-                if(len(safeTag) < 3 or len(safeTag) > 64):
+                if len(safeTag) < 3 or len(safeTag) > 64:
                     continue
 
                 cleanTags.add(safeTag)
@@ -293,3 +300,36 @@ class Utils:
             if not np.isfinite(val):
                 return 0.0
         return val
+
+    @staticmethod
+    async def validate_tag_set(llml, tags) -> list[str]:
+        clean_tag_list = Utils.get_clean_tag_set(tags)
+
+        if len(clean_tag_list) >= 20:
+            random_indices = random.sample(range(len(clean_tag_list)), 20)
+            clean_tag_list = [clean_tag_list[i] for i in random_indices]
+
+        clean_tag_list = [tag[:50] for tag in clean_tag_list]
+
+        clean_tag_string = ",".join(clean_tag_list)
+
+        # Tag validation prompt
+        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Malformed keywords should include combined/compound words that are not in the English Dictionary, abbreviations, and typos. Return two comma-delimited lists."
+        prompt1 += f"\n\n<keywords>\n{clean_tag_string}\n</keywords>\n\n"
+
+        response = await llml.prompt_call_csv(override_prompt=prompt1)
+
+        if len(response['content']) == 0:
+            print(f"EMPTY RESPONSE -- no valid tags: {response['content']}")
+            return None
+
+        content_str = response['content'].lower()
+        malformed_pos = content_str.find("malformed")
+        good_keywords_str = content_str[0:malformed_pos].replace("good english keywords:", "").replace("***", "").replace("\n", "").strip()
+
+        valid_tags = good_keywords_str.split(",")
+        valid_tags = Utils.get_clean_tag_set(valid_tags)
+
+        processed_tag_list = [element for element in valid_tags if element in clean_tag_string]
+
+        return processed_tag_list

@@ -9,6 +9,7 @@ import pytest
 
 from conversationgenome.base.miner import BaseMinerNeuron
 from conversationgenome.base.validator import BaseValidatorNeuron
+from conversationgenome.task.Task import Task
 from conversationgenome.utils import uids as uids_mod
 from neurons.miner import Miner
 from tests.mocks.DummyAxon import DummyAxon
@@ -122,6 +123,5 @@ async def test_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, valid
         cgp_inputs = synapse.cgp_input
 
         for window in cgp_inputs:
-            assert "task_prompt" in window
-            assert isinstance(window.get("lines"), list)
-            assert all(isinstance(t, (list, tuple)) and len(t) == 2 for t in window["lines"])
+            task: Task = window.get("task")
+            assert isinstance(task, Task)

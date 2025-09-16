@@ -7,22 +7,21 @@ from conversationgenome.llm.LlmLib import LlmLib
 from conversationgenome.task.Task import Task
 
 
-class ConversationTaskInputData(BaseModel):
-    min_convo_windows: int = 1
+class WebpageMarkdownTaskInputData(BaseModel):
+    min_convo_windows: int = 0
     participants: List[str]
     prompt: str
-    window_idx: int = -1
-    window: Optional[List[Tuple[int, str]]] = None
+    window: List[Tuple[int, str]]
 
 
-class ConversationTaskInput(BaseModel):
-    input_type: Literal["conversation"]
-    data: ConversationTaskInputData
+class WebpageMarkdownTaskInput(BaseModel):
+    input_type: Literal["webpage_markdown"]
+    data: WebpageMarkdownTaskInputData
 
 
-class ConversationTaggingTask(Task):
-    type: Literal["conversation_tagging"] = "conversation_tagging"
-    input: Optional[ConversationTaskInput] = None
+class WebpageMetadataGenerationTask(Task):
+    type: Literal["webpage_metadata_generation"] = "webpage_metadata_generation"
+    input: Optional[WebpageMarkdownTaskInput] = None
 
     async def mine(self) -> dict[str, list]:
         llml = LlmLib()
@@ -30,7 +29,7 @@ class ConversationTaggingTask(Task):
         conversation = Conversation(
             guid="HIDDEN",
             lines=self.input.data.window,
-            participants=self.input.data.participants,
+            participants=["UNKNOWN_SPEAKER"],
             miner_task_prompt=self.prompt_chain[0].prompt_template,
         )
 

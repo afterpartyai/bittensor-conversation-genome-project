@@ -46,17 +46,17 @@ def patch_uids(monkeypatch):
 @pytest.fixture
 def fake_libs(monkeypatch):
     """
-    Patch ValidatorLib, Evaluator, WandbLib, Utils.append_log.
+    Patch ValidatorLib, WandbLib, Utils.append_log.
     Return the created fake instances so tests can tweak behaviors.
     """
-
+    # Removed invalid patch for to_mining_task (no such method on bundle)
     class _FakeVL:
         def __init__(self):
-            self.calls = {"reserve_conversation": 0, "put_convo": 0}
+            self.calls = {"reserve_task_bundle": 0, "put_task": 0}
 
-        async def reserve_conversation(self, *, batch_num=None, return_indexed_windows=True):
-            self.calls["reserve_conversation"] += 1
-            return DummyData.conversation()
+        async def reserve_task_bundle(self, *, batch_num=None, return_indexed_windows=True):
+            self.calls["reserve_task_bundle"] += 1
+            return DummyData.conversation_tagging_task_bundle()
 
         async def get_convo_metadata(self, *a, **k):
             return DummyData.metadata()
@@ -67,23 +67,12 @@ def fake_libs(monkeypatch):
         async def get_vector_embeddings_set(self, tags):
             return DummyData.vectors()
 
-        async def put_convo(self, *a, **k):
-            self.calls["put_convo"] += 1
+        async def put_task(self, *a, **k):
+            self.calls["put_task"] += 1
             return True
 
     vl_instance = _FakeVL()
     monkeypatch.setattr(validator_module, "ValidatorLib", lambda: vl_instance)
-
-    class _FakeEval:
-        def __init__(self):
-            self.last_kwargs = None
-
-        async def evaluate(self, **kwargs):
-            self.last_kwargs = kwargs
-            return ([], [])  # (final_scores, rank_scores)
-
-    eval_instance = _FakeEval()
-    monkeypatch.setattr(validator_module, "Evaluator", lambda: eval_instance)
 
     class _FakeWB:
         def __init__(self):
@@ -107,7 +96,6 @@ def fake_libs(monkeypatch):
 
     return {
         "vl": vl_instance,
-        "evaluator": eval_instance,
         "wandb": wb_instance,
         "uids": uids,
         "dendrite": _FakeDendrite(),

@@ -2,13 +2,20 @@ from typing import Dict, List, Tuple
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
-from conversationgenome.task.Task import Task
+from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
+from conversationgenome.task.task_factory import try_parse_task
+from conversationgenome.task_bundle.task_bundle_factory import try_parse_task_bundle
+from conversationgenome.task_bundle.TaskBundle import TaskBundle
 
 
 class DummyData:
     @staticmethod
     def guid() -> str:
         return "103733224526844599340117036848021470924"
+
+    @staticmethod
+    def task_guid() -> str:
+        return "165816516541685165168546984894894984984"
 
     @staticmethod
     def participants() -> List[str]:
@@ -79,11 +86,52 @@ class DummyData:
         return ConversationMetadata(participantProfiles=DummyData.participants(), tags=["risk", "security"], vectors={"risk": {"vectors": [0.1, 0.2, 0.3]}})
 
     @staticmethod
-    def conversation_tagging_task_json():
+    def conversation_tagging_task_json() -> dict:
         return {
             "mode": "local",
             "api_version": 1.4,
-            "job_type": "conversation_tagging",
+            "guid": DummyData.task_guid(),
+            "bundle_guid": DummyData.guid(),
+            "type": "conversation_tagging",
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "conversation",
+                "data": {
+                    "participants": DummyData.participants(),
+                    "window_idx": DummyData.windows()[0][0],
+                    "window": DummyData.windows()[0][1],
+                    "prompt": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.:\n\n{{ input }}",
+                    "min_convo_windows": 1,
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546888",
+                    "crc": 1321321,
+                    "title": "Infer tags from a conversation window",
+                    "name": "infer_tags_from_a_conversation_window",
+                    "description": "Returns tags representing the conversation as a whole from the window received.",
+                    "type": "inference",
+                    "input_path": "conversation",
+                    "prompt_template": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.:\n\n{{ input }}",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
+            ],
+            "example_output": {"tags": ["guitar", "barn", "farm", "nashville"], "type": "List[str]"},
+        }
+
+    @staticmethod
+    def conversation_tagging_task() -> ConversationTaggingTask:
+        return try_parse_task(DummyData.conversation_tagging_task_json())
+
+    @staticmethod
+    def conversation_tagging_task_bundle_json():
+        return {
+            "mode": "local",
+            "api_version": 1.4,
+            "type": "conversation_tagging",
             "scoring_mechanism": "ground_truth_tag_similarity_scoring",
             "input": {
                 "input_type": "conversation",
@@ -112,17 +160,21 @@ class DummyData:
             "example_output": {"tags": ["guitar", "barn", "farm", "nashville"], "type": "List[str]"},
             "errors": [],
             "warnings": [],
-            "total": len(DummyData.lines()),
             "guid": DummyData.guid(),
-            "participants": DummyData.participants(),
-            "lines": DummyData.lines(),
-            "prompts": {},
             "data_type": 1,
         }
 
     @staticmethod
-    def conversation_tagging_task() -> Task:
-        return Task.model_validate(DummyData.conversation_tagging_task_json())
+    def conversation_tagging_task_bundle() -> TaskBundle:
+        return try_parse_task_bundle(DummyData.conversation_tagging_task_bundle_json())
+
+    
+    @staticmethod
+    def setup_conversation_tagging_task_bundle() -> TaskBundle:
+        task_bundle = try_parse_task_bundle(DummyData.conversation_tagging_task_bundle_json())
+        task_bundle.input.data.indexed_windows = DummyData.windows()
+        task_bundle.input.metadata = DummyData.metadata()
+        return task_bundle
 
     @staticmethod
     def conversation() -> Conversation:

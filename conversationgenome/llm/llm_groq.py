@@ -104,7 +104,6 @@ class llm_groq:
                   "messages": [{"role": "user", "content": prompt}],
                 }
                 http_response = self.do_direct_call(data)
-                #print("________CSV LLM completion", completion)
                 out['content'] = Utils.get(http_response, 'json.choices.0.message.content')
 
         except Exception as e:
@@ -174,14 +173,3 @@ class llm_groq:
     async def get_vector_embeddings_set(self,  tags):
         llm_embeddings = llm_openai()
         return await llm_embeddings.get_vector_embeddings_set(tags)
-
-
-if __name__ == "__main__":
-    print("Test Groq LLM class")
-    llm = llm_groq()
-
-    example_convo = {
-        "lines": ["hello", "world"],
-    }
-    asyncio.run(llm.conversation_to_metadata(example_convo))
-

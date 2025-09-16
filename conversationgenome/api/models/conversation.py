@@ -9,7 +9,6 @@ from conversationgenome.api.models.conversation_metadata import ConversationMeta
 class Conversation(BaseModel):
     guid: Annotated[str, ...]
     lines: List[Tuple[int, str]]
-    miner_task_type: Optional[Literal["conversation_tagging", "webpage_metadata_generation"]] = None
     miner_task_prompt: Optional[str] = None
     participants: Optional[List[str]] = None
     min_convo_windows: Optional[int] = None
