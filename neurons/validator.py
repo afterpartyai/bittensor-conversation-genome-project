@@ -53,16 +53,16 @@ class Validator(BaseValidatorNeuron):
         try:
             wl = WandbLib()
 
-            miners_per_window = c.get("validator", "miners_per_window", 6)
-            num_convos_per_buffer = c.get("validator", "num_convos_per_buffer", 10)
-            num_windows_per_convo = c.get("validator", "num_windows_per_convo", 5)
+            miners_per_task = c.get("validator", "miners_per_task", 6)
+            number_of_task_bundles = c.get("validator", "number_of_task_bundles", 10)
+            number_of_task_per_bundle = c.get("validator", "number_of_task_per_bundle", 5)
             minimum_number_of_tasks = c.get("validator", "minimum_number_of_tasks", 10)
 
             # If command line overrides the standard 6 miners, then use that
             if self.config.neuron.sample_size != 6:
-                miners_per_window = self.config.neuron.sample_size
+                miners_per_task = self.config.neuron.sample_size
 
-            miner_sample_size = min(self.metagraph.n.item(), miners_per_window)
+            miner_sample_size = min(self.metagraph.n.item(), miners_per_task)
             bt.logging.debug(f"miner_sample_size: {miner_sample_size} config: {self.config.neuron.sample_size}, available: {self.metagraph.n.item()}")
 
             # Instance of validator and eval library
@@ -86,7 +86,7 @@ class Validator(BaseValidatorNeuron):
             except:
                 pass
 
-            for idx_convo in range(num_convos_per_buffer):
+            for idx_convo in range(number_of_task_bundles):
                 batch_num = random.randint(100000, 9999999)
                 task_bundle: TaskBundle = await vl.reserve_task_bundle()
 
@@ -95,7 +95,7 @@ class Validator(BaseValidatorNeuron):
 
                 buffered_task_bundles[task_bundle.guid] = task_bundle
 
-                tasks: List[Task] = task_bundle.to_mining_tasks(number_of_tasks_per_bundle=num_windows_per_convo)
+                tasks: List[Task] = task_bundle.to_mining_tasks(number_of_tasks_per_bundle=number_of_task_per_bundle)
 
                 if not tasks or len(tasks) == 0:
                     continue

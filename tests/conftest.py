@@ -19,8 +19,9 @@ def patch_random_and_config(monkeypatch):
 
     defaults = {
         ("validator", "miners_per_window"): 3,
-        ("validator", "num_convos_per_buffer"): 10,
-        ("validator", "num_windows_per_convo"): 5,
+        ("validator", "number_of_task_bundles"): 10,
+        ("validator", "number_of_task_per_bundle"): 5,
+        ("validator", "minimum_number_of_tasks"): 10,
         ("convo_window", "min_lines"): 5,
         ("convo_window", "max_lines"): 10,
         ("convo_window", "overlap_lines"): 2,
@@ -49,6 +50,7 @@ def fake_libs(monkeypatch):
     Patch ValidatorLib, WandbLib, Utils.append_log.
     Return the created fake instances so tests can tweak behaviors.
     """
+
     # Removed invalid patch for to_mining_task (no such method on bundle)
     class _FakeVL:
         def __init__(self):
