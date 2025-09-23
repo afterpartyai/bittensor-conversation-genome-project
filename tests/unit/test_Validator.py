@@ -216,4 +216,38 @@ async def test_forward_retries_on_status_code(bare_validator, fake_libs, monkeyp
     validator.metagraph.axons = [MagicMock(hotkey="hk") for _ in range(3)]
 
     result = await validator.forward(test_mode=True)
+
+
+@pytest.mark.asyncio
+async def test_forward_handles_missing_cgp_output(bare_validator, fake_libs, monkeypatch):
+    validator = bare_validator
+    validator.config.neuron.sample_size = 3
+    validator.metagraph.n.item.return_value = 3
+
+    bundle_guid = "test-guid"
+    bundle = MockTaskBundle(num_tasks=5, guid=bundle_guid)
+    bundle.to_mining_tasks = MagicMock(
+        return_value=[MagicMock(bundle_guid=bundle_guid, guid=f"task_guid_{i}", input=MagicMock(data=MagicMock(window_idx=0)), type="type") for i in range(5)]
+    )
+    bundle.input.metadata.model_dump = MagicMock(return_value={})
+    bundle.format_results = AsyncMock(side_effect=lambda x: x)
+    bundle.generate_result_logs = MagicMock(return_value="result_logs")
+    bundle.evaluate = AsyncMock(return_value=([{"hotkey": "hk", "adjustedScore": 1.0, "final_miner_score": 1.0}], [1.0]))
+
+    fake_libs["vl"].reserve_task_bundle = AsyncMock(return_value=bundle)
+    fake_libs["vl"].put_task = AsyncMock()
+
+    class DummyResponseNoCGP:
+        def __init__(self, hotkey):
+            self.dendrite = MagicMock()
+            self.dendrite.status_code = 200
+            self.axon = MagicMock()
+            self.axon.hotkey = hotkey
+            self.cgp_output = None  # Simulate missing cgp_output
+
+    validator.dendrite.forward = AsyncMock(side_effect=lambda axons, *_, **__: [DummyResponseNoCGP(axon.hotkey) for axon in axons])
+    validator.metagraph.hotkeys = ["hk"]
+    validator.update_scores = MagicMock()
+
+    result = await validator.forward(test_mode=True)
     assert result is True

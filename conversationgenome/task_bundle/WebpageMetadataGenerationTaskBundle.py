@@ -140,7 +140,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
             self.input.data.indexed_windows = []
 
     async def _generate_metadata(self) -> None:
-        bt.logging.info(f"Execute generating metadata for conversation")
+        bt.logging.info(f"Generating metadata")
 
         llml = LlmLib()
 

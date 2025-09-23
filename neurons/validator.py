@@ -208,6 +208,7 @@ class Validator(BaseValidatorNeuron):
 
                     if not response.cgp_output:
                         bt.logging.debug(f"BAD RESPONSE: hotkey: {response.axon.hotkey} - status_code: {getattr(response.dendrite, 'status_code', None)}")
+                        continue
 
                     try:
                         miner_response = response.cgp_output
