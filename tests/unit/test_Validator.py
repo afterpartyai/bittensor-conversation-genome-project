@@ -216,6 +216,7 @@ async def test_forward_retries_on_status_code(bare_validator, fake_libs, monkeyp
     validator.metagraph.axons = [MagicMock(hotkey="hk") for _ in range(3)]
 
     result = await validator.forward(test_mode=True)
+    assert result is True
 
 
 @pytest.mark.asyncio
