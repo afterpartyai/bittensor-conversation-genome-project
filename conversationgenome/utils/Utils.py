@@ -1,6 +1,6 @@
 import os
+import random
 import re
-from random import random
 
 import numpy as np
 import requests
