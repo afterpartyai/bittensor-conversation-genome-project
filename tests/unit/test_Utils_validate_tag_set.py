@@ -17,6 +17,7 @@ class DummyLLML:
 async def test_validate_tag_set_normal_tags_returns_all_tags(monkeypatch):
     tags = ['apple', 'banana', 'carrot']
     llml = DummyLLML('good english keywords: apple,banana,carrot\nmalformed keywords: ')
+
     result = await Utils.validate_tag_set(llml, tags)
     assert set(result) == {'apple', 'banana', 'carrot'}
 
@@ -25,8 +26,7 @@ async def test_validate_tag_set_normal_tags_returns_all_tags(monkeypatch):
 async def test_validate_tag_set_more_than_20_tags_returns_a_subset_of_tags(monkeypatch):
     tags = [f'tag{i}' for i in range(25)]
     llml = DummyLLML('good english keywords: ' + ','.join(tags[:20]) + '\nmalformed keywords: ')
-    # Patch random.sample to always pick the first 20 for deterministic test
-    monkeypatch.setattr(random, 'sample', lambda population, k: population[:k])
+
     result = await Utils.validate_tag_set(llml, tags)
     assert len(result) <= 20
     for tag in result:
@@ -37,6 +37,7 @@ async def test_validate_tag_set_more_than_20_tags_returns_a_subset_of_tags(monke
 async def test_validate_tag_set_empty_response():
     tags = ['apple', 'banana']
     llml = DummyLLML('')
+
     result = await Utils.validate_tag_set(llml, tags)
     assert result is None
 
@@ -44,7 +45,8 @@ async def test_validate_tag_set_empty_response():
 @pytest.mark.asyncio
 async def test_validate_tag_set_malformed_tags_removes_invalid_tags():
     tags = ['apple', 'ban@na', 'carrot']
-    # Simulate LLM response with malformed keyword
+
     llml = DummyLLML('good english keywords: apple,carrot\nmalformed keywords: ban@na')
+
     result = await Utils.validate_tag_set(llml, tags)
     assert set(result) == {'apple', 'carrot'}
