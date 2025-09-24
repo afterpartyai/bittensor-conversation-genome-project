@@ -167,3 +167,5 @@ wandb/*
 virtualenv_*
 web/store
 .vscode/
+web/*.sqlite
+*.sqlite
