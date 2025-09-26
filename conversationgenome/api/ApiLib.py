@@ -1,7 +1,5 @@
 verbose = False
 
-import json
-
 import requests
 
 from conversationgenome.ConfigLib import c
