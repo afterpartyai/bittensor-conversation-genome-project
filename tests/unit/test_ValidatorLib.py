@@ -1,10 +1,7 @@
-import copy
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
-from conversationgenome.api.models.conversation import Conversation
-from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.validator.ValidatorLib import ValidatorLib
 from tests.mocks.DummyData import DummyData

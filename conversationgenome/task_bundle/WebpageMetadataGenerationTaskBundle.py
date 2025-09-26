@@ -1,6 +1,10 @@
 import random
 import uuid
-from typing import Any, List, Literal, Optional, Tuple
+from copy import deepcopy
+from typing import List
+from typing import Literal
+from typing import Optional
+from typing import Tuple
 
 import bittensor as bt
 from pydantic import BaseModel
@@ -10,9 +14,19 @@ from conversationgenome.api.models.conversation_metadata import ConversationMeta
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.LlmLib import LlmLib
-from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import GroundTruthTagSimilarityScoringMechanism
+from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
+    GroundTruthTagSimilarityScoringMechanism,
+)
 from conversationgenome.task.Task import Task
-from conversationgenome.task.WebpageMetadataGenerationTask import WebpageMarkdownTaskInput, WebpageMarkdownTaskInputData, WebpageMetadataGenerationTask
+from conversationgenome.task.WebpageMetadataGenerationTask import (
+    WebpageMarkdownTaskInput,
+)
+from conversationgenome.task.WebpageMetadataGenerationTask import (
+    WebpageMarkdownTaskInputData,
+)
+from conversationgenome.task.WebpageMetadataGenerationTask import (
+    WebpageMetadataGenerationTask,
+)
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.types import ForceStr
 from conversationgenome.utils.Utils import Utils
@@ -77,9 +91,8 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                 scoring_mechanism=self.scoring_mechanism,
                 input=WebpageMarkdownTaskInput(
                     input_type=self.input.input_type,
+                    guid=self.input.guid,
                     data=WebpageMarkdownTaskInputData(
-                        min_convo_windows=self.input.data.min_convo_windows,
-                        prompt=self.input.data.prompt,
                         participants=self.input.data.participants,
                         window=indexed_window[1],
                     ),
@@ -155,11 +168,11 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
 
         if not result:
             bt.logging.error(f"ERROR:2873226353. No metadata returned. Aborting.")
-            return None
+            return
 
         if not result.success:
             bt.logging.error(f"ERROR:2873226354. Metadata failed: {result}. Aborting.")
-            return None
+            return
 
         self.input.metadata = ConversationMetadata(
             tags=getattr(result, "tags", []),

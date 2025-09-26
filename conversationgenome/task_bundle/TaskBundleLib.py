@@ -1,8 +1,6 @@
 from conversationgenome import __version__ as CGP_VERSION
 from conversationgenome.api.ApiLib import ApiLib
-from conversationgenome.ConfigLib import c
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
-from conversationgenome.utils.Utils import Utils
 
 
 class TaskBundleLib:

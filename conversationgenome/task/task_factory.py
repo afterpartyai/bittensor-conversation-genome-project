@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Dict, Optional, Union
+from typing import Annotated
+from typing import Any
+from typing import Dict
+from typing import Optional
+from typing import Union
 
-from pydantic import Field, TypeAdapter, ValidationError
+from pydantic import Field
+from pydantic import TypeAdapter
+from pydantic import ValidationError
 
 from conversationgenome.task.Task import Task
 
@@ -16,7 +22,9 @@ def _get_task_adapter() -> TypeAdapter:
 
     # ------------- Hardcoded imports / union -------------
     from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
-    from conversationgenome.task.WebpageMetadataGenerationTask import WebpageMetadataGenerationTask
+    from conversationgenome.task.WebpageMetadataGenerationTask import (
+        WebpageMetadataGenerationTask,
+    )
 
     TaskUnion = Annotated[
         Union[ConversationTaggingTask, WebpageMetadataGenerationTask],

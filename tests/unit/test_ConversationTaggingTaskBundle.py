@@ -1,9 +1,15 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
+from unittest.mock import patch
 
 import pytest
 
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
-from conversationgenome.task_bundle.ConversationTaggingTaskBundle import ConversationInput, ConversationInputData, ConversationTaggingTaskBundle
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationInput,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationInputData,
+)
 from tests.mocks.DummyData import DummyData
 
 

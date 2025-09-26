@@ -2,7 +2,9 @@ import shutil
 import tempfile
 from itertools import cycle
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import numpy as np
 import pytest

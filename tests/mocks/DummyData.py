@@ -1,4 +1,6 @@
-from typing import Dict, List, Tuple
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
@@ -96,6 +98,7 @@ class DummyData:
             "scoring_mechanism": "ground_truth_tag_similarity_scoring",
             "input": {
                 "input_type": "conversation",
+                "guid": DummyData.guid(),
                 "data": {
                     "participants": DummyData.participants(),
                     "window_idx": DummyData.windows()[0][0],
@@ -168,7 +171,6 @@ class DummyData:
     def conversation_tagging_task_bundle() -> TaskBundle:
         return try_parse_task_bundle(DummyData.conversation_tagging_task_bundle_json())
 
-    
     @staticmethod
     def setup_conversation_tagging_task_bundle() -> TaskBundle:
         task_bundle = try_parse_task_bundle(DummyData.conversation_tagging_task_bundle_json())

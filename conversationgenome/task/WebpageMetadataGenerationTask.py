@@ -1,5 +1,9 @@
-from typing import List, Literal, Optional, Tuple
+from typing import List
+from typing import Literal
+from typing import Optional
+from typing import Tuple
 
+import bittensor as bt
 from pydantic import BaseModel
 
 from conversationgenome.api.models.conversation import Conversation
@@ -8,13 +12,12 @@ from conversationgenome.task.Task import Task
 
 
 class WebpageMarkdownTaskInputData(BaseModel):
-    min_convo_windows: int = 0
     participants: List[str]
-    prompt: str
     window: List[Tuple[int, str]]
 
 
 class WebpageMarkdownTaskInput(BaseModel):
+    guid: str
     input_type: Literal["webpage_markdown"]
     data: WebpageMarkdownTaskInputData
 
@@ -26,13 +29,18 @@ class WebpageMetadataGenerationTask(Task):
     async def mine(self) -> dict[str, list]:
         llml = LlmLib()
 
-        conversation = Conversation(
-            guid="HIDDEN",
-            lines=self.input.data.window,
-            participants=["UNKNOWN_SPEAKER"],
-            miner_task_prompt=self.prompt_chain[0].prompt_template,
-        )
+        try:
+            conversation = Conversation(
+                guid=self.input.guid,
+                lines=self.input.data.window,
+                participants=self.input.data.participants,
+                miner_task_prompt=self.prompt_chain[0].prompt_template,
+            )
 
-        result = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)
+            result = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)
+            output = {"tags": result.tags, "vectors": result.vectors}
+        except Exception as e:
+            bt.logging.error(f"Error during mining: {e}")
+            output = {"tags": [], "vectors": []}
 
-        return {"tags": result.tags, "vectors": result.vectors}
+        return output

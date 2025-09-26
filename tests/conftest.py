@@ -3,7 +3,8 @@ import os
 from unittest.mock import AsyncMock
 
 import pytest
-from dotenv import find_dotenv, load_dotenv
+from dotenv import find_dotenv
+from dotenv import load_dotenv
 
 import neurons.validator as validator_module
 from tests.mocks.DummyData import DummyData
@@ -18,13 +19,27 @@ def patch_random_and_config(monkeypatch):
     monkeypatch.setattr(validator_module.random, "shuffle", lambda seq: None)
 
     defaults = {
+        # validator section
         ("validator", "miners_per_window"): 3,
+        ("validator", "miners_per_task"): 6,
         ("validator", "number_of_task_bundles"): 10,
         ("validator", "number_of_task_per_bundle"): 5,
         ("validator", "minimum_number_of_tasks"): 10,
+        # convo_window section
         ("convo_window", "min_lines"): 5,
         ("convo_window", "max_lines"): 10,
         ("convo_window", "overlap_lines"): 2,
+        # system section
+        ("system", "mode"): "test",
+        ("system", "scoring_version"): 0.1,
+        ("system", "netuid"): -1,
+        # llm section
+        ("llm", "type"): "openai",
+        ("llm", "embeddings_model"): "text-embedding-3-large",
+        ("llm", "model"): "gpt-4o",
+        # network section
+        ("network", "mainnet"): 33,
+        ("network", "testnet"): 138,
     }
 
     def get(section, key, default=None):

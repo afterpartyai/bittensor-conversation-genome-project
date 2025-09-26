@@ -8,6 +8,7 @@ import numpy as np
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.scoring_mechanism.ScoringMechanism import ScoringMechanism
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
+from conversationgenome.utils.constants import PENALTIES
 from conversationgenome.utils.Utils import Utils
 
 
@@ -24,143 +25,139 @@ class GroundTruthTagSimilarityScoringMechanism(ScoringMechanism):
 
     async def evaluate(self, task_bundle: TaskBundle, miner_responses=None):
         full_conversation_neighborhood = await self._calculate_semantic_neighborhood(task_bundle.input.metadata)
-
         num_responses = len(miner_responses)
-        scores = np.zeros(num_responses)
         zero_score_mask = np.ones(num_responses)
         rank_scores = np.zeros(num_responses)
-
         final_scores = []
 
         for idx, response in enumerate(miner_responses):
-            try:
-                miner_response = response.cgp_output
-            except:
-                miner_response = response
-
-            uuid = "uuid-" + str(idx)
-            hotkey = "hk-uuid"
-
-            try:
-                uuid = response.axon.uuid
-                hotkey = response.axon.hotkey
-            except:
-                pass
-
-            if not miner_response:
-                final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore": 0.0, "final_miner_score": 0.0})
-            else:
-                # bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
-                miner_result = miner_response[0]
-                try:
-                    # Make sure there are enough tags to make processing worthwhile
-                    if miner_result is None or not miner_result or len(miner_result['tags']) < self.min_tags:
-                        bt.logging.info(f"Only {len(miner_result['tags'])} tag(s) found for miner response {idx}. Skipping.")
-                        final_scores.append(
-                            {
-                                "uuid": uuid,
-                                "hotkey": hotkey,
-                                "adjustedScore": 0.0,
-                                "final_miner_score": 0.0,
-                            }
-                        )
-                        zero_score_mask[idx] = 0
-                        continue
-
-                except Exception as e:
-                    bt.logging.error(f"Error while intitial checking {idx}-th response: {e}, 0 score")
-                    bt.logging.debug(print_exception(type(e), e, e.__traceback__))
-                    zero_score_mask[idx] = 0
-
-                # Loop through tags that match the full convo and get the scores for those
-                results = await self._calc_scores(
-                    full_convo_metadata=task_bundle.input.metadata,
-                    full_conversation_neighborhood=full_conversation_neighborhood,
-                    miner_result=miner_result,
-                )
-
-                (scores, scores_both, scores_unique, diff) = results
-
-                # Ensure all arrays are valid for statistics
-                if len(scores) == 0:
-                    mean_score = 0.0
-                    median_score = 0.0
-                    min_score = 0.0
-                    max_score = 0.0
-                else:
-                    mean_score = np.mean(scores)
-                    median_score = np.median(scores)
-                    min_score = np.min(scores)
-                    max_score = np.max(scores)
-
-                if len(scores_unique) == 0:
-                    sorted_unique_scores = np.array([0.0, 0.0, 0.0])
-                else:
-                    sorted_unique_scores = np.sort(scores_unique)
-
-                top_3_sorted_unique_scores = sorted_unique_scores
-
-                if len(sorted_unique_scores) >= 3:
-                    top_3_sorted_unique_scores = sorted_unique_scores[-3:]
-
-                # Pad to 3 elements if needed
-                while len(top_3_sorted_unique_scores) < 3:
-                    top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, 0.0)
-
-                top_3_mean = np.mean(top_3_sorted_unique_scores)
-
-                top_3_mean = Utils.safe_value(top_3_mean)
-                median_score = Utils.safe_value(median_score)
-                mean_score = Utils.safe_value(mean_score)
-                max_score = Utils.safe_value(max_score)
-                min_score = Utils.safe_value(min_score)
-
-                adjusted_score = (
-                    (self.scoring_factors['top_3_mean'] * top_3_mean)
-                    + (self.scoring_factors['median_score'] * median_score)
-                    + (self.scoring_factors['mean_score'] * mean_score)
-                    + (self.scoring_factors['max_score'] * max_score)
-                )
-
-                final_miner_score = adjusted_score
-                both_tags = diff['both']
-                unique_tags = diff['unique_2']
-                total_tag_count = len(both_tags) + len(unique_tags)
-
-                final_miner_score = await self._calculate_penalty(
-                    adjusted_score,
-                    total_tag_count,
-                    len(unique_tags),
-                    min_score,
-                    max_score,
-                )
-
-                final_scores.append(
-                    {
-                        "uid": idx + 1,
-                        "uuid": uuid,
-                        "hotkey": hotkey,
-                        "adjustedScore": adjusted_score,
-                        "final_miner_score": final_miner_score,
-                    }
-                )
-
-                bt.logging.debug(
-                    f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}"
-                )
+            score_entry = await self._evaluate_single_response(idx, response, task_bundle, full_conversation_neighborhood, zero_score_mask)
+            final_scores.append(score_entry)
 
         bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
 
-        # Force to use cuda if available -- otherwise, causes device mismatch
-        # Convert to tensors
         if len(final_scores) != len(rank_scores):
             bt.logging.error(f"ERROR: final scores length ({len(final_scores)})  doesn't match rank scores ({len(rank_scores)}). Aborting.")
             return (None, None)
 
         for idx, final_score in enumerate(final_scores):
-            rank_scores[idx] = final_scores[idx]['final_miner_score']
+            rank_scores[idx] = final_score.get('final_miner_score', 0.0)
 
         return (final_scores, rank_scores)
+
+    async def _evaluate_single_response(self, idx, response, task_bundle, full_conversation_neighborhood, zero_score_mask):
+        try:
+            miner_response = response.cgp_output
+        except Exception:
+            miner_response = response
+
+        uuid = f"uuid-{idx}"
+        hotkey = "hk-uuid"
+        try:
+            uuid = response.axon.uuid
+            hotkey = response.axon.hotkey
+        except Exception:
+            pass
+
+        if not miner_response:
+            return {"uuid": uuid, "hotkey": hotkey, "adjustedScore": 0.0, "final_miner_score": 0.0}
+
+        miner_result = miner_response[0]
+        if not self._has_enough_tags(miner_result, idx):
+            zero_score_mask[idx] = 0
+            return {"uuid": uuid, "hotkey": hotkey, "adjustedScore": 0.0, "final_miner_score": 0.0}
+
+        try:
+            results = await self._calc_scores(
+                full_convo_metadata=task_bundle.input.metadata,
+                full_conversation_neighborhood=full_conversation_neighborhood,
+                miner_result=miner_result,
+            )
+        except Exception as e:
+            bt.logging.error(f"Error while calculating scores for response {idx}: {e}")
+            bt.logging.debug(print_exception(type(e), e, e.__traceback__))
+            zero_score_mask[idx] = 0
+            return {"uuid": uuid, "hotkey": hotkey, "adjustedScore": 0.0, "final_miner_score": 0.0}
+
+        (scores, scores_both, scores_unique, diff) = results
+        stats = self._calculate_stats(scores, scores_unique)
+        adjusted_score = self._calculate_adjusted_score(stats)
+
+        both_tags = diff['both']
+        unique_tags = diff['unique_2']
+        total_tag_count = len(both_tags) + len(unique_tags)
+
+        final_miner_score = await self._calculate_penalty(
+            adjusted_score,
+            total_tag_count,
+            len(unique_tags),
+            stats['min_score'],
+            stats['max_score'],
+        )
+
+        bt.logging.debug(
+            f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {stats['median_score']} Mean score: {stats['mean_score']} Top 3 Mean: {stats['top_3_mean']} Min: {stats['min_score']} Max: {stats['max_score']}"
+        )
+
+        return {
+            "uid": idx + 1,
+            "uuid": uuid,
+            "hotkey": hotkey,
+            "adjustedScore": adjusted_score,
+            "final_miner_score": final_miner_score,
+        }
+
+    def _has_enough_tags(self, miner_result, idx):
+        try:
+            if miner_result is None or not miner_result or len(miner_result['tags']) < self.min_tags:
+                bt.logging.info(f"Only {len(miner_result['tags']) if miner_result and 'tags' in miner_result else 0} tag(s) found for miner response {idx}. Skipping.")
+                return False
+        except Exception as e:
+            bt.logging.error(f"Error while initial checking {idx}-th response: {e}, 0 score")
+            bt.logging.debug(print_exception(type(e), e, e.__traceback__))
+            return False
+        return True
+
+    def _calculate_stats(self, scores, scores_unique):
+        if len(scores) == 0:
+            mean_score = 0.0
+            median_score = 0.0
+            min_score = 0.0
+            max_score = 0.0
+        else:
+            mean_score = np.mean(scores)
+            median_score = np.median(scores)
+            min_score = np.min(scores)
+            max_score = np.max(scores)
+
+        if len(scores_unique) == 0:
+            sorted_unique_scores = np.array([0.0, 0.0, 0.0])
+        else:
+            sorted_unique_scores = np.sort(scores_unique)
+
+        top_3_sorted_unique_scores = sorted_unique_scores
+        if len(sorted_unique_scores) >= 3:
+            top_3_sorted_unique_scores = sorted_unique_scores[-3:]
+        while len(top_3_sorted_unique_scores) < 3:
+            top_3_sorted_unique_scores = np.append(top_3_sorted_unique_scores, 0.0)
+
+        top_3_mean = np.mean(top_3_sorted_unique_scores)
+
+        return {
+            'top_3_mean': Utils.safe_value(top_3_mean),
+            'median_score': Utils.safe_value(median_score),
+            'mean_score': Utils.safe_value(mean_score),
+            'max_score': Utils.safe_value(max_score),
+            'min_score': Utils.safe_value(min_score),
+        }
+
+    def _calculate_adjusted_score(self, stats):
+        return (
+            (self.scoring_factors['top_3_mean'] * stats['top_3_mean'])
+            + (self.scoring_factors['median_score'] * stats['median_score'])
+            + (self.scoring_factors['mean_score'] * stats['mean_score'])
+            + (self.scoring_factors['max_score'] * stats['max_score'])
+        )
 
     async def _calculate_semantic_neighborhood(self, conversation_metadata: ConversationMetadata, tag_count_ceiling=None):
         all_vectors = []
@@ -235,28 +232,28 @@ class GroundTruthTagSimilarityScoringMechanism(ScoringMechanism):
         # No both tags. Penalize.
         if num_both_tags == 0:
             bt.logging.debug("!!PENALTY: No BOTH tags")
-            final_score *= 0.9
+            final_score *= PENALTIES["no_both_tags"]["penalty"]
 
         # All junk tags. Penalize
-        if max_score < 0.2:
-            bt.logging.debug("!!PENALTY: max_score < .2 -- all junk tags")
-            final_score *= 0.5
+        if max_score < PENALTIES["all_junk_tags"]["threshold"]:
+            bt.logging.debug(f"!!PENALTY: max_score < {PENALTIES['all_junk_tags']['threshold']} -- all junk tags")
+            final_score *= PENALTIES["all_junk_tags"]["penalty"]
 
         # Very few tags. Penalize.
-        if num_tags < 2:
-            bt.logging.debug("!!PENALTY: < 2 TOTAL tags")
-            final_score *= 0.2
+        if num_tags < PENALTIES["too_few_tags"]["threshold"]:
+            bt.logging.debug(f"!!PENALTY: < {PENALTIES['too_few_tags']['threshold']} TOTAL tags")
+            final_score *= PENALTIES["too_few_tags"]["penalty"]
 
         # no unique tags. Penalize
         if num_unique_tags < 1:
             bt.logging.debug("!!PENALTY: less than 1 unique tag")
-            final_score *= 0.85
+            final_score *= PENALTIES["num_unique_tags"]["less_than_1"]["penalty"]
         elif num_unique_tags < 2:
             bt.logging.debug("!!PENALTY: less than 2 unique tags")
-            final_score *= 0.9
+            final_score *= PENALTIES["num_unique_tags"]["less_than_2"]["penalty"]
         elif num_unique_tags < 3:
             bt.logging.debug("!!PENALTY: less than 3 unique tags")
-            final_score *= 0.95
+            final_score *= PENALTIES["num_unique_tags"]["less_than_3"]["penalty"]
 
         return final_score
 

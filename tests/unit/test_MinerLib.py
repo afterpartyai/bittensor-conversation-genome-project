@@ -1,12 +1,8 @@
-import uuid
-from asyncio import Task
-
 import pytest
 from pydantic import ValidationError
 
 import conversationgenome.task.ConversationTaggingTask as ctt
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
-from conversationgenome.miner.default_prompts import get_task_default_prompt
 from conversationgenome.miner.MinerLib import MinerLib
 from tests.mocks.DummyData import DummyData
 

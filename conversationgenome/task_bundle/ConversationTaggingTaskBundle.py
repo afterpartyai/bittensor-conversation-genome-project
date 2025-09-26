@@ -1,6 +1,10 @@
 import random
 import uuid
-from typing import List, Literal, Optional, Tuple
+from copy import deepcopy
+from typing import List
+from typing import Literal
+from typing import Optional
+from typing import Tuple
 
 import bittensor as bt
 from pydantic import BaseModel
@@ -10,8 +14,12 @@ from conversationgenome.api.models.conversation_metadata import ConversationMeta
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.LlmLib import LlmLib
-from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import GroundTruthTagSimilarityScoringMechanism
-from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask, ConversationTaskInput, ConversationTaskInputData
+from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
+    GroundTruthTagSimilarityScoringMechanism,
+)
+from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
+from conversationgenome.task.ConversationTaggingTask import ConversationTaskInput
+from conversationgenome.task.ConversationTaggingTask import ConversationTaskInputData
 from conversationgenome.task.Task import Task
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.types import ForceStr
@@ -77,12 +85,11 @@ class ConversationTaggingTaskBundle(TaskBundle):
                 scoring_mechanism=self.scoring_mechanism,
                 input=ConversationTaskInput(
                     input_type=self.input.input_type,
+                    guid=self.input.guid,
                     data=ConversationTaskInputData(
-                        min_convo_windows=self.input.data.min_convo_windows,
                         participants=self.input.data.participants,
                         window_idx=indexed_window[0],
                         window=indexed_window[1],
-                        prompt=self.input.data.prompt,
                     ),
                 ),
                 prompt_chain=self.prompt_chain,
@@ -113,6 +120,14 @@ class ConversationTaggingTaskBundle(TaskBundle):
     async def evaluate(self, miner_responses):
         evaluator = GroundTruthTagSimilarityScoringMechanism()
         return await evaluator.evaluate(self, miner_responses)
+
+    def mask_task_for_miner(self, task: Task) -> Task:
+        masked_task = super().mask_task_for_miner(task)
+
+        HIDDEN_WINDOW_IDX = -1
+        masked_task.input.data.window_idx = HIDDEN_WINDOW_IDX
+
+        return masked_task
 
     def _split_conversation_in_windows(self) -> None:
         minLines = c.get("convo_window", "min_lines", 2)
@@ -157,11 +172,11 @@ class ConversationTaggingTaskBundle(TaskBundle):
 
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
-            return None
+            return
 
         if not result.success:
             bt.logging.error(f"ERROR:2873226354. Conversation metadata failed: {result}. Aborting.")
-            return None
+            return
 
         self.input.metadata = ConversationMetadata(
             participantProfiles=self.input.data.participants,

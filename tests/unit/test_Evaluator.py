@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
-from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import GroundTruthTagSimilarityScoringMechanism
-from conversationgenome.utils.Utils import Utils
+from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
+    GroundTruthTagSimilarityScoringMechanism,
+)
 
 
 # Dummy classes for bundle and miner response

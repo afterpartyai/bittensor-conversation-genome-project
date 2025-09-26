@@ -1,5 +1,6 @@
-# tests/mocks/MockTaskBundle.py
-from unittest.mock import AsyncMock, MagicMock
+from asyncio import Task
+from copy import deepcopy
+from unittest.mock import MagicMock
 
 
 class MockTask:
@@ -20,6 +21,26 @@ class MockTask:
 
     async def mine(self):
         return {"tags": ["mock_tag"], "vectors": {"mock_tag": [0.1]}}
+
+    def model_dump(self):
+        # Return a dictionary representation of the mock task
+        return {
+            "guid": self.guid,
+            "bundle_guid": self.bundle_guid,
+            "type": self.type,
+            "input": {
+                "data": {
+                    "window_idx": self.input.data.window_idx,
+                    "lines": self.input.data.lines,
+                    "participants": self.input.data.participants,
+                    "prompt": self.input.data.prompt,
+                    "min_convo_windows": self.input.data.min_convo_windows,
+                    "indexed_windows": self.input.data.indexed_windows,
+                }
+            },
+            "prompt_chain": self.prompt_chain,
+            "example_output": self.example_output,
+        }
 
 
 class MockTaskBundle:
@@ -56,3 +77,13 @@ class MockTaskBundle:
         scores = [{"hotkey": f"hk{i}", "adjustedScore": 1.0, "final_miner_score": 1.0} for i in range(len(miner_responses))]
         ranks = [1 for _ in range(len(miner_responses))]
         return scores, ranks
+
+    def mask_task_for_miner(self, task: Task) -> Task:
+        masked_task = deepcopy(task)
+
+        HIDDEN_GUID = "HIDDEN"
+        masked_task.bundle_guid = HIDDEN_GUID
+        masked_task.guid = HIDDEN_GUID
+        masked_task.input.data.guid = HIDDEN_GUID
+
+        return masked_task

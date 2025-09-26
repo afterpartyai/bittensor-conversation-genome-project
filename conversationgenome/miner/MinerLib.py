@@ -1,9 +1,5 @@
 verbose = False
 
-import copy
-import random
-from typing import Optional
-
 from conversationgenome.ConfigLib import c
 from conversationgenome.mock.MockBt import MockBt
 from conversationgenome.task.Task import Task
@@ -15,8 +11,6 @@ except:
     if verbose:
         print("bittensor not installed")
     bt = MockBt()
-
-from conversationgenome.llm.LlmLib import LlmLib
 
 if c.get('env', 'FORCE_LOG') == 'debug':
     bt.logging.enable_debug(True)

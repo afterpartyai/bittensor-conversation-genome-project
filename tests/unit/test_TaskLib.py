@@ -1,6 +1,11 @@
+from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from conversationgenome.task.TaskLib import TaskLib
+
 
 @pytest.mark.asyncio
 @patch("conversationgenome.task.TaskLib.ApiLib")
@@ -17,6 +22,8 @@ async def test_put_task_basic(mock_c, mock_ApiLib):
         ("system", "scoring_version"): "v1",
         ("system", "netuid"): 42,
         ("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE"): None,
+        ("llm", "type"): "openai",
+        ("llm", "embeddings_model"): "text-embedding-3-large",
     }[(section, key)]
 
     # Setup ApiLib mock
@@ -31,7 +38,7 @@ async def test_put_task_basic(mock_c, mock_ApiLib):
         task_id="tid1",
         neuron_type="typeA",
         batch_number=7,
-        data={"foo": "bar"}
+        data={"foo": "bar"},
     )
 
     assert result == {"status": "ok"}
@@ -48,6 +55,7 @@ async def test_put_task_basic(mock_c, mock_ApiLib):
     assert output["cgp_version"] == "1.2.3"
     assert output["data"] == {"foo": "bar"}
 
+
 @pytest.mark.asyncio
 @patch("conversationgenome.task.TaskLib.ApiLib")
 @patch("conversationgenome.task.TaskLib.c")
@@ -63,6 +71,8 @@ async def test_put_task_with_overrides(mock_c, mock_ApiLib):
         ("system", "scoring_version"): "v2",
         ("system", "netuid"): 99,
         ("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE"): "custom-embedder",
+        ("llm", "type"): "openai",
+        ("llm", "embeddings_model"): "text-embedding-3-large",
     }[(section, key)]
 
     mock_api_instance = MagicMock()
@@ -70,14 +80,7 @@ async def test_put_task_with_overrides(mock_c, mock_ApiLib):
     mock_ApiLib.return_value = mock_api_instance
 
     task_lib = TaskLib()
-    result = await task_lib.put_task(
-        hotkey="hk2",
-        task_bundle_id="tbid2",
-        task_id="tid2",
-        neuron_type="typeB",
-        batch_number=3,
-        data=[1, 2, 3]
-    )
+    result = await task_lib.put_task(hotkey="hk2", task_bundle_id="tbid2", task_id="tid2", neuron_type="typeB", batch_number=3, data=[1, 2, 3])
 
     assert result == {"status": "success"}
     args, kwargs = mock_api_instance.put_task_data.call_args

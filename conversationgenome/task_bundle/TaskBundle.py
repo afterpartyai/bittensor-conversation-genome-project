@@ -1,7 +1,12 @@
-from abc import ABC, abstractmethod
-from typing import Any, List, Literal, Optional, Tuple, Union
+from abc import ABC
+from abc import abstractmethod
+from copy import deepcopy
+from typing import Any
+from typing import List
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 
 from conversationgenome.prompt_chain.PromptChainStep import PromptChainStep
 from conversationgenome.scoring_mechanism.example_output_union import ExampleOutputUnion
@@ -36,7 +41,7 @@ class TaskBundle(BaseModel, ABC):
         pass
 
     @abstractmethod
-    def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List["Task"]:
+    def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         pass
 
     @abstractmethod
@@ -50,3 +55,13 @@ class TaskBundle(BaseModel, ABC):
     @abstractmethod
     def evaluate(self, miner_responses):
         pass
+
+    def mask_task_for_miner(self, task: Task) -> Task:
+        masked_task = deepcopy(task)
+
+        HIDDEN_GUID = "HIDDEN"
+        masked_task.bundle_guid = HIDDEN_GUID
+        masked_task.guid = HIDDEN_GUID
+        masked_task.input.guid = HIDDEN_GUID
+
+        return masked_task

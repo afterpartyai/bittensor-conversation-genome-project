@@ -21,9 +21,9 @@ class c:
             "netuid": -1,
         },
         "llm": {
-            # "type": 'spacy',
-            # "type": os.environ.get("LLM_TYPE"),
             "type": 'openai',
+            "embeddings_model": 'text-embedding-3-large',
+            "model": 'gpt-4o',
         },
         "network": {
             "mainnet": 33,

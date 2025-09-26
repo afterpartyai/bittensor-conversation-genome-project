@@ -16,7 +16,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import json
 import random
 import time
 from typing import List
@@ -73,8 +72,8 @@ class Validator(BaseValidatorNeuron):
             selected_tasks: List[Task] = []
 
             validatorHotkey = "FINDHOTKEY-"
-            llm_type = "openai"
-            model = "gpt-4o"
+            llm_type = c.get('llm', 'type')
+            model = c.get('llm', 'model')
 
             try:
                 validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
@@ -91,6 +90,10 @@ class Validator(BaseValidatorNeuron):
                 task_bundle: TaskBundle = await vl.reserve_task_bundle()
 
                 if not task_bundle:
+                    continue
+
+                if not task_bundle.is_ready():
+                    bt.logging.error(f"Task bundle not ready. Skipping.")
                     continue
 
                 buffered_task_bundles[task_bundle.guid] = task_bundle
@@ -151,14 +154,10 @@ class Validator(BaseValidatorNeuron):
                 bt.logging.info(f"miner_uid pool {miner_uids}")
                 bt.logging.info(f"Sending task of type {task.type} to miners...")
 
-                try:
-                    task.bundle_guid = "HIDDEN"
-                    task.input.data.window_idx = -1
-                except Exception:
-                    pass
+                masked_task = task_bundle.mask_task_for_miner(task)
 
                 # Create a synapse to distribute to miners
-                synapse = conversationgenome.protocol.CgSynapse(cgp_input=[{"task": task}])
+                synapse = conversationgenome.protocol.CgSynapse(cgp_input=[{"task": masked_task}])
 
                 responses = await self.dendrite.forward(
                     axons=[self.metagraph.axons[uid] for uid in miner_uids],
@@ -231,7 +230,10 @@ class Validator(BaseValidatorNeuron):
                         task_id=task.guid,
                         neuron_type="miner",
                         batch_number=batch_num,
-                        data=miner_result,
+                        data={
+                            "result": miner_result,
+                            "task": task.model_dump(),
+                        },
                     )
 
                 (final_scores, rank_scores) = await task_bundle.evaluate(miner_responses=responses)

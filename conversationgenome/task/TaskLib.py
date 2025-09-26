@@ -7,14 +7,14 @@ from conversationgenome.ConfigLib import c
 
 class TaskLib:
     async def put_task(self, *, hotkey: str, task_bundle_id: str, task_id: str, neuron_type: str, batch_number: int, data: Any) -> None:
-        llm_type = "openai"
+        llm_type = c.get('llm', 'type')
         llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
 
         if llm_type_override:
             llm_type = llm_type_override
 
         llm_model = c.get('env', llm_type.upper() + "_MODEL")
-        embeddings_model = "text-embedding-3-large"
+        embeddings_model = c.get('llm', 'embeddings_model') 
         embeddings_model_override = c.get("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE")
 
         if embeddings_model_override:
@@ -25,7 +25,7 @@ class TaskLib:
             "model": llm_model,
             "embeddings_model": embeddings_model,
             "marker_id": c.get('env', 'MARKER_ID'),
-            "llm_type": c.get('env', 'LLM_TYPE'),
+            "llm_type": llm_type,
             "scoring_version": c.get('system', 'scoring_version'),
             "cgp_version": CGP_VERSION,
             "netuid": c.get("system", "netuid"),

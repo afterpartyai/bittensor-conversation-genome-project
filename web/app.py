@@ -5,14 +5,33 @@ import sqlite3
 import time
 
 from models.conversation_record import ConversationRecord
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest
 from Utils import Utils
 
 from conversationgenome.prompt_chain.PromptChainStep import PromptChainStep
-from conversationgenome.scoring_mechanism.TaggingExampleOutput import TaggingExampleOutput
-from conversationgenome.task_bundle.ConversationTaggingTaskBundle import ConversationInput, ConversationInputData, ConversationTaggingTaskBundle
+from conversationgenome.scoring_mechanism.TaggingExampleOutput import (
+    TaggingExampleOutput,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationInput,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationInputData,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationTaggingTaskBundle,
+)
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
-from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import WebpageMarkdownInput, WebpageMarkdownInputData, WebpageMetadataGenerationTaskBundle
+from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import (
+    WebpageMarkdownInput,
+)
+from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import (
+    WebpageMarkdownInputData,
+)
+from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import (
+    WebpageMetadataGenerationTaskBundle,
+)
 from web.middlewares.authentication_middleware import AuthMiddleware
 from web.middlewares.metrics_middleware import MetricsMiddleware
 
@@ -37,7 +56,9 @@ DIVIDER = '_' * 120
 # Test convo write endpoint:
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
+from fastapi import Request
+from fastapi import Response
 
 app = FastAPI()
 app.add_middleware(MetricsMiddleware)
