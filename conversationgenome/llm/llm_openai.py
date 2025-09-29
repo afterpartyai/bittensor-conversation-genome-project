@@ -1,7 +1,8 @@
 import json
 import os
 import traceback
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.raw_metadata import RawMetadata
@@ -12,7 +13,8 @@ openai = None
 AsyncOpenAI = None
 OpenAI = None
 try:
-    from openai import AsyncOpenAI, OpenAI
+    from openai import AsyncOpenAI
+    from openai import OpenAI
 
     client = OpenAI()
 except Exception as e:

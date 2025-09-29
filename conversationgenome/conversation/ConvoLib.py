@@ -20,7 +20,6 @@ class ConvoLib:
             llm_type = llm_type_override
 
         llm_model = c.get('env', llm_type.upper() + "_MODEL")
-        embeddings_model = "text-embedding-3-large"
         embeddings_model = c.get("llm", "embeddings_model", "text-embedding-3-large")
         embeddings_model_override = c.get("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE")
 
