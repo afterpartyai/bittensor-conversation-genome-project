@@ -178,7 +178,7 @@ def get_request():
 
 
 @app.post("/api/v1/conversation/reserve")
-def post_request() -> TaskBundle:
+def post_request():
     # Used for testing long or bad responses
     if False:
         time.sleep(30)
@@ -223,79 +223,97 @@ def post_request() -> TaskBundle:
         webpage_markdown_input_data_participants = ["UNKNOWN_SPEAKER"]
         webpage_markdown_input_data_total = 1
 
-        webpage_tagging_task = WebpageMetadataGenerationTaskBundle(
-            mode="local",
-            type="webpage_metadata_generation",
-            guid=webpage_tagging_task_guid,
-            scoring_mechanism="ground_truth_tag_similarity_scoring",
-            input=WebpageMarkdownInput(
-                input_type="webpage_markdown",
-                guid=webpage_tagging_task_guid,
-                data=WebpageMarkdownInputData(
-                    lines=webpage_markdown_input_data_lines,
-                    participants=webpage_markdown_input_data_participants,
-                    total=webpage_markdown_input_data_total,
-                ),
-            ),
-            prompt_chain=[
-                PromptChainStep(
-                    step=0,
-                    id="12346546888",
-                    crc=1321321,
-                    title="Infer the tags of the web page from the provided Markdown",
-                    name="infer_tags_for_webpage_from_markdown",
-                    description="Returns tags representing the webpage from the content of the page in Markdown.",
-                    type="inference",
-                    input_path="markdown",
-                    prompt_template="You are given the content of a webpage inside <markdown>...</markdown> tags. Identify the most relevant high-level topics, entities, and concepts that describe the page. Focus only on the core subject matter and ignore navigation menus, boilerplate, or contact info. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
-                    output_variable="final_output",
-                    output_type="List[str]",
-                )
+        webpage_tagging_task = {
+            "mode": "local",
+            "type": "webpage_metadata_generation",
+            "guid": webpage_tagging_task_guid,
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "webpage_markdown",
+                "guid": webpage_tagging_task_guid,
+                "data": {
+                    "lines": webpage_markdown_input_data_lines,
+                    "participants": webpage_markdown_input_data_participants,
+                    "total": webpage_markdown_input_data_total,
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546888",
+                    "crc": 1321321,
+                    "title": "Infer the tags of the web page from the provided Markdown",
+                    "name": "infer_tags_for_webpage_from_markdown",
+                    "description": "Returns tags representing the webpage from the content of the page in Markdown.",
+                    "type": "inference",
+                    "input_path": "markdown",
+                    "prompt_template": "You are given the content of a webpage inside <markdown>...</markdown> tags. Identify the most relevant high-level topics, entities, and concepts that describe the page. Focus only on the core subject matter and ignore navigation menus, boilerplate, or contact info. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
             ],
-            example_output=TaggingExampleOutput(tags=["guitar", "barn", "farm", "nashville"], type="List[str]"),
-            errors=[],
-            warnings=[],
-            data_type=1,
-        )
+            "example_output": {
+                "tags": ["guitar", "barn", "farm", "nashville"],
+                "type": "List[str]",
+            },
+            "errors": [],
+            "warnings": [],
+            "data_type": 1,
+            "job_type": "webpage_metadata_generation",
+            "total": webpage_markdown_input_data_total,
+            "guid": webpage_tagging_task_guid,
+            "participants": webpage_markdown_input_data_participants,
+            "lines": webpage_markdown_input_data_lines,
+            "min_convo_windows": 0,
+        }
 
-        conversation_tagging_task = ConversationTaggingTaskBundle(
-            mode="local",
-            type="conversation_tagging",
-            guid=convo.get("guid"),
-            scoring_mechanism="ground_truth_tag_similarity_scoring",
-            input=ConversationInput(
-                input_type="conversation",
-                guid=convo.get("guid"),
-                data=ConversationInputData(
-                    total=len(convo.get("lines")),
-                    participants=convo.get("participants"),
-                    lines=convo.get("lines"),
-                ),
-            ),
-            prompt_chain=[
-                PromptChainStep(
-                    step=0,
-                    id="12346546888",
-                    crc=1321321,
-                    title="Infer tags from a conversation window",
-                    name="infer_tags_from_a_conversation_window",
-                    description="Returns tags representing the conversation as a whole from the window received.",
-                    type="inference",
-                    input_path="conversation",
-                    prompt_template="Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers. Return comma-delimited tags. Only return the tags without any English commentary.",
-                    output_variable="final_output",
-                    output_type="List[str]",
-                )
+        conversation_tagging_task = {
+            "mode": "local",
+            "type": "conversation_tagging",
+            "guid": convo.get("guid"),
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "conversation",
+                "guid": convo.get("guid"),
+                "data": {
+                    "total": len(convo.get("lines")),
+                    "participants": convo.get("participants"),
+                    "lines": convo.get("lines"),
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546888",
+                    "crc": 1321321,
+                    "title": "Infer tags from a conversation window",
+                    "name": "infer_tags_from_a_conversation_window",
+                    "description": "Returns tags representing the conversation as a whole from the window received.",
+                    "type": "inference",
+                    "input_path": "conversation",
+                    "prompt_template": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers. Return comma-delimited tags. Only return the tags without any English commentary.",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
             ],
-            example_output=TaggingExampleOutput(tags=["guitar", "barn", "farm", "nashville"], type="List[str]"),
-            errors=[],
-            warnings=[],
-            data_type=1,
-        )
+            "example_output": {
+                "tags": ["guitar", "barn", "farm", "nashville"],
+                "type": "List[str]",
+            },
+            "errors": [],
+            "warnings": [],
+            "data_type": 1,
+            "job_type": "conversation_tagging",
+            "total": len(convo.get("lines")),
+            "guid": convo.get("guid"),
+            "participants": convo.get("participants"),
+            "lines": convo.get("lines"),
+            "min_convo_windows": 1,
+        }
 
         choice = random.choice([webpage_tagging_task, conversation_tagging_task])
         # choice = random.choice([webpage_tagging_task])
-        print(f"Selected task: {choice.type} with GUID {choice.guid}")
+        print(f"Selected task: {choice['type']} with GUID {choice['guid']}")
 
         return choice
 

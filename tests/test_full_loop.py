@@ -117,9 +117,11 @@ async def test_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, valid
     validator.dendrite.forward = AsyncMock(side_effect=forward_side_effect)
 
     result = await validator.forward(test_mode=True)
+    responses_array = validator.responses
 
     assert result is True
 
+    # Check that tasks were correctly formed when passed to miners
     for _, call in enumerate(validator.dendrite.forward.await_args_list):
         synapse = call.kwargs["synapse"]
         cgp_inputs = synapse.cgp_input
@@ -127,3 +129,95 @@ async def test_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, valid
         for window in cgp_inputs:
             task: Task = window.get("task")
             assert isinstance(task, Task)
+
+    # Required response keys
+    required_keys = {
+        'tags',
+        'vectors',
+        'original_tags',
+    }
+
+    for response in responses_array:
+        cgp = response[0].cgp_output
+        for item in cgp:
+            # Check required keys exist
+            assert required_keys.issubset(item.keys())
+
+            # Check tags is a list of strings
+            tags = item["tags"]
+            assert isinstance(tags, list)
+            assert all(isinstance(tag, str) for tag in tags)
+
+            # Check vectors structure
+            vectors = item["vectors"]
+            assert isinstance(vectors, dict)
+            for tag in tags:
+                assert tag in vectors
+                tag_vectors = vectors[tag]
+                assert isinstance(tag_vectors, dict)
+                assert "vectors" in tag_vectors
+                vec = tag_vectors["vectors"]
+                assert isinstance(vec, list)
+                assert all(isinstance(v, float) or isinstance(v, np.floating) for v in vec)
+
+
+@pytest.mark.asyncio
+async def test_old_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, validator_with_mock_metagraph):
+    validator, miner = validator_with_mock_metagraph
+
+    validator.scores = np.zeros(validator.metagraph.n, dtype=np.float32)
+    validator.ema_scores = np.zeros(validator.metagraph.n, dtype=np.float32)
+
+    miners = [
+        {"hotkey": "miner1", "uuid": "miner1_id", "uid": 0},
+        {"hotkey": "miner2", "uuid": "miner2_id", "uid": 1},
+        {"hotkey": "miner3", "uuid": "miner3_id", "uid": 2},
+    ]
+    uids_to_return = [np.array([m["uid"]]) for m in miners]
+    uids_cycle = cycle(uids_to_return)
+    uids_mod.get_random_uids = lambda self, k: next(uids_cycle)
+
+    async def forward_side_effect(*, axons=None, synapse=None, **_):
+        syn_after = await miner.forward(synapse)
+        ax = axons[0]
+        return [DummyResponse(ax.hotkey, ax.uuid, 200, syn_after.cgp_output)]
+
+    validator.dendrite.forward = AsyncMock(side_effect=forward_side_effect)
+
+    result = await validator.old_forward(test_mode=True)
+    responses_array = validator.responses
+
+    assert result is True
+
+    required_keys = {
+        'uid',
+        'tags',
+        'profiles',
+        'convoChecksum',
+        'vectors',
+        'original_tags',
+    }
+
+    for response in responses_array:
+        cgp = response[0].cgp_output
+        for item in cgp:
+            # Check required keys exist
+            assert required_keys.issubset(item.keys())
+
+            # Check tags is a list of strings
+            tags = item["tags"]
+            assert isinstance(tags, list)
+            assert all(isinstance(tag, str) for tag in tags)
+
+            # Check vectors structure
+            vectors = item["vectors"]
+            assert isinstance(vectors, dict)
+            for tag in tags:
+                assert tag in vectors
+                tag_vectors = vectors[tag]
+                assert isinstance(tag_vectors, dict)
+                assert "vectors" in tag_vectors
+                vec = tag_vectors["vectors"]
+                assert isinstance(vec, list)
+                assert all(isinstance(v, float) or isinstance(v, np.floating) for v in vec)
+

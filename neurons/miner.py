@@ -47,16 +47,31 @@ class Miner(BaseMinerNeuron):
             CgSynapse: The synapse object with the 'cgp_output' field
 
         """
-        task: Task = synapse.cgp_input[0]["task"]
-
-        log_path = c.get('env', 'SCORING_DEBUG_LOG')
-        if not Utils.empty(log_path):
-            Utils.append_log(log_path, f"______Received Packet from validator. synapse.cgp_input: {synapse.cgp_input}")
-
-        bt.logging.info(f"Miner received task of type {task.type}")
-
         ml = MinerLib()
-        result = await ml.do_mining(task=task)
+
+        try:
+            task: Task = synapse.cgp_input[0]["task"]
+            bt.logging.info(f"Miner received task of type {task.type}")
+            result = await ml.do_mining(task=task)
+        except Exception as e:
+            bt.logging.error(f"Error extracting task from synapse. Fallback to old method.")
+
+            # Here we ensure miners can still process requests from validators that are yet to update.
+            window = synapse.cgp_input[0]
+            conversation_guid = Utils.get(window, "guid")
+            window_idx = Utils.get(window, "window_idx")
+            lines = Utils.get(window, "lines")
+            task_prompt = Utils.get(window, "task_prompt")
+            task_type = Utils.get(window, "task_type")
+
+            result = await ml.do_old_mining(
+                conversation_guid=conversation_guid,
+                window_idx=window_idx,
+                conversation_window=lines,
+                minerUid=17,
+                task_prompt=task_prompt,
+                task_type=task_type,
+            )
 
         synapse.cgp_output = [result]
         return synapse
