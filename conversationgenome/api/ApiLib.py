@@ -5,11 +5,10 @@ import random
 
 import requests
 
+from conversationgenome import __version__ as CGP_VERSION
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
 from conversationgenome.mock.MockBt import MockBt
-from conversationgenome.task.Task import Task
-from conversationgenome.task.task_factory import try_parse_task
 from conversationgenome.task_bundle.task_bundle_factory import try_parse_task_bundle
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.Utils import Utils
@@ -40,13 +39,13 @@ class ApiLib:
         read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
         options_str = c.get('env', 'CGP_API_OPTIONS', '')
-        url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
+        url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve?cgp_version={CGP_VERSION}"
 
         if len(options_str) > 0:
             options = options_str.split(",")
             bt.logging.info(f"Read API options: {options}")
             if "22" in options:
-                url += "?options=22"
+                url += "&options=22"
 
         response = None
 
@@ -134,13 +133,13 @@ class ApiLib:
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
             http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
             options_str = c.get('env', 'CGP_API_OPTIONS', '')
-            url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
+            url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve?cgp_version={CGP_VERSION}"
 
             if len(options_str) > 0:
                 options = options_str.split(",")
                 bt.logging.info(f"Read API options: {options}")
                 if "22" in options:
-                    url += "?options=22"
+                    url += "&options=22"
 
             response = None
 
