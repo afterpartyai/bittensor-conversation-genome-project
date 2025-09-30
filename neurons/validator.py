@@ -172,8 +172,9 @@ class Validator(BaseValidatorNeuron):
                     print("RAW RESPONSES", len(responses))
                     print(responses)
 
-                # Generate retry list
-                uids_to_retry = []
+                # Generate retry lists
+                uids_to_retry_same = []
+                uids_to_retry_old = []
 
                 for i, response in enumerate(responses):
                     status_code = getattr(response.dendrite, "status_code", None)
@@ -182,26 +183,58 @@ class Validator(BaseValidatorNeuron):
                         self.initial_status_codes[status_code] = self.initial_status_codes.get(status_code, 0) + 1
 
                         if status_code in [408, 422]:
-                            uids_to_retry.append(miner_uids[i])
+                            uids_to_retry_same.append(miner_uids[i])
+                        elif status_code is not None and str(status_code).startswith("5"):
+                            uids_to_retry_old.append(miner_uids[i])
 
-                if uids_to_retry:
-                    bt.logging.debug(f"Retrying requests for the following UIDs: {uids_to_retry}")
+                uid_to_index = {uid: idx for idx, uid in enumerate(miner_uids)}
+
+                # Retry with the same synapse for 408/422
+                if uids_to_retry_same:
+                    bt.logging.debug(f"Retrying requests for the following UIDs (same synapse): {uids_to_retry_same}")
+
                     retry_responses = await self.dendrite.forward(
-                        axons=[self.metagraph.axons[uid] for uid in uids_to_retry],
+                        axons=[self.metagraph.axons[uid] for uid in uids_to_retry_same],
                         synapse=synapse,
                         deserialize=False,
                     )
 
-                    uid_to_index = {uid: idx for idx, uid in enumerate(miner_uids)}
-
-                    # Overwrite original responses with new responses
-                    for i, uid in enumerate(uids_to_retry):
+                    for i, uid in enumerate(uids_to_retry_same):
                         idx = uid_to_index[uid]
                         responses[idx] = retry_responses[i]
 
                     if self.verbose:
-                        print(f"RETRY RESPONSES: {len(retry_responses)}")
+                        print(f"RETRY RESPONSES (same synapse): {len(retry_responses)}")
                         print(retry_responses)
+
+                # Retry with the old synapse for 5xx
+                if uids_to_retry_old:
+                    bt.logging.debug(f"Retrying requests for the following UIDs (old synapse): {uids_to_retry_old}")
+
+                    window_packet_old = {
+                        "guid": "HIDDEN",
+                        "window_idx": -1,
+                        "lines": task.input.data.window,
+                        "participants": task.input.data.participants,
+                        "task_prompt": task.prompt_chain[0].prompt_template,
+                        "task_type": task.type,
+                    }
+
+                    synapse_old = conversationgenome.protocol.CgSynapse(cgp_input=[window_packet_old])
+
+                    retry_responses_old = await self.dendrite.forward(
+                        axons=[self.metagraph.axons[uid] for uid in uids_to_retry_old],
+                        synapse=synapse_old,
+                        deserialize=False,
+                    )
+
+                    for i, uid in enumerate(uids_to_retry_old):
+                        idx = uid_to_index[uid]
+                        responses[idx] = retry_responses_old[i]
+
+                    if self.verbose:
+                        print(f"RETRY RESPONSES (old synapse): {len(retry_responses_old)}")
+                        print(retry_responses_old)
 
                 for response_idx, response in enumerate(responses):
                     status_code = getattr(response.dendrite, "status_code", None)
