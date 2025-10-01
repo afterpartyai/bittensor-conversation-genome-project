@@ -12,7 +12,6 @@ from conversationgenome.task.Task import Task
 
 
 class ConversationTaskInputData(BaseModel):
-    participants: List[str]
     window_idx: int = -1
     window: Optional[List[Tuple[int, str]]] = None
 
@@ -34,7 +33,6 @@ class ConversationTaggingTask(Task):
             conversation = Conversation(
                 guid=self.input.guid,
                 lines=self.input.data.window,
-                participants=self.input.data.participants,
                 miner_task_prompt=self.prompt_chain[0].prompt_template,
             )
 

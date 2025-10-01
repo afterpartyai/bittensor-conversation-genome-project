@@ -215,7 +215,6 @@ class Validator(BaseValidatorNeuron):
                         "guid": "HIDDEN",
                         "window_idx": -1,
                         "lines": task.input.data.window,
-                        "participants": task.input.data.participants,
                         "task_prompt": task.prompt_chain[0].prompt_template,
                         "task_type": task.type,
                     }

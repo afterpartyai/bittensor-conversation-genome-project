@@ -12,7 +12,6 @@ from conversationgenome.task.Task import Task
 
 
 class WebpageMarkdownTaskInputData(BaseModel):
-    participants: List[str]
     window: List[Tuple[int, str]]
 
 
@@ -33,7 +32,6 @@ class WebpageMetadataGenerationTask(Task):
             conversation = Conversation(
                 guid=self.input.guid,
                 lines=self.input.data.window,
-                participants=self.input.data.participants,
                 miner_task_prompt=self.prompt_chain[0].prompt_template,
             )
 

@@ -87,7 +87,6 @@ class ConversationTaggingTaskBundle(TaskBundle):
                     input_type=self.input.input_type,
                     guid=self.input.guid,
                     data=ConversationTaskInputData(
-                        participants=self.input.data.participants,
                         window_idx=indexed_window[0],
                         window=indexed_window[1],
                     ),

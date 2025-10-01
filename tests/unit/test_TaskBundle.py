@@ -56,29 +56,24 @@ async def test_mask_task_for_miner_masks_sensitive_fields(monkeypatch):
     assert tasks, "No tasks generated from bundle"
     task = tasks[0]
 
-
     print("task", task)
     # Set sensitive fields to known values
-    # task.guid = "real-task-guid"
-    # task.bundle_guid = bundle.guid
-    # task.input.data.guid = "real-task-guid"
+    task.guid = "real-task-guid"
+    task.bundle_guid = bundle.guid
+    task.input.guid = "real-task-guid"
 
-    # masked_task = bundle.mask_task_for_miner(task)
+    masked_task = bundle.mask_task_for_miner(task)
 
-    # # Sensitive fields are masked
-    # assert masked_task.guid == "HIDDEN"
-    # assert masked_task.bundle_guid == "HIDDEN"
-    # assert masked_task.input.data.guid == "HIDDEN"
+    # Sensitive fields are masked
+    assert masked_task.guid == "HIDDEN"
+    assert masked_task.bundle_guid == "HIDDEN"
+    assert masked_task.input.guid == "HIDDEN"
+    assert masked_task.input.data.window_idx == -1
 
-    # # Non-sensitive fields are preserved
-    # assert masked_task.input.data.window_idx == task.input.data.window_idx
-    # assert masked_task.input.data.lines == task.input.data.lines
-    # assert masked_task.input.data.participants == task.input.data.participants
-    # assert masked_task.input.data.prompt == task.input.data.prompt
-    # assert masked_task.input.data.min_convo_windows == task.input.data.min_convo_windows
-    # assert masked_task.input.data.indexed_windows == task.input.data.indexed_windows
+    # Non-sensitive fields are preserved
+    assert masked_task.input.data.window == task.input.data.window
 
-    # # Original task is unchanged
-    # assert task.guid == "real-task-guid"
-    # assert task.bundle_guid == bundle.guid
-    # assert task.input.data.guid == "real-task-guid"
+    # Original task is unchanged
+    assert task.guid == "real-task-guid"
+    assert task.bundle_guid == bundle.guid
+    assert task.input.guid == "real-task-guid"

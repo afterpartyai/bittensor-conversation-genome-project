@@ -93,7 +93,6 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                     input_type=self.input.input_type,
                     guid=self.input.guid,
                     data=WebpageMarkdownTaskInputData(
-                        participants=self.input.data.participants,
                         window=indexed_window[1],
                     ),
                 ),
