@@ -14,6 +14,7 @@ from conversationgenome.task.Task import Task
 class ConversationTaskInputData(BaseModel):
     window_idx: int = -1
     window: Optional[List[Tuple[int, str]]] = None
+    participants: Optional[List[str]] = None
 
 
 class ConversationTaskInput(BaseModel):

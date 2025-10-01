@@ -13,7 +13,7 @@ from conversationgenome.task.Task import Task
 
 class WebpageMarkdownTaskInputData(BaseModel):
     window: List[Tuple[int, str]]
-
+    participants: Optional[List[str]] = None
 
 class WebpageMarkdownTaskInput(BaseModel):
     guid: str

@@ -72,6 +72,7 @@ async def test_mask_task_for_miner_masks_sensitive_fields(monkeypatch):
 
     # Non-sensitive fields are preserved
     assert masked_task.input.data.window == task.input.data.window
+    assert masked_task.input.data.participants == task.input.data.participants == []
 
     # Original task is unchanged
     assert task.guid == "real-task-guid"

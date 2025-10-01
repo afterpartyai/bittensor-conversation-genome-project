@@ -94,6 +94,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                     guid=self.input.guid,
                     data=WebpageMarkdownTaskInputData(
                         window=indexed_window[1],
+                        participants=[]
                     ),
                 ),
                 prompt_chain=self.prompt_chain,

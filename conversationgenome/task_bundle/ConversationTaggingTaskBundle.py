@@ -89,6 +89,7 @@ class ConversationTaggingTaskBundle(TaskBundle):
                     data=ConversationTaskInputData(
                         window_idx=indexed_window[0],
                         window=indexed_window[1],
+                        participants=[]
                     ),
                 ),
                 prompt_chain=self.prompt_chain,
