@@ -64,7 +64,7 @@ async def test_mine_handles_none_tags_and_vectors():
 
 
 @pytest.mark.asyncio
-async def test_mine_handles_exception_from_llmlib_returns_empty_tags_and_vectors():
+async def test_mine_handles_exception_from_llmlib_raises_error():
     # Mock LlmLib to raise an exception
     with patch("conversationgenome.task.ConversationTaggingTask.LlmLib") as MockLlmLib:
         mock_llml = MockLlmLib.return_value
@@ -73,7 +73,5 @@ async def test_mine_handles_exception_from_llmlib_returns_empty_tags_and_vectors
         task = DummyData.conversation_tagging_task()
         task.prompt_chain = [type("Prompt", (), {"prompt_template": "Tag the conversation."})()]
 
-        result = await task.mine()
-
-        assert result["tags"] == []
-        assert result["vectors"] == []
+        with pytest.raises(Exception, match="Mining failed"):
+            await task.mine()

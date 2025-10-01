@@ -41,6 +41,6 @@ class WebpageMetadataGenerationTask(Task):
             output = {"tags": result.tags, "vectors": result.vectors}
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")
-            output = {"tags": [], "vectors": []}
+            raise e
 
         return output

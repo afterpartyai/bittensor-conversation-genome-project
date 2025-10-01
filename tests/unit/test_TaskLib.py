@@ -13,7 +13,7 @@ from conversationgenome.task.TaskLib import TaskLib
 @patch("conversationgenome.task.TaskLib.CGP_VERSION", "1.2.3")
 async def test_put_task_basic(mock_c, mock_ApiLib):
     # Setup config mock
-    mock_c.get.side_effect = lambda section, key: {
+    mock_c.get.side_effect = lambda section, key, default=None: {
         ("env", "LLM_TYPE_OVERRIDE"): None,
         ("env", "OPENAI_MODEL"): "gpt-4",
         ("env", "SYSTEM_MODE"): "test",
@@ -62,7 +62,7 @@ async def test_put_task_basic(mock_c, mock_ApiLib):
 @patch("conversationgenome.task.TaskLib.CGP_VERSION", "2.0.0")
 async def test_put_task_with_overrides(mock_c, mock_ApiLib):
     # Setup config mock with overrides
-    mock_c.get.side_effect = lambda section, key: {
+    mock_c.get.side_effect = lambda section, key, default=None: {
         ("env", "LLM_TYPE_OVERRIDE"): "anthropic",
         ("env", "ANTHROPIC_MODEL"): "claude-3",
         ("env", "SYSTEM_MODE"): "prod",
@@ -80,7 +80,14 @@ async def test_put_task_with_overrides(mock_c, mock_ApiLib):
     mock_ApiLib.return_value = mock_api_instance
 
     task_lib = TaskLib()
-    result = await task_lib.put_task(hotkey="hk2", task_bundle_id="tbid2", task_id="tid2", neuron_type="typeB", batch_number=3, data=[1, 2, 3])
+    result = await task_lib.put_task(
+        hotkey="hk2",
+        task_bundle_id="tbid2",
+        task_id="tid2",
+        neuron_type="typeB",
+        batch_number=3,
+        data=[1, 2, 3],
+    )
 
     assert result == {"status": "success"}
     args, kwargs = mock_api_instance.put_task_data.call_args
