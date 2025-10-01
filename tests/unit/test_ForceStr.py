@@ -1,5 +1,6 @@
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
+from pydantic import ValidationError
 
 from conversationgenome.utils.types import ForceStr
 

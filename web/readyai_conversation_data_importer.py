@@ -24,7 +24,6 @@ class ConversationDbProcessor:
             source_id INTEGER,
             guid TEXT,
             idx INTEGER,
-            topic TEXT,
             json JSON,
             created_at TEXT,
             updated_at TEXT

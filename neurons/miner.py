@@ -16,23 +16,17 @@
 # DEALINGS IN THE SOFTWARE.
 
 import time
-import os
-import hashlib
 import typing
-import sys
-
 
 # Bittensor
 import bittensor as bt
 
-from conversationgenome.ConfigLib import c
-from conversationgenome.utils.Utils import Utils
-
-
 from conversationgenome.base.miner import BaseMinerNeuron
-
+from conversationgenome.ConfigLib import c
 from conversationgenome.miner.MinerLib import MinerLib
 from conversationgenome.protocol import CgSynapse
+from conversationgenome.task import Task
+from conversationgenome.utils.Utils import Utils
 
 
 class Miner(BaseMinerNeuron):
@@ -42,9 +36,7 @@ class Miner(BaseMinerNeuron):
         super(Miner, self).__init__(config=config)
         c.set("system", "netuid", self.config.netuid)
 
-    async def forward(
-        self, synapse: CgSynapse
-    ) -> CgSynapse:
+    async def forward(self, synapse: CgSynapse) -> CgSynapse:
         """
         Processes the incoming 'CgSynapse' synapse by performing a predefined operation on the input data.
 
@@ -55,31 +47,36 @@ class Miner(BaseMinerNeuron):
             CgSynapse: The synapse object with the 'cgp_output' field
 
         """
-
-        log_path = c.get('env', 'SCORING_DEBUG_LOG')
-        if not Utils.empty(log_path):
-            Utils.append_log(log_path, f"______Received Packet from validator. synapse.cgp_input: {synapse.cgp_input}")
-        window = synapse.cgp_input[0]
-        conversation_guid = Utils.get(window, "guid")
-        window_idx = Utils.get(window, "window_idx")
-        lines = Utils.get(window, "lines")
-        task_prompt = Utils.get(window, "task_prompt")
-        task_type = Utils.get(window, "task_type")
-
-        bt.logging.info(f"Miner received window {window_idx} with {len(lines)} conversation lines")
-
         ml = MinerLib()
-        result = await ml.do_mining(conversation_guid=conversation_guid, window_idx=window_idx, conversation_window=lines, minerUid=17, task_prompt=task_prompt, task_type=task_type)
 
-        if not Utils.empty(log_path):
-            Utils.append_log(log_path, f"Mined vectors and tags: {result['tags']}")
+        try:
+            task: Task = synapse.cgp_input[0]["task"]
+            bt.logging.info(f"Miner received task of type {task.type}")
+            result = await ml.do_mining(task=task)
+        except Exception as e:
+            bt.logging.error(f"Error extracting task from synapse. Fallback to old method.")
+
+            # Here we ensure miners can still process requests from validators that are yet to update.
+            window = synapse.cgp_input[0]
+            conversation_guid = Utils.get(window, "guid")
+            window_idx = Utils.get(window, "window_idx")
+            lines = Utils.get(window, "lines")
+            task_prompt = Utils.get(window, "task_prompt")
+            task_type = Utils.get(window, "task_type")
+
+            result = await ml.do_old_mining(
+                conversation_guid=conversation_guid,
+                window_idx=window_idx,
+                conversation_window=lines,
+                minerUid=17,
+                task_prompt=task_prompt,
+                task_type=task_type,
+            )
 
         synapse.cgp_output = [result]
         return synapse
 
-    async def blacklist(
-        self, synapse: CgSynapse
-    ) -> typing.Tuple[bool, str]:
+    async def blacklist(self, synapse: CgSynapse) -> typing.Tuple[bool, str]:
         """
         Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
         define the logic for blacklisting requests based on your needs and desired security parameters.
@@ -110,27 +107,18 @@ class Miner(BaseMinerNeuron):
         Otherwise, allow the request to be processed further.
         """
         # TODO(developer): Define how miners should blacklist requests.
-        if (
-            not self.config.blacklist.allow_non_registered
-            and synapse.dendrite.hotkey not in self.metagraph.hotkeys
-        ):
+        if not self.config.blacklist.allow_non_registered and synapse.dendrite.hotkey not in self.metagraph.hotkeys:
             # Ignore requests from un-registered entities.
-            bt.logging.trace(
-                f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
-            )
+            bt.logging.trace(f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}")
             return True, "Unrecognized hotkey"
         uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
         if self.config.blacklist.force_validator_permit:
             # If the config is set to force validator permit, then we should only allow requests from validators.
             if not self.metagraph.validator_permit[uid]:
-                bt.logging.warning(
-                    f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
-                )
+                bt.logging.warning(f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}")
                 return True, "Non-validator hotkey"
 
-        bt.logging.trace(
-            f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}"
-        )
+        bt.logging.trace(f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}")
         return False, "Hotkey recognized!"
 
     async def priority(self, synapse: CgSynapse) -> float:
@@ -147,16 +135,10 @@ class Miner(BaseMinerNeuron):
         processed first. Higher values indicate that the request should be processed first. Lower values indicate
         that the request should be processed later.
 
-         """
-        caller_uid = self.metagraph.hotkeys.index(
-            synapse.dendrite.hotkey
-        )  # Get the caller index.
-        priority = float(
-            self.metagraph.S[caller_uid]
-        )  # Return the stake as the priority.
-        bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: {priority}"
-        )
+        """
+        caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)  # Get the caller index.
+        priority = float(self.metagraph.S[caller_uid])  # Return the stake as the priority.
+        bt.logging.trace(f"Prioritizing {synapse.dendrite.hotkey} with value: {priority}")
         return priority
 
 

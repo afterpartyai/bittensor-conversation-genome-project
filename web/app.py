@@ -1,4 +1,3 @@
-import hashlib
 import json
 import os
 import random
@@ -6,12 +5,33 @@ import sqlite3
 import time
 
 from models.conversation_record import ConversationRecord
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest
 from Utils import Utils
 
-from conversationgenome.task.ConversationTaggingTask import ConversationInput, ConversationInputData
-from conversationgenome.task.MarkdownMetadataGenerationTask import WebpageMarkdownInput, WebpageMarkdownInputData
-from conversationgenome.task.Task import PromptChainStep, TaggingExampleOutput, Task
+from conversationgenome.prompt_chain.PromptChainStep import PromptChainStep
+from conversationgenome.scoring_mechanism.TaggingExampleOutput import (
+    TaggingExampleOutput,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationInput,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationInputData,
+)
+from conversationgenome.task_bundle.ConversationTaggingTaskBundle import (
+    ConversationTaggingTaskBundle,
+)
+from conversationgenome.task_bundle.TaskBundle import TaskBundle
+from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import (
+    WebpageMarkdownInput,
+)
+from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import (
+    WebpageMarkdownInputData,
+)
+from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import (
+    WebpageMetadataGenerationTaskBundle,
+)
 from web.middlewares.authentication_middleware import AuthMiddleware
 from web.middlewares.metrics_middleware import MetricsMiddleware
 
@@ -36,7 +56,9 @@ DIVIDER = '_' * 120
 # Test convo write endpoint:
 # curl -XPOST http://localhost:8000/api/v1/conversation/reserve | python -m json.tool
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
+from fastapi import Request
+from fastapi import Response
 
 app = FastAPI()
 app.add_middleware(MetricsMiddleware)
@@ -150,23 +172,13 @@ class Db:
         return d
 
 
-# Get account functionality for decrypting public key
-def get_account_from_coldkey(ss58_coldkey):
-    # Relevant sites: https://github.com/polkascan/py-substrate-interface/blob/c15d699c87810c041d851fbd556faa2f3626c496/substrateinterface/base.py#L2745
-    # https://ss58.org/
-    if not ss58_decode:
-        print("scalecodec is not installed. Aborting.")
-        return
-    return ss58_decode(ss58_coldkey, valid_ss58_format=42)
-
-
 @app.get("/")
 def get_request():
     return {"message": "Forbidden"}
 
 
 @app.post("/api/v1/conversation/reserve")
-def post_request() -> Task:
+def post_request():
     # Used for testing long or bad responses
     if False:
         time.sleep(30)
@@ -211,117 +223,118 @@ def post_request() -> Task:
         webpage_markdown_input_data_participants = ["UNKNOWN_SPEAKER"]
         webpage_markdown_input_data_total = 1
 
-        webpage_tagging_task = Task(
-            mode="local",
-            job_type="webpage_metadata_generation",
-            scoring_mechanism="ground_truth_tag_similarity_scoring",
-            input=WebpageMarkdownInput(
-                input_type="webpage_markdown",
-                guid=webpage_tagging_task_guid,
-                data=WebpageMarkdownInputData(
-                    lines=webpage_markdown_input_data_lines,
-                    participants=webpage_markdown_input_data_participants,
-                    total=webpage_markdown_input_data_total,
-                ),
-            ),
-            prompt_chain=[
-                PromptChainStep(
-                    step=0,
-                    id="12346546888",
-                    crc=1321321,
-                    title="Infer the tags of the web page from the provided Markdown",
-                    name="infer_tags_for_webpage_from_markdown",
-                    description="Returns tags representing the webpage from the content of the page in Markdown.",
-                    type="inference",
-                    input_path="markdown",
-                    prompt_template="You are given the content of a webpage inside <markdown>...</markdown> tags. Identify the most relevant high-level topics, entities, and concepts that describe the page. Focus only on the core subject matter and ignore navigation menus, boilerplate, or contact info. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
-                    output_variable="final_output",
-                    output_type="List[str]",
-                )
+        webpage_tagging_task = {
+            "mode": "local",
+            "type": "webpage_metadata_generation",
+            "guid": webpage_tagging_task_guid,
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "webpage_markdown",
+                "guid": webpage_tagging_task_guid,
+                "data": {
+                    "lines": webpage_markdown_input_data_lines,
+                    "participants": webpage_markdown_input_data_participants,
+                    "total": webpage_markdown_input_data_total,
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546888",
+                    "crc": 1321321,
+                    "title": "Infer the tags of the web page from the provided Markdown",
+                    "name": "infer_tags_for_webpage_from_markdown",
+                    "description": "Returns tags representing the webpage from the content of the page in Markdown.",
+                    "type": "inference",
+                    "input_path": "markdown",
+                    "prompt_template": "You are given the content of a webpage inside <markdown>...</markdown> tags. Identify the most relevant high-level topics, entities, and concepts that describe the page. Focus only on the core subject matter and ignore navigation menus, boilerplate, or contact info. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
             ],
-            example_output=TaggingExampleOutput(tags=["guitar", "barn", "farm", "nashville"], type="List[str]"),
-            total=webpage_markdown_input_data_total,
-            guid=webpage_tagging_task_guid,
-            participants=webpage_markdown_input_data_participants,
-            lines=webpage_markdown_input_data_lines,
-            errors=[],
-            warnings=[],
-            prompts={},
-            data_type=1,
-            min_convo_windows=0,
-        )
+            "example_output": {
+                "tags": ["guitar", "barn", "farm", "nashville"],
+                "type": "List[str]",
+            },
+            "errors": [],
+            "warnings": [],
+            "data_type": 1,
+            "job_type": "webpage_metadata_generation",
+            "total": webpage_markdown_input_data_total,
+            "guid": webpage_tagging_task_guid,
+            "participants": webpage_markdown_input_data_participants,
+            "lines": webpage_markdown_input_data_lines,
+            "min_convo_windows": 0,
+        }
 
-        conversation_tagging_task = Task(
-            mode="local",
-            job_type="conversation_tagging",
-            scoring_mechanism="ground_truth_tag_similarity_scoring",
-            input=ConversationInput(
-                input_type="conversation",
-                guid=convo.get("guid"),
-                data=ConversationInputData(
-                    total=len(convo.get("lines")),
-                    participants=convo.get("participants"),
-                    lines=convo.get("lines"),
-                ),
-            ),
-            prompt_chain=[
-                PromptChainStep(
-                    step=0,
-                    id="12346546888",
-                    crc=1321321,
-                    title="Infer tags from a conversation window",
-                    name="infer_tags_from_a_conversation_window",
-                    description="Returns tags representing the conversation as a whole from the window received.",
-                    type="inference",
-                    input_path="conversation",
-                    prompt_template="Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers. Return comma-delimited tags. Only return the tags without any English commentary.",
-                    output_variable="final_output",
-                    output_type="List[str]",
-                )
+        conversation_tagging_task = {
+            "mode": "local",
+            "type": "conversation_tagging",
+            "guid": convo.get("guid"),
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "conversation",
+                "guid": convo.get("guid"),
+                "data": {
+                    "total": len(convo.get("lines")),
+                    "participants": convo.get("participants"),
+                    "lines": convo.get("lines"),
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546888",
+                    "crc": 1321321,
+                    "title": "Infer tags from a conversation window",
+                    "name": "infer_tags_from_a_conversation_window",
+                    "description": "Returns tags representing the conversation as a whole from the window received.",
+                    "type": "inference",
+                    "input_path": "conversation",
+                    "prompt_template": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers. Return comma-delimited tags. Only return the tags without any English commentary.",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
             ],
-            example_output=TaggingExampleOutput(tags=["guitar", "barn", "farm", "nashville"], type="List[str]"),
-            total=len(convo.get("lines")),
-            guid=convo.get("guid"),
-            participants=convo.get("participants"),
-            lines=convo.get("lines"),
-            errors=[],
-            warnings=[],
-            prompts={},
-            data_type=1,
-        )
+            "example_output": {
+                "tags": ["guitar", "barn", "farm", "nashville"],
+                "type": "List[str]",
+            },
+            "errors": [],
+            "warnings": [],
+            "data_type": 1,
+            "job_type": "conversation_tagging",
+            "total": len(convo.get("lines")),
+            "guid": convo.get("guid"),
+            "participants": convo.get("participants"),
+            "lines": convo.get("lines"),
+            "min_convo_windows": 1,
+        }
 
         choice = random.choice([webpage_tagging_task, conversation_tagging_task])
-        print(f"Selected task: {choice.job_type} with GUID {choice.guid}")
+        # choice = random.choice([webpage_tagging_task])
+        print(f"Selected task: {choice['type']} with GUID {choice['guid']}")
 
         return choice
 
     except Exception as e:
         print(f"Error: {e}")
-        return Task(
-            mode="error",
-            api_version=1.4,
-            job_type="unknown",
-            scoring_mechanism=None,
-            input=None,
-            prompt_chain=[],
-            example_output=None,
-            errors=[f"post_request failed: {str(e)}"],
-            warnings=[],
-            guid="ERROR",
-            total=0,
-            participants=[],
-            lines=[],
-            min_convo_windows=0,
-        )
-
-
-# Mock endpoint for testing OpenAI call failures
-@app.post("/v1/chat/completions")
-def post_openai_mock_request():
-    # Used for testing long or bad responses
-    if False:
-        time.sleep(10)
-    return {"errors": {"id": 923123, "msg": "Mock error"}}
+        return {
+            "mode": "error",
+            "api_version": 1.4,
+            "type": "unknown",
+            "scoring_mechanism": None,
+            "input": None,
+            "prompt_chain": [],
+            "example_output": None,
+            "errors": [f"post_request failed: {str(e)}"],
+            "warnings": [],
+            "guid": "ERROR",
+            "total": 0,
+            "participants": [],
+            "lines": [],
+            "min_convo_windows": 0,
+        }
 
 
 @app.put("/api/v1/conversation/record/{c_guid}")
@@ -340,82 +353,6 @@ def put_record_request(c_guid, data: dict):
                 "Missing hotkey",
             ]
         )
-    return out
-
-
-import binascii
-import hashlib
-
-
-def hashReadyAiMessage(password):
-    salt = "THIS IS MY SALT"
-    password = password.encode('utf-8')
-    salt = salt.encode('utf-8')
-    pwdhash = hashlib.pbkdf2_hmac('sha512', password, salt, 100000)
-    pwdhashAscii = binascii.hexlify(pwdhash)
-    return (pwdhashAscii).decode('ascii')
-
-
-@app.post("/api/v1/generate_message")
-def post_get_api_key_message(data: dict):
-    out = {"success": 0, "errors": [], "data": {}}
-    if False:
-        out['errors'].append(
-            [
-                9893844,
-                "Missing hotkey",
-            ]
-        )
-    else:
-        out['success'] = 1
-        basicMessage = u"This is it and more:"
-        out['data']['message'] = basicMessage  # "Message seed: akldjslakjdlkajsldkjalskdjalskdj llka jsljdj lah uioeryo uq023 4h lsdfclasd f90 408roi hlkad lakk sdo"
-    return out
-
-
-Keypair = None
-try:
-    from substrateinterface import Keypair
-except:
-    print(f"substrateinterface is not installed. Try: pip install substrateinterface")
-
-
-@app.post("/api/v1/generate_api_key")
-def post_get_api_generate_key(data: dict):
-    out = {"success": 0, "errors": [], "data": {}}
-    if False:
-        out['errors'].append(
-            [
-                9893845,
-                "Missing stuff",
-            ]
-        )
-    else:
-        # Junk local address
-        ss58_address = "5EhPJEicfJRF6EZyq82YtwkFyg4SCTqeFAo7s5Nbw2zUFDFi"
-        message = "HELLOWORLD"
-        # Signed example
-        signature = "eca79a777366194d9eef83379b413b1c6349473ed0ca19bc7f33e2c0461e0c75ccbd25ffdd6e25b93ee2c7ac6bf80815420ddb8c61e8c5fc02dfa27ba105b387"
-        if Keypair:
-            keypair = Keypair(ss58_address=ss58_address)
-            is_valid = keypair.verify(message.encode("utf-8"), bytes.fromhex(signature))
-            if is_valid:
-                out['success'] = 1
-                out['data'] = {"api_key": 239423}
-            else:
-                out['errors'].append(
-                    [
-                        9893845,
-                        "Signature didn't verify",
-                    ]
-                )
-        else:
-            out['errors'].append(
-                [
-                    9893846,
-                    "Keypair not installed",
-                ]
-            )
     return out
 
 

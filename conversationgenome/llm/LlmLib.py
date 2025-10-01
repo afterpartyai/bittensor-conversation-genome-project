@@ -1,14 +1,7 @@
-import json
-import os
-
-from dotenv import load_dotenv
-import numpy as np
-
 from conversationgenome.ConfigLib import c
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.mock.MockBt import MockBt
-#from conversationgenome.llm.llm_openai import llm_openai
 
 verbose = False
 bt = None
@@ -66,6 +59,9 @@ class LlmLib:
         return response
 
     async def get_vector_embeddings_set(self, tags):
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+
         response = await self.factory_llm.get_vector_embeddings_set(tags)
         return response
 

@@ -1,9 +1,7 @@
-import json
-import os
-import random
-from datetime import datetime, timezone
-from traceback import print_exception
 import pprint
+from datetime import datetime
+from datetime import timezone
+from traceback import print_exception
 
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 
@@ -12,10 +10,9 @@ verbose = False
 
 import numpy as np
 
-from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
-
 from conversationgenome.mock.MockBt import MockBt
+from conversationgenome.utils.Utils import Utils
 
 bt = None
 try:
@@ -24,7 +21,6 @@ except:
     if verbose:
         print("bittensor not installed")
     bt = MockBt()
-
 
 
 class Evaluator:
@@ -47,7 +43,7 @@ class Evaluator:
         #       numeric_vectors = conversation_metadata['vectors'][tag_name]['vectors']
         for tag_name, val in conversation_metadata.vectors.items():
             all_vectors.append(val['vectors'])
-            #all_vectors.append(val)
+            # all_vectors.append(val)
             count += 1
             if tag_count_ceiling and count > tag_count_ceiling:
                 break
@@ -64,7 +60,7 @@ class Evaluator:
         similarity_score = 0
         # Calculate the similarity score between the neighborhood_vectors and the individual_vectors
         # If all vectors are 0.0, the vector wasn't found for scoring in the embedding score
-        if np.all(individual_vectors==0):
+        if np.all(individual_vectors == 0):
             bt.logging.error("All empty vectors")
             return 0
         # Calculate the cosine similarity between two sets of vectors
@@ -88,7 +84,7 @@ class Evaluator:
             final_score *= 0.9
 
         # All junk tags. Penalize
-        if max_score < .2:
+        if max_score < 0.2:
             bt.logging.debug("!!PENALTY: max_score < .2 -- all junk tags")
             final_score *= 0.5
 
@@ -110,7 +106,6 @@ class Evaluator:
 
         return final_score
 
-
     async def evaluate(self, full_convo_metadata: ConversationMetadata, miner_responses=None, body=None, exampleList=None, verbose=None, scoring_factors=None):
         if verbose == None:
             verbose = self.verbose
@@ -125,7 +120,7 @@ class Evaluator:
         scores = np.zeros(num_responses)
         zero_score_mask = np.ones(num_responses)
         rank_scores = np.zeros(num_responses)
-        #bt.logging.info(f"DEVICE for rank_scores: {rank_scores.device}")
+        # bt.logging.info(f"DEVICE for rank_scores: {rank_scores.device}")
 
         avg_ages = np.zeros(num_responses)
         avg_age_scores = np.zeros(num_responses)
@@ -136,7 +131,6 @@ class Evaluator:
 
         spot_check_id_dict = dict()
 
-
         final_scores = []
         for idx, response in enumerate(miner_responses):
             # TODO: Testing framework returns just response. Make it return cgp_output
@@ -144,7 +138,7 @@ class Evaluator:
                 miner_response = response.cgp_output
             except:
                 miner_response = response
-            uuid = "uuid-"+str(idx)
+            uuid = "uuid-" + str(idx)
             hotkey = "hk-uuid"
             try:
                 uuid = response.axon.uuid
@@ -154,15 +148,15 @@ class Evaluator:
             if not miner_response:
                 if verbose:
                     bt.logging.error(f"BAD RESPONSE EVAL: miner index: {idx} HOTKEY: {response.axon.hotkey}")
-                final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
+                final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore": 0.0, "final_miner_score": 0.0})
             else:
-                #bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
+                # bt.logging.info("GOOD RESPONSE", idx, response.axon.uuid, response.axon.hotkey, )
                 miner_result = miner_response[0]
                 try:
                     # Make sure there are enough tags to make processing worthwhile
                     if miner_result is None or not miner_result or len(miner_result['tags']) < self.min_tags:
                         bt.logging.info(f"Only {len(miner_result['tags'])} tag(s) found for miner {miner_result['uid']}. Skipping.")
-                        final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore":0.0, "final_miner_score":0.0})
+                        final_scores.append({"uuid": uuid, "hotkey": hotkey, "adjustedScore": 0.0, "final_miner_score": 0.0})
                         zero_score_mask[idx] = 0
                         continue
                 except Exception as e:
@@ -209,7 +203,7 @@ class Evaluator:
 
                 if not scoring_factors:
                     scoring_factors = self.scoring_factors
-                
+
                 top_3_mean = Utils.safe_value(top_3_mean)
                 median_score = Utils.safe_value(median_score)
                 mean_score = Utils.safe_value(mean_score)
@@ -217,10 +211,10 @@ class Evaluator:
                 min_score = Utils.safe_value(min_score)
 
                 adjusted_score = (
-                    (scoring_factors['top_3_mean'] * top_3_mean) +
-                    (scoring_factors['median_score'] * median_score) +
-                    (scoring_factors['mean_score'] * mean_score) +
-                    (scoring_factors['max_score'] * max_score)
+                    (scoring_factors['top_3_mean'] * top_3_mean)
+                    + (scoring_factors['median_score'] * median_score)
+                    + (scoring_factors['mean_score'] * mean_score)
+                    + (scoring_factors['max_score'] * max_score)
                 )
 
                 final_miner_score = adjusted_score
@@ -229,13 +223,15 @@ class Evaluator:
                 total_tag_count = len(both_tags) + len(unique_tags)
                 uid = Utils.get(miner_result, 'uid')
                 final_miner_score = await self.calculate_penalty(uid, adjusted_score, total_tag_count, len(unique_tags), min_score, max_score)
-                final_scores.append({"uid": idx+1, "uuid": uuid, "hotkey": hotkey, "adjustedScore":adjusted_score, "final_miner_score":final_miner_score})
-                bt.logging.debug(f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}" )
+                final_scores.append({"uid": idx + 1, "uuid": uuid, "hotkey": hotkey, "adjustedScore": adjusted_score, "final_miner_score": final_miner_score})
+                bt.logging.debug(
+                    f"_______ ADJ SCORE: {adjusted_score} ___Num Tags: {len(miner_result['tags'])} Unique Tag Scores: {scores_unique} Median score: {median_score} Mean score: {mean_score} Top 3 Mean: {top_3_mean} Min: {min_score} Max: {max_score}"
+                )
 
         bt.logging.debug(f"Complete evaluation. Final scores:\n{pprint.pformat(final_scores, indent=2)}")
         # Force to use cuda if available -- otherwise, causes device mismatch
         # Convert to tensors
-        if  len(final_scores) != len(rank_scores):
+        if len(final_scores) != len(rank_scores):
             bt.logging.error(f"ERROR: final scores length ({len(final_scores)})  doesn't match rank scores ({len(rank_scores)}). Aborting.")
             return (None, None)
 
@@ -269,8 +265,8 @@ class Evaluator:
             is_unique = False
             if tag in diff['unique_2']:
                 is_unique = True
-                
-            #bt.logging.info(example, resp2)
+
+            # bt.logging.info(example, resp2)
             if not tag in tag_vector_dict:
                 bt.logging.error(f"No vectors found for tag '{tag}'. Score of 0. Unique: {is_unique}")
                 scores.append(0)
@@ -294,44 +290,3 @@ class Evaluator:
         bt.logging.info(f"Scores num: {len(scores)} num of Unique tags: {len(scores_unique)} num of full convo tags: {len(full_convo_tags)}")
 
         return (scores, scores_both, scores_unique, diff)
-
-if __name__ == "__main__":
-    bt.logging.info("Setting up test data...")
-
-    body = """Today for lunch, I decided to have a colorful and healthy meal. I started off with a bowl of mixed greens, topped with some cherry tomatoes, cucumbers, and sliced avocado. I love incorporating fruits and vegetables into my meals as they are packed with vitamins and minerals that are essential for our bodies. The fresh and crisp vegetables added a nice crunch to my salad, making it a refreshing and satisfying choice.
-    Next, I had a grilled chicken wrap with a side of steamed broccoli. The wrap was filled with tender and juicy chicken, lettuce, tomatoes, and a drizzle of ranch dressing. It was a perfect balance of protein and veggies, making it a well-rounded meal. The steamed broccoli was a great addition as it provided a good source of fiber and other nutrients.
-    To satisfy my sweet tooth, I had a bowl of mixed fruit for dessert. It had a variety of fruits such as strawberries, blueberries, and grapes. Not only did it add some natural sweetness to my meal, but it also provided me with a boost of antioxidants and other beneficial nutrients.
-    Eating a nutritious and balanced lunch not only keeps me physically healthy but also helps me stay focused and energized for the rest of the day. It's important to make conscious choices and incorporate fruits and vegetables into our meals to maintain a healthy diet. After finishing my lunch, I felt satisfied and ready to tackle the rest of my day with a renewed sense of energy."""
-
-    tagLists = [
-        # Mostly relevant, with a few irrelevant tags
-        ["apple", "lunch", "automobile", "banana", "pear", "dinner", "meal", "beef", "akjsdkajsdlkajl", "political party", "airliner"],
-        # Tags close to target
-        ["apple", "lunch", "banana", "pear", "dinner", "meal", "beef", "desert", "broccoli", "strawberries"],
-        # Few tags, all irrelevant
-        ["akjsdkajsdlkajl", "political party", "airliner"],
-        # Many tags, all irrelevant
-        ["aircraft", "aviation", "flight", "passengers", "pilots", "cockpit", "air traffic control", "takeoff", "landing", "jet engines", "altitude", "airlines", "airports", "flight attendants", "airplane mode", "airworthiness", "boarding", "turbulence", "emergency exits", "cabin crew"],
-        # Food tags, not directly related to ground text (lunch)
-        ["fruit", "apple", "orange", "banana", "grape", "strawberry", "mango", "watermelon", "pineapple", "kiwi", "peach", "plum", "cherry", "pear", "blueberry", "raspberry", "lemon", "lime", "fig", "coconut"],
-        # Meal tags
-        ["lunch", "food", "meal", "dining", "restaurant", "sandwich", "salad", "soup", "fast food", "takeout", "brunch", "picnic", "cafeteria", "lunch break", "healthy", "comfort food", "bag lunch", "leftovers", "vegetarian", "gluten-free"],
-        # Duplicate tags and 1 irrelevant tags -- so 2 tags, 1 relevant and 1 irrelevant
-        ["apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "apple", "akjsdkajsdlkajl"],
-        # Many non-sense tags (no latent space location) and 1 very relevant tag
-        ["apple", "akjsdkajsdlkajl1", "akjsdkajsdlkajl2", "akjsdkajsdlkajl3", "akjsdkajsdlkajl4", "akjsdkajsdlkajl5", "akjsdkajsdlkajl6", "akjsdkajsdlkajl7", "akjsdkajsdlkajl8"],
-        # Many non-sense tags (no latent space location) and 1  irrelevant tag
-        ["clock", "akjsdkajsdlkajl1", "akjsdkajsdlkajl2", "akjsdkajsdlkajl3", "akjsdkajsdlkajl4", "akjsdkajsdlkajl5", "akjsdkajsdlkajl6", "akjsdkajsdlkajl7", "akjsdkajsdlkajl8"],
-    ]
-    miner_tag_lists = tagLists
-
-
-    bt.logging.info("Running basic spacy keyword test...")
-    llm = llm_spacy()
-    #response = await llm.simple_text_to_tags(body, min_tokens=0)
-    ground_tags = list(response.keys())
-    bt.logging.info(f"Found tags for main conversation: {ground_tags}")
-    #neighborhood_vector = await llm.get_neighborhood(response)
-    #bt.logging.info("neighborhood_vector", neighborhood_vector)
-    bt.logging.info("Processing tag sets...")
-    #await el.calculate_final_scores(ground_tags, miner_tag_lists)

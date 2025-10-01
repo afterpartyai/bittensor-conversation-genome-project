@@ -1,12 +1,10 @@
 verbose = False
 
-import asyncio
-import copy
 import json
-import math
 import os
 import random
-import sys
+from typing import Any
+from typing import Optional
 
 import numpy as np
 
@@ -16,9 +14,10 @@ from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.conversation.ConvoLib import ConvoLib
 from conversationgenome.llm.LlmLib import LlmLib
-from conversationgenome.miner.MinerLib import MinerLib
 from conversationgenome.mock.MockBt import MockBt
-from conversationgenome.utils.uids import check_uid_availability
+from conversationgenome.task.TaskLib import TaskLib
+from conversationgenome.task_bundle.TaskBundle import TaskBundle
+from conversationgenome.task_bundle.TaskBundleLib import TaskBundleLib
 from conversationgenome.utils.Utils import Utils
 
 bt = None
@@ -33,27 +32,13 @@ if c.get('env', 'FORCE_LOG') == 'debug':
     bt.logging.enable_debug(True)
 elif c.get('env', 'FORCE_LOG') == 'info':
     bt.logging.enable_default(True)
-try:
-    import wandb
-except Exception as e:
-    print("Wand error")
-
-# TODO: Refactor to multiple participants. Make abstract class?
-proto = {
-    "interests_of_q": [],
-    "hobbies_of_q": [],
-    "personality_traits_of_q": [],
-    "interests_of_a": [],
-    "hobbies_of_a": [],
-    "personality_traits_of_a": [],
-}
 
 
 class ValidatorLib:
     mode = "test"  # test|local_llm|openai|anthropic
     hotkey = "v1234"
     verbose = False
-    llml = None
+    llml = LlmLib()
     readyai_api_key = None
 
     def __init__(self):
@@ -80,162 +65,39 @@ class ValidatorLib:
             return
         self.readyai_api_key = data['api_key']
 
-    async def reserve_conversation(self, minConvWindows=1, batch_num=None, return_indexed_windows=False, verbose=False) -> Conversation | None:
-        out = None
+    async def reserve_task_bundle(self) -> Optional[TaskBundle]:
         # Validator requests a full conversation from the API
-        full_conversation: Conversation = await self.getConvo()
+        task_bundle: TaskBundle = await self.get_task_bundle()
 
-        if self.verbose or verbose:
-            bt.logging.info(f"full_conversation: {full_conversation}")
-
-        if full_conversation:
-            num_lines = len(full_conversation.lines)
-            llm_type = "openai"
-            model = "gpt-4o"
-            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
-
-            if llm_type_override:
-                llm_type = llm_type_override
-                model = c.get("env", "OPENAI_MODEL")
-
-            bt.logging.info(f"Reserved conversation with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
-            # Break the full conversation up into overlapping conversation windows
-            convoWindows = self.getConvoWindows(full_conversation, return_indexed_windows=return_indexed_windows)
-
-            if full_conversation.min_convo_windows is not None and full_conversation.min_convo_windows >= 0:
-                bt.logging.info(f"Change in minimum required convo windows from API " f"from {minConvWindows} to {full_conversation.min_convo_windows}.")
-                minConvWindows = full_conversation.min_convo_windows
-
-            if len(convoWindows) > minConvWindows:
-                out = full_conversation
-            else:
-                bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
-                out = None
-
-            if return_indexed_windows:
-                full_conversation.indexed_windows = convoWindows
-            else:
-                full_conversation.windows = convoWindows
-
-            return out
+        if task_bundle:
+            bt.logging.info(f"Reserved task bundle.")
+            return task_bundle
         else:
-            bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
+            bt.logging.error(f"ERROR:9879432: No task bundle returned from API. Aborting.")
 
         return None
 
-    async def get_convo_metadata(self, conversation_guid: str, full_conversation: Conversation, batch_num: int) -> ConversationMetadata | None:
-        # Do overview tagging and generate base participant profiles
-        full_conversation_metadata: ConversationMetadata = await self.generate_full_convo_metadata(convo=full_conversation)
-
-        if not full_conversation_metadata:
-            bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
-            await self.put_convo("NO-TAGS", conversation_guid, {"tags": [], "vectors": []}, type="validator", batch_num=batch_num)
-            return None
-
-        full_conversation_tags = getattr(full_conversation_metadata, "tags", [])
-        full_conversation_vectors = getattr(full_conversation_metadata, "vectors", [])
-        bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
-
-        log_path = c.get('env', 'SCORING_DEBUG_LOG')
-        if not Utils.empty(log_path):
-            Utils.append_log(log_path, f"Validator found full convo tags {full_conversation_tags} in FullConvo")
-
-        # Make sure there are enough tags to make processing worthwhile
-        minValidTags = self.validateMinimumTags(full_conversation_tags)
-        if not minValidTags:
-            bt.logging.info("Not enough valid tags for conversation. Passing.")
-            out = None
-        else:
-            out = full_conversation_metadata
-
-        return out
-
-    async def getConvo(self) -> Conversation:
+    async def get_task_bundle(self) -> Optional[TaskBundle]:
         hotkey = self.hotkey
 
         if not self.readyai_api_key:
             self.read_api_key()
 
-        cl = ConvoLib()
-        convo: Conversation = await cl.get_conversation(hotkey, api_key=self.readyai_api_key)
+        tbl = TaskBundleLib()
+        raw_task_data: TaskBundle = await tbl.get_task_bundle(hotkey, api_key=self.readyai_api_key)
 
-        return convo
+        return raw_task_data
 
-    async def put_convo(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):
-        cl = ConvoLib()
-        convo = await cl.put_conversation(hotkey, c_guid, data, type=type, batch_num=batch_num, window=window)
-        return convo
-
-    def getConvoWindows(self, fullConvo: Conversation, return_indexed_windows=False):
-        minLines = c.get("convo_window", "min_lines", 5)
-        maxLines = c.get("convo_window", "max_lines", 10)
-        overlapLines = c.get("convo_window", "overlap_lines", 2)
-
-        windows = Utils.split_overlap_array(fullConvo.lines, size=maxLines, overlap=overlapLines)
-        if len(windows) < 2:
-            windows = Utils.split_overlap_array(fullConvo.lines, size=minLines, overlap=overlapLines)
-
-        # TODO: Write convo windows into local database with full convo metadata
-        if return_indexed_windows:
-            indexed_windows = []
-
-            for idx, window in enumerate(windows):
-                indexed_windows.append((idx, window))
-            windows = indexed_windows
-
-        return windows
-
-    async def filter_valid_tags(self, tags):
-        # Filter valid tags
-        return tags
-
-    async def generate_full_convo_metadata(self, convo: Conversation) -> ConversationMetadata | None:
-        if self.verbose:
-            bt.logging.info(f"Execute generate_full_convo_metadata for participants {convo.participants}")
-        else:
-            bt.logging.info(f"Execute generate_full_convo_metadata")
-
-        llml = LlmLib()
-        self.llml = llml
-        result: RawMetadata = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
-
-        if not result:
-            bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
-            return None
-
-        if not result.success:
-            bt.logging.error(f"ERROR:2873226354. Conversation metadata failed: {result}. Aborting.")
-            return None
-
-        return ConversationMetadata(
-            participantProfiles=convo.participants,
-            tags=getattr(result, "tags", []),
-            vectors=getattr(result, "vectors", {}),
+    async def put_task(self, *, hotkey: str, task_bundle_id: str, task_id: str, neuron_type: str, batch_number: int, data: Any) -> None:
+        tl = TaskLib()
+        await tl.put_task(
+            hotkey=hotkey,
+            task_bundle_id=task_bundle_id,
+            task_id=task_id,
+            neuron_type=neuron_type,
+            batch_number=batch_number,
+            data=data,
         )
-
-    async def get_vector_embeddings_set(self, tags):
-        response = await self.llml.get_vector_embeddings_set(tags)
-        return response
-
-    async def send_to_miners(self, conversation_guid, window_idx, conversation_window, miner_uids):
-        bt.logging.info(f"Send to conversation window {window_idx} to miners: {miner_uids}")
-        results = []
-        ml = MinerLib()
-        tasks = [asyncio.create_task(ml.do_mining(conversation_guid, window_idx, conversation_window, minerUid)) for minerUid in miner_uids]
-        await asyncio.wait(tasks)
-        for task in tasks:
-            results.append(task.result())
-        return results
-
-    def validateMinimumTags(self, tags):
-        # TODO: Validate tags
-        # bt.logging.info(f"Validating tags: {tags}")
-        return True
-
-    def selectStage1Miners(self, uids, num=3):
-        # TODO: Move to MockBt
-        selectedMiners = random.sample(uids, num)
-        return selectedMiners
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):
         if isinstance(uids, np.ndarray):
@@ -300,45 +162,6 @@ class ValidatorLib:
             bt.logging.debug(f"Updated final scores: {scores}")
 
         return scores, ema_scores
-
-    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
-        llml = LlmLib()
-        return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
-
-    async def validate_tag_set(self, originalTagList):
-        cleanTagList = Utils.get_clean_tag_set(originalTagList)
-
-        if len(cleanTagList) >= 20:
-            random_indices = random.sample(range(len(cleanTagList)), 20)
-            cleanTagList = [cleanTagList[i] for i in random_indices]
-        else:
-            if self.verbose:
-                bt.logging.warning("cleanTagList has fewer than 20 elements. Skipping random selection.")
-
-        cleanTagList = [tag[:50] for tag in cleanTagList]
-
-        if self.verbose:
-            print(f"Original tag set len: {len(originalTagList)} clean tag set len: {len(cleanTagList)}")
-        cleanTagsStr = ",".join(cleanTagList)
-
-        # Tag validation prompt
-        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Malformed keywords should include combined/compound words that are not in the English Dictionary, abbreviations, and typos. Return two comma-delimited lists."
-        prompt1 += f"\n\n<keywords>\n{cleanTagsStr}\n</keywords>\n\n"
-
-        response = await self.prompt_call_csv(override_prompt=prompt1)
-        if len(response['content']) == 0:
-            print(f"EMPTY RESPONSE -- no valid tags: {response['content']}")
-            return None
-        contentStr = response['content'].lower()
-        goodPos = contentStr.find("good")
-        malformedPos = contentStr.find("malformed")
-        goodKeywordsStr = contentStr[0:malformedPos].replace("good english keywords:", "").replace("***", "").replace("\n", "").strip()
-        validTags = goodKeywordsStr.split(",")
-        validTags = Utils.get_clean_tag_set(validTags)
-
-        processed_tag_list = [element for element in validTags if element in cleanTagsStr]
-
-        return processed_tag_list
 
     def transposed_cubic_distribution(self, i, num_uids):
         # Calculate the range of x values
@@ -405,3 +228,178 @@ class ValidatorLib:
             raw_weights = raw_weights / np.sum(np.abs(raw_weights))
 
         return raw_weights
+
+    # ############
+    # old stuff below to ensure backward compatibility
+    # ############
+
+    async def reserve_conversation(self, minConvWindows=1, batch_num=None, return_indexed_windows=False, verbose=False) -> Conversation | None:
+        out = None
+        # Validator requests a full conversation from the API
+        full_conversation: Conversation = await self.getConvo()
+
+        if self.verbose or verbose:
+            bt.logging.info(f"full_conversation: {full_conversation}")
+
+        if full_conversation:
+            num_lines = len(full_conversation.lines)
+            llm_type = "openai"
+            model = "gpt-4o"
+            llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
+
+            if llm_type_override:
+                llm_type = llm_type_override
+                model = c.get("env", "OPENAI_MODEL")
+
+            bt.logging.info(f"Reserved conversation with {num_lines} lines. Sending to {llm_type}:{model} LLM...")
+            # Break the full conversation up into overlapping conversation windows
+            convoWindows = self.getConvoWindows(full_conversation, return_indexed_windows=return_indexed_windows)
+
+            if full_conversation.min_convo_windows is not None and full_conversation.min_convo_windows >= 0:
+                bt.logging.info(f"Change in minimum required convo windows from API " f"from {minConvWindows} to {full_conversation.min_convo_windows}.")
+                minConvWindows = full_conversation.min_convo_windows
+
+            if len(convoWindows) > minConvWindows:
+                out = full_conversation
+            else:
+                bt.logging.info(f"Not enough convo windows -- only {len(convoWindows)}. Passing.")
+                out = None
+
+            if return_indexed_windows:
+                full_conversation.indexed_windows = convoWindows
+            else:
+                full_conversation.windows = convoWindows
+
+            return out
+        else:
+            bt.logging.error(f"ERROR:9879432: No conversation returned from API. Aborting.")
+
+        return None
+
+    async def get_convo_metadata(self, conversation_guid: str, full_conversation: Conversation, batch_num: int) -> ConversationMetadata | None:
+        # Do overview tagging and generate base participant profiles
+        full_conversation_metadata: ConversationMetadata = await self.generate_full_convo_metadata(convo=full_conversation)
+
+        if not full_conversation_metadata:
+            bt.logging.error(f"ERROR:927402. No metadata for conversation returned to validator. Aborting.")
+            await self.put_convo("NO-TAGS", conversation_guid, {"tags": [], "vectors": []}, type="validator", batch_num=batch_num)
+            return None
+
+        full_conversation_tags = getattr(full_conversation_metadata, "tags", [])
+        full_conversation_vectors = getattr(full_conversation_metadata, "vectors", [])
+        bt.logging.info(f"Found {len(full_conversation_tags)} tags and {len(full_conversation_vectors)} in FullConvo")
+
+        # Make sure there are enough tags to make processing worthwhile
+        minValidTags = self.validateMinimumTags(full_conversation_tags)
+        if not minValidTags:
+            bt.logging.info("Not enough valid tags for conversation. Passing.")
+            out = None
+        else:
+            out = full_conversation_metadata
+
+        return out
+
+    async def getConvo(self) -> Conversation:
+        hotkey = self.hotkey
+
+        if not self.readyai_api_key:
+            self.read_api_key()
+
+        cl = ConvoLib()
+        convo: Conversation = await cl.get_conversation(hotkey, api_key=self.readyai_api_key)
+
+        return convo
+
+    async def put_convo(self, hotkey, c_guid, data, type="validator", batch_num=None, window=None):
+        cl = ConvoLib()
+        convo = await cl.put_conversation(hotkey, c_guid, data, type=type, batch_num=batch_num, window=window)
+        return convo
+
+    def getConvoWindows(self, fullConvo: Conversation, return_indexed_windows=False):
+        minLines = c.get("convo_window", "min_lines", 5)
+        maxLines = c.get("convo_window", "max_lines", 10)
+        overlapLines = c.get("convo_window", "overlap_lines", 2)
+
+        windows = Utils.split_overlap_array(fullConvo.lines, size=maxLines, overlap=overlapLines)
+        if len(windows) < 2:
+            windows = Utils.split_overlap_array(fullConvo.lines, size=minLines, overlap=overlapLines)
+
+        # TODO: Write convo windows into local database with full convo metadata
+        if return_indexed_windows:
+            indexed_windows = []
+
+            for idx, window in enumerate(windows):
+                indexed_windows.append((idx, window))
+            windows = indexed_windows
+
+        return windows
+
+    async def generate_full_convo_metadata(self, convo: Conversation) -> ConversationMetadata | None:
+        if self.verbose:
+            bt.logging.info(f"Execute generate_full_convo_metadata for participants {convo.participants}")
+        else:
+            bt.logging.info(f"Execute generate_full_convo_metadata")
+
+        llml = LlmLib()
+        self.llml = llml
+        result: RawMetadata = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
+
+        if not result:
+            bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
+            return None
+
+        if not result.success:
+            bt.logging.error(f"ERROR:2873226354. Conversation metadata failed: {result}. Aborting.")
+            return None
+
+        return ConversationMetadata(
+            participantProfiles=convo.participants,
+            tags=getattr(result, "tags", []),
+            vectors=getattr(result, "vectors", {}),
+        )
+
+    def validateMinimumTags(self, tags):
+        return True
+
+    async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
+        llml = LlmLib()
+        return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
+
+    async def validate_tag_set(self, originalTagList):
+        cleanTagList = Utils.get_clean_tag_set(originalTagList)
+
+        if len(cleanTagList) >= 20:
+            random_indices = random.sample(range(len(cleanTagList)), 20)
+            cleanTagList = [cleanTagList[i] for i in random_indices]
+        else:
+            if self.verbose:
+                bt.logging.warning("cleanTagList has fewer than 20 elements. Skipping random selection.")
+
+        cleanTagList = [tag[:50] for tag in cleanTagList]
+
+        if self.verbose:
+            print(f"Original tag set len: {len(originalTagList)} clean tag set len: {len(cleanTagList)}")
+        cleanTagsStr = ",".join(cleanTagList)
+
+        # Tag validation prompt
+        prompt1 = "Separate these keywords into 2 groups: good English keywords and malformed keywords. Malformed keywords should include combined/compound words that are not in the English Dictionary, abbreviations, and typos. Return two comma-delimited lists."
+        prompt1 += f"\n\n<keywords>\n{cleanTagsStr}\n</keywords>\n\n"
+
+        response = await self.prompt_call_csv(override_prompt=prompt1)
+        if len(response['content']) == 0:
+            print(f"EMPTY RESPONSE -- no valid tags: {response['content']}")
+            return None
+        contentStr = response['content'].lower()
+        goodPos = contentStr.find("good")
+        malformedPos = contentStr.find("malformed")
+        goodKeywordsStr = contentStr[0:malformedPos].replace("good english keywords:", "").replace("***", "").replace("\n", "").strip()
+        validTags = goodKeywordsStr.split(",")
+        validTags = Utils.get_clean_tag_set(validTags)
+
+        processed_tag_list = [element for element in validTags if element in cleanTagsStr]
+
+        return processed_tag_list
+
+    async def get_vector_embeddings_set(self, tags):
+        response = await self.llml.get_vector_embeddings_set(tags)
+        return response

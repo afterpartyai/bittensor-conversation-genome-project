@@ -5,11 +5,12 @@ import random
 
 import requests
 
+from conversationgenome import __version__ as CGP_VERSION
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
 from conversationgenome.mock.MockBt import MockBt
-from conversationgenome.task.Task import Task
-from conversationgenome.task.task_factory import try_parse_task
+from conversationgenome.task_bundle.task_bundle_factory import try_parse_task_bundle
+from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.Utils import Utils
 
 bt = None
@@ -23,6 +24,82 @@ except:
 
 class ApiLib:
     verbose = False
+
+    async def reserve_task_bundle(self, hotkey, api_key=None) -> TaskBundle:
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": "en_US",
+            "Authorization": "Bearer %s" % (str(api_key)),
+        }
+
+        jsonData = {}
+        postData = None
+        cert = None
+        read_host_url = c.get('env', 'CGP_API_READ_HOST', 'https://api.conversations.xyz')
+        read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
+        http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+        options_str = c.get('env', 'CGP_API_OPTIONS', '')
+        url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve?cgp_version={CGP_VERSION}"
+
+        if len(options_str) > 0:
+            options = options_str.split(",")
+            bt.logging.info(f"Read API options: {options}")
+            if "22" in options:
+                url += "&options=22"
+
+        response = None
+
+        try:
+            response = requests.post(url, headers=headers, json=jsonData, data=postData, cert=cert, timeout=http_timeout)
+        except requests.exceptions.Timeout as e:
+            bt.logging.error(f"reserveConversation timeout error: {e}")
+
+        if response and response.status_code == 200:
+            data = response.json()
+            task_bundle: TaskBundle = try_parse_task_bundle(data)
+
+            if not task_bundle:
+                bt.logging.error("reserveConversation error. No task bundle")
+                return None
+        else:
+            bt.logging.error(f"reserveConversation error. Response: {response}")
+            return None
+
+        return task_bundle
+
+    async def put_task_data(self, id, json_data) -> bool:
+        write_host_url = c.get('env', 'CGP_API_WRITE_HOST', 'https://db.conversations.xyz')
+        write_host_port = c.get('env', 'CGP_API_WRITE_PORT', '443')
+        url = f"{write_host_url}:{write_host_port}/api/v1/conversation/record/{id}"
+
+        if self.verbose:
+            print(f"PUTTING TO {url}")
+
+        headers = {
+            "Accept": "application/json",
+            "Accept-Language": "en_US",
+        }
+
+        http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
+
+        try:
+            response = requests.put(url, headers=headers, json=json_data, timeout=http_timeout)
+
+            if response.status_code == 200:
+                if self.verbose:
+                    print("PUT success", response.json())
+            else:
+                bt.logging.error("ERROR: 7283917: put_task_data ERROR", response)
+                return False
+        except Exception as e:
+            bt.logging.error("ERROR: 7283918: put_task_data RESPONSE", e)
+            return False
+
+        return True
+
+    ############
+    # old stuff below to ensure backward compatibility
+    ############
 
     async def reserveConversation(self, hotkey, api_key=None) -> Conversation:
         # Call Convo server and reserve a conversation
@@ -56,13 +133,13 @@ class ApiLib:
             read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
             http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
             options_str = c.get('env', 'CGP_API_OPTIONS', '')
-            url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
+            url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve?cgp_version={CGP_VERSION}"
 
             if len(options_str) > 0:
                 options = options_str.split(",")
                 bt.logging.info(f"Read API options: {options}")
                 if "22" in options:
-                    url += "?options=22"
+                    url += "&options=22"
 
             response = None
 
@@ -75,9 +152,8 @@ class ApiLib:
 
             if response and response.status_code == 200:
                 data = response.json()
-                task: Task = try_parse_task(data)
 
-                if not task:
+                if not data:
                     bt.logging.error("reserveConversation error. Task is None")
                     return None
             else:
@@ -86,17 +162,17 @@ class ApiLib:
 
             # Until API and code is updated everywhere
             try:
-                miner_task_prompt = task.prompt_chain[0].prompt_template
+                miner_task_prompt = data['prompt_chain'][0]['prompt_template']
             except (IndexError, AttributeError, TypeError):
                 miner_task_prompt = None
 
             convo: Conversation = Conversation(
-                guid=str(task.guid),
-                participants=task.participants,
-                lines=task.lines[0:maxLines],
+                guid=str(data['guid']),
+                participants=data['participants'],
+                lines=data['lines'][0:maxLines],
                 miner_task_prompt=miner_task_prompt,
-                miner_task_type=task.job_type,
-                min_convo_windows=task.min_convo_windows,
+                miner_task_type=data['job_type'],
+                min_convo_windows=data['min_convo_windows'],
             )
 
         return convo
@@ -133,10 +209,3 @@ class ApiLib:
             return False
 
         return True
-
-
-if __name__ == "__main__":
-    print("Test convo get")
-    url = "https://www.google.com"
-    body = Utils.get_url(url)
-    print(body)

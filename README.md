@@ -429,7 +429,7 @@ SELECT * FROM conversations LIMIT 1;
 That will show you the tables in the database (only 1 -- `conversations`) and then you will see one of the conversations like this:
 
 ```console
-1|1|123|10000||{"id": 10000, "guid": 123, "topic": "", "lines": [[0, "Hey, Jordan Harbinger here from the Art of Charm."], [0, "Welcome to Minnesota Monday."], [0, "I m happy to be here with you kicking off the w...}|2025-04-30 21:54:16|2025-04-30 21:54:16
+1|1|123|10000||{"id": 10000, "guid": 123, "lines": [[0, "Hey, Jordan Harbinger here from the Art of Charm."], [0, "Welcome to Minnesota Monday."], [0, "I m happy to be here with you kicking off the w...}|2025-04-30 21:54:16|2025-04-30 21:54:16
 ```
 
 With the data populated, you're ready to start running the server.

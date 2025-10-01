@@ -22,7 +22,7 @@ class ConversationDbProcessor:
     def __init__(self):
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
-        sql_create = f"CREATE TABLE IF NOT EXISTS {self.table_name} (id INTEGER PRIMARY KEY AUTOINCREMENT, source_id INTEGER, guid TEXT, idx INTEGER, topic TEXT, json JSON, created_at TEXT, updated_at TEXT )"
+        sql_create = f"CREATE TABLE IF NOT EXISTS {self.table_name} (id INTEGER PRIMARY KEY AUTOINCREMENT, source_id INTEGER, guid TEXT, idx INTEGER, json JSON, created_at TEXT, updated_at TEXT )"
         self.cursor.execute(sql_create)
 
     def process_conversation_csv(self):
@@ -40,7 +40,6 @@ class ConversationDbProcessor:
                 guid = Utils.guid()
 
                 id = row[0]
-                topic = row[1].strip()
                 chat = row[2]
 
                 # split the chat into individual lines
@@ -62,7 +61,6 @@ class ConversationDbProcessor:
                 row_dict = {
                     "id": id,
                     "guid": guid,
-                    "topic": topic,
                     "lines": lines,
                     "participants": participantGuids,
                 }
@@ -71,8 +69,8 @@ class ConversationDbProcessor:
                 jsonData = json.dumps(row_dict)
 
                 # Generate SQLite insert statement
-                sql_insert = f"INSERT INTO {self.table_name} (source_id, json, idx, topic, guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-                insert_data = (self.source_id, jsonData, row_dict['id'], row_dict['topic'], str(row_dict['guid']), created_at, created_at)
+                sql_insert = f"INSERT INTO {self.table_name} (source_id, json, idx, guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+                insert_data = (self.source_id, jsonData, row_dict['id'], str(row_dict['guid']), created_at, created_at)
                 self.cursor.execute(sql_insert, insert_data)
 
                 row_count += 1

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from conversationgenome.utils.Utils import Utils
 
 
@@ -28,15 +29,24 @@ def test_safe_value_bool():
 
 
 def test_safe_value_numpy_array():
-    arr = np.array([
-        np.float64(0.6603625972570843), np.float64(0.6095246510949066),
-        np.float64(0.6562667357581294), np.float64(0.6497091819269162),
-        np.float64(0.592988679728645), np.float64(0.6130020980774428),
-        np.float64(0.6874548512781428), np.float64(0.6664986614293865),
-        np.float64(0.6033494958351422), np.float64(0.6017652504044572),
-        np.float64(0.5942755016756684), np.float64(0.6552286764630223),
-        np.float64(0.6426896566135323), np.float64(0.6265698059764568)
-    ])
+    arr = np.array(
+        [
+            np.float64(0.6603625972570843),
+            np.float64(0.6095246510949066),
+            np.float64(0.6562667357581294),
+            np.float64(0.6497091819269162),
+            np.float64(0.592988679728645),
+            np.float64(0.6130020980774428),
+            np.float64(0.6874548512781428),
+            np.float64(0.6664986614293865),
+            np.float64(0.6033494958351422),
+            np.float64(0.6017652504044572),
+            np.float64(0.5942755016756684),
+            np.float64(0.6552286764630223),
+            np.float64(0.6426896566135323),
+            np.float64(0.6265698059764568),
+        ]
+    )
     assert np.allclose(Utils.safe_value(arr), arr)
 
 
@@ -55,15 +65,18 @@ def test_safe_value_empty_numpy_array():
     assert np.array_equal(Utils.safe_value(arr), arr)
 
 
-@pytest.mark.parametrize("v,expected", [
-    (np.float64(np.nan), 0.0),
-    (np.float32(np.inf), 0.0),
-    (np.float64(-np.inf), 0.0),
-    (float('inf'), 0.0),
-    (float('-inf'), 0.0),
-    (np.float32(1.2345), 1.2345),
-    (np.int64(42), 42),
-])
+@pytest.mark.parametrize(
+    "v,expected",
+    [
+        (np.float64(np.nan), 0.0),
+        (np.float32(np.inf), 0.0),
+        (np.float64(-np.inf), 0.0),
+        (float('inf'), 0.0),
+        (float('-inf'), 0.0),
+        (np.float32(1.2345), 1.2345),
+        (np.int64(42), 42),
+    ],
+)
 def test_safe_value_scalars_various(v, expected):
     assert Utils.safe_value(v) == expected
 
@@ -73,6 +86,7 @@ def test_safe_value_numpy_array_with_inf_pass_through():
     out = Utils.safe_value(arr)
 
     assert np.allclose(out, arr, equal_nan=True)
+
 
 def test_safe_value_empty_numpy_array():
     arr = np.array([])

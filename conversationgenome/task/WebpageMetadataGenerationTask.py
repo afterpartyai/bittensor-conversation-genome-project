@@ -11,21 +11,19 @@ from conversationgenome.llm.LlmLib import LlmLib
 from conversationgenome.task.Task import Task
 
 
-class ConversationTaskInputData(BaseModel):
-    window_idx: int = -1
-    window: Optional[List[Tuple[int, str]]] = None
+class WebpageMarkdownTaskInputData(BaseModel):
+    window: List[Tuple[int, str]]
     participants: Optional[List[str]] = None
 
-
-class ConversationTaskInput(BaseModel):
+class WebpageMarkdownTaskInput(BaseModel):
     guid: str
-    input_type: Literal["conversation"]
-    data: ConversationTaskInputData
+    input_type: Literal["webpage_markdown"]
+    data: WebpageMarkdownTaskInputData
 
 
-class ConversationTaggingTask(Task):
-    type: Literal["conversation_tagging"] = "conversation_tagging"
-    input: Optional[ConversationTaskInput] = None
+class WebpageMetadataGenerationTask(Task):
+    type: Literal["webpage_metadata_generation"] = "webpage_metadata_generation"
+    input: Optional[WebpageMarkdownTaskInput] = None
 
     async def mine(self) -> dict[str, list]:
         llml = LlmLib()
