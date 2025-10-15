@@ -22,12 +22,13 @@ def _get_task_adapter() -> TypeAdapter:
 
     # ------------- Hardcoded imports / union -------------
     from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
-    from conversationgenome.task.WebpageMetadataGenerationTask import (
-        WebpageMetadataGenerationTask,
-    )
+    from conversationgenome.task.WebpageMetadataGenerationTask import WebpageMetadataGenerationTask
+    from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask
+
+    
 
     TaskUnion = Annotated[
-        Union[ConversationTaggingTask, WebpageMetadataGenerationTask],
+        Union[ConversationTaggingTask, WebpageMetadataGenerationTask, SurveyTaggingTask],
         Field(discriminator="type"),
     ]
     _TASK_ADAPTER = TypeAdapter(TaskUnion)
