@@ -21,6 +21,7 @@ override_env_variables = {"SYSTEM_MODE": "prod", "CGP_API_READ_HOST": "https://f
 async def test_when_getting_task_bundle_then_max_lines_is_respected(mock_llm_lib, mock_config_get, mock_requests_post):
     mock_llm_instance = AsyncMock()
     mock_llm_instance.conversation_to_metadata.return_value = None
+    mock_llm_instance.validate_conversation_quality.return_value = DummyData.conversation_quality_metadata_high()
     mock_llm_lib.return_value = mock_llm_instance
 
     MAX_CONVO_LINES = 1

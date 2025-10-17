@@ -3,7 +3,7 @@ from typing import List
 from typing import Tuple
 
 from conversationgenome.api.models.conversation import Conversation
-from conversationgenome.api.models.conversation_metadata import ConversationMetadata
+from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
 from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
 from conversationgenome.task.task_factory import try_parse_task
 from conversationgenome.task_bundle.task_bundle_factory import try_parse_task_bundle
@@ -106,6 +106,7 @@ class DummyData:
                     "prompt": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.:\n\n{{ input }}",
                     "min_convo_windows": 1,
                 },
+                "quality_score": 9
             },
             "prompt_chain": [
                 {
@@ -144,6 +145,7 @@ class DummyData:
                     "lines": DummyData.lines(),
                     "total": len(DummyData.lines()),
                 },
+                "quality_score": 9
             },
             "prompt_chain": [
                 {
@@ -186,4 +188,10 @@ class DummyData:
             participants=DummyData.participants(),
             indexed_windows=DummyData.windows(),
             metadata=DummyData.metadata(),
+        )
+
+    @staticmethod
+    def conversation_quality_metadata_high():
+        return ConversationQualityMetadata(
+            quality_score=9
         )

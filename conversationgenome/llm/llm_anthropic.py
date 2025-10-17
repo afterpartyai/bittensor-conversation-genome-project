@@ -3,10 +3,12 @@ import json
 import asyncio
 
 from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.conversation_metadata import ConversationQualityMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_openai import llm_openai
+from conversationgenome.llm.prompt import prompt_manager
 
 
 class llm_anthropic:
@@ -140,6 +142,26 @@ class llm_anthropic:
             vectors=out["vectors"],
             success=out["success"]
         )
+
+    async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
+        conversation_xml, _ = Utils.generate_convo_xml(conversation)
+        prompt = prompt_manager.conversation_quality_prompt(transcript_text=conversation_xml)
+        try:
+            data = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            http_response = self.do_direct_call(data)
+            response_content = Utils.get(http_response, 'json.choices.0.message.content')
+        except Exception as e:
+            print("Error in LLM call:", e)
+            return None
+        
+        try:
+            return ConversationQualityMetadata(**json.loads(response_content))
+        except json.JSONDecodeError as e:
+            print("Error parsing LLM reply as JSON. RESPONSE:", response_content)
+            return None
 
     async def get_vector_embeddings_set(self,  tags):
         llm_embeddings = llm_openai()
