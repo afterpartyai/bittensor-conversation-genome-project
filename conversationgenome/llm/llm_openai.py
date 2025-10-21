@@ -9,7 +9,7 @@ from conversationgenome.api.models.conversation_metadata import ConversationQual
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
-from conversationgenome.llm.prompt import prompt_manager
+from conversationgenome.llm.prompt_manager import prompt_manager
 
 openai = None
 AsyncOpenAI = None
@@ -137,6 +137,8 @@ class llm_openai:
                     print("Warning: LLM returned a response with no choices or no content.")
                     return None
                 response_content = completion.choices[0].message.content
+                print('RES')
+                print(response_content)
             else:
                 data = {
                     "model": self.model,

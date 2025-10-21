@@ -1,4 +1,4 @@
-from conversationgenome.llm.prompt import prompt_manager
+from conversationgenome.llm.prompt_manager import prompt_manager
 
 def test_conversation_quality_prompt():
     conversation_xml = "<conversation><p0>Hello</p0><p1>Hi there!</p1></conversation>"

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
+from conversationgenome.ConfigLib import c
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.utils import uids
 from tests.mocks.DummyAxon import DummyAxon
@@ -20,6 +21,7 @@ def validator_with_mock_metagraph():
     with patch("conversationgenome.base.neuron.MockMetagraph") as mock_metagraph_class, patch("bittensor.subtensor") as mock_subtensor_class, patch(
         "bittensor.wallet"
     ) as mock_wallet_class:
+        c.set('env', 'CONVO_QUALITY_THRESHOLD', 1)  # Set low quality threshold for testing
 
         # ---- Mock instances
         mock_wallet_instance = MagicMock()

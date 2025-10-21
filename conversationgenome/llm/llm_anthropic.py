@@ -8,7 +8,7 @@ from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_openai import llm_openai
-from conversationgenome.llm.prompt import prompt_manager
+from conversationgenome.llm.prompt_manager import prompt_manager
 
 
 class llm_anthropic:
