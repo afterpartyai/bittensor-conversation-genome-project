@@ -153,7 +153,7 @@ class llm_anthropic:
             http_response = self.do_direct_call(data)
             response_content = Utils.get(http_response, 'json.choices.0.message.content')
         except Exception as e:
-            print("Error in LLM call:", e)
+            print("Error in LLM call")
             return None
         
         try:
