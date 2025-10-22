@@ -67,8 +67,7 @@ class llm_groq:
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
-            print("Groq API Error", e)
-            print("response", response)
+            print("Groq API Error")
 
         return response
 
@@ -109,7 +108,7 @@ class llm_groq:
                 out['content'] = Utils.get(http_response, 'json.choices.0.message.content')
 
         except Exception as e:
-            print("GROQ API Error", e)
+            print("GROQ API Error")
 
         #raw_content = Utils.get(completion, "choices.0.message.content")
         out['success'] = 1
@@ -133,7 +132,7 @@ class llm_groq:
             print("No tagging response. Aborting")
             return None
         elif not response['success']:
-            print(f"Tagging failed: {response}. Aborting")
+            print(f"Tagging failed. Aborting")
             return response
 
         content = Utils.get(response, 'content')
@@ -164,7 +163,7 @@ class llm_groq:
                 out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = True
         else:
-            print("No tags returned by OpenAI for Groq", response)
+            print("No tags returned by OpenAI for Groq")
             
         return RawMetadata(
             tags=out["tags"],
@@ -196,13 +195,13 @@ class llm_groq:
                 http_response = self.do_direct_call(data)
                 response_content = Utils.get(http_response, 'json.choices.0.message.content')
         except Exception as e:
-            print("Error in LLM call:", e)
+            print("Error in LLM call")
             return None
         
         try:
             return ConversationQualityMetadata(**json.loads(response_content))
         except json.JSONDecodeError as e:
-            print("Error parsing LLM reply as JSON. RESPONSE:", response_content)
+            print("Error parsing LLM reply as ConversationQualityMetadata")
             return None
 
     async def get_vector_embeddings_set(self,  tags):

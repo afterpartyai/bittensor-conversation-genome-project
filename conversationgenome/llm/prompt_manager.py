@@ -1,3 +1,4 @@
+import bittensor as bt
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
@@ -17,8 +18,8 @@ class PromptManager:
             template = self.env.get_template(prompt_location)
             return template.render(**kwargs)
         except Exception as e:
-            print(f"Error processing prompt {prompt_location}: {e}")
-            raise
+            bt.logging.error(f"Error processing prompt {prompt_location}: {e}")
+            raise e
 
 
 # Create a singleton instance for easy access

@@ -76,8 +76,7 @@ class llm_openai:
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
-            print("OPEN AI API Error", e)
-            print("response", response)
+            print("OPEN AI API Error")
 
         return response
 
@@ -91,7 +90,7 @@ class llm_openai:
             print("No tagging response. Aborting")
             return None
         elif not response['success']:
-            print(f"Tagging failed: {response}. Aborting")
+            print(f"Tagging failed. Aborting")
             return response
 
         content = Utils.get(response, 'content')
@@ -115,7 +114,7 @@ class llm_openai:
 
             out['success'] = True
         else:
-            print("No tags returned by OpenAI", response)
+            print("No tags returned by OpenAI")
             return None
 
         return RawMetadata(tags=out["tags"], vectors=out["vectors"], success=out["success"])
@@ -137,8 +136,6 @@ class llm_openai:
                     print("Warning: LLM returned a response with no choices or no content.")
                     return None
                 response_content = completion.choices[0].message.content
-                print('RES')
-                print(response_content)
             else:
                 data = {
                     "model": self.model,
@@ -147,13 +144,13 @@ class llm_openai:
                 completion = self.do_direct_call(data)
                 response_content = completion['json']['choices'][0]['message']['content']
         except Exception as e:
-            print("Error in LLM call:", e)
+            print("Error in LLM call")
             return None
         
         try:
             return ConversationQualityMetadata(**json.loads(response_content))
         except json.JSONDecodeError as e:
-            print("Error parsing LLM reply as JSON. RESPONSE:", response_content)
+            print("Error parsing LLM reply as ConversationQualityMetadata")
             return None
 
     def getExampleFunctionConv(self):
@@ -184,7 +181,7 @@ class llm_openai:
             try:
                 out = json.loads(reply_content.content)
             except:
-                print("Error parsing LLM reply. RESPONSE:", completion)
+                print("Error parsing LLM reply.")
         else:
             data = {
                 "model": self.model,
@@ -222,7 +219,7 @@ class llm_openai:
             content = completion.choices[0].message.content
             out = {'success': True, 'content': content}
         except Exception as e:
-            print("Error in non-direct call:", e)
+            print("Error in non-direct call")
             out = {'success': False, 'content': None}
 
         return out
@@ -262,7 +259,7 @@ class llm_openai:
                 # print("responseData", responseData)
                 embedding = responseData[0]['embedding']
             else:
-                print("ERROR getting embedding", response)
+                print("ERROR getting embedding")
 
         if self.verbose or verbose:
             # print("OpenAI embeddings USAGE", response.usage)

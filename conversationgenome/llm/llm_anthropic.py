@@ -51,8 +51,7 @@ class llm_anthropic:
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
-            print("Anthropic API Error", e)
-            print("response", response)
+            print("Anthropic API Error")
 
         return response
 
@@ -81,7 +80,7 @@ class llm_anthropic:
             out['content'] = Utils.get(http_response, 'json.content.0.text')
 
         except Exception as e:
-            print("ANTHROPIC API Error", e)
+            print("ANTHROPIC API Error")
 
         out['success'] = 1
         return out
@@ -104,7 +103,7 @@ class llm_anthropic:
             print("No tagging response. Aborting")
             return None
         elif not response['success']:
-            print(f"Tagging failed: {response}. Aborting")
+            print(f"Tagging failed. Aborting")
             return response
 
         content = Utils.get(response, 'content')
@@ -135,7 +134,7 @@ class llm_anthropic:
                 out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = True
         else:
-            print("No tags returned by OpenAI for Anthropic", response)
+            print("No tags returned by OpenAI for Anthropic")
 
         return RawMetadata(
             tags=out["tags"],
@@ -160,7 +159,7 @@ class llm_anthropic:
         try:
             return ConversationQualityMetadata(**json.loads(response_content))
         except json.JSONDecodeError as e:
-            print("Error parsing LLM reply as JSON. RESPONSE:", response_content)
+            print("Error parsing LLM reply as ConversationQualityMetadata")
             return None
 
     async def get_vector_embeddings_set(self,  tags):
