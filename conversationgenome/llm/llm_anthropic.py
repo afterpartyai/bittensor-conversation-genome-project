@@ -3,10 +3,12 @@ import json
 import asyncio
 
 from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.conversation_metadata import ConversationQualityMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_openai import llm_openai
+from conversationgenome.llm.prompt_manager import prompt_manager
 
 
 class llm_anthropic:
@@ -49,8 +51,7 @@ class llm_anthropic:
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
-            print("Anthropic API Error", e)
-            print("response", response)
+            print("Anthropic API Error")
 
         return response
 
@@ -79,7 +80,7 @@ class llm_anthropic:
             out['content'] = Utils.get(http_response, 'json.content.0.text')
 
         except Exception as e:
-            print("ANTHROPIC API Error", e)
+            print("ANTHROPIC API Error")
 
         out['success'] = 1
         return out
@@ -102,7 +103,7 @@ class llm_anthropic:
             print("No tagging response. Aborting")
             return None
         elif not response['success']:
-            print(f"Tagging failed: {response}. Aborting")
+            print(f"Tagging failed. Aborting")
             return response
 
         content = Utils.get(response, 'content')
@@ -133,13 +134,33 @@ class llm_anthropic:
                 out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = True
         else:
-            print("No tags returned by OpenAI for Anthropic", response)
+            print("No tags returned by OpenAI for Anthropic")
 
         return RawMetadata(
             tags=out["tags"],
             vectors=out["vectors"],
             success=out["success"]
         )
+
+    async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
+        conversation_xml, _ = Utils.generate_convo_xml(conversation)
+        prompt = prompt_manager.conversation_quality_prompt(transcript_text=conversation_xml)
+        try:
+            data = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            http_response = self.do_direct_call(data)
+            response_content = Utils.get(http_response, 'json.choices.0.message.content')
+        except Exception as e:
+            print("Error in LLM call")
+            return None
+        
+        try:
+            return ConversationQualityMetadata(**json.loads(response_content))
+        except json.JSONDecodeError as e:
+            print("Error parsing LLM reply as ConversationQualityMetadata")
+            return None
 
     async def get_vector_embeddings_set(self,  tags):
         llm_embeddings = llm_openai()

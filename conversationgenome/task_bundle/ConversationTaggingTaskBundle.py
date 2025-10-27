@@ -10,7 +10,7 @@ import bittensor as bt
 from pydantic import BaseModel
 
 from conversationgenome.api.models.conversation import Conversation
-from conversationgenome.api.models.conversation_metadata import ConversationMetadata
+from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.LlmLib import LlmLib
@@ -42,6 +42,7 @@ class ConversationInput(BaseModel):
     guid: ForceStr
     data: ConversationInputData
     metadata: Optional[ConversationMetadata] = None
+    quality_score: Optional[int] = None
 
     def trim_input(self) -> None:
         max_lines = Utils._int(c.get('env', 'MAX_CONVO_LINES', 300))
@@ -54,9 +55,10 @@ class ConversationInput(BaseModel):
 class ConversationTaggingTaskBundle(TaskBundle):
     type: Literal["conversation_tagging"] = "conversation_tagging"
     input: Optional[ConversationInput] = None
+    _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 5))
 
     def is_ready(self) -> bool:
-        if self.input.metadata is not None and self.input.data.indexed_windows is not None:
+        if self.input.metadata is not None and self.input.data.indexed_windows is not None and self._check_conversation_quality():
             return True
         return False
 
@@ -64,7 +66,33 @@ class ConversationTaggingTaskBundle(TaskBundle):
         self.input.trim_input()
         self._split_conversation_in_windows()
         self._enforce_minimum_convo_windows()
-        await self._generate_metadata()
+        await self._get_conversation_quality()
+        # Only generate metadata and make bundle ready for conversations that pass quality threshold
+        if self._check_conversation_quality():
+            await self._generate_metadata()
+        else:
+            bt.logging.info(f"Conversation did not pass quality check or could not be validated. Skipping metadata generation.")
+
+    async def _get_conversation_quality(self) -> None:
+        bt.logging.info(f"Validating conversation quality")
+        llml = LlmLib()
+        conversation = Conversation(
+            guid=self.input.guid,
+            lines=self.input.data.lines,
+            participants=self.input.data.participants,
+            miner_task_prompt=self.input.data.prompt,
+        )
+        result: ConversationQualityMetadata|None = await llml.validate_conversation_quality(conversation=conversation)
+        if result:
+            # For now, only store quality score, down the line we can expand to store more detailed metadata if we want to use it
+            self.input.quality_score = result.quality_score
+        else:
+            bt.logging.error(f"ERROR - No conversation quality metadata returned. Aborting.")
+    
+    def _check_conversation_quality(self) -> bool:
+        if self.input.quality_score is not None:
+            return self.input.quality_score >= self._QUALITY_THRESHOLD
+        return False
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         tasks = []

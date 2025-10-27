@@ -3,10 +3,12 @@ import json
 import asyncio
 
 from conversationgenome.api.models.conversation import Conversation
+from conversationgenome.api.models.conversation_metadata import ConversationQualityMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.utils.Utils import Utils
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_openai import llm_openai
+from conversationgenome.llm.prompt_manager import prompt_manager
 
 
 Groq = None
@@ -65,8 +67,7 @@ class llm_groq:
         try:
             response = Utils.post_url(url, jsonData=data, headers=headers, timeout=http_timeout)
         except Exception as e:
-            print("Groq API Error", e)
-            print("response", response)
+            print("Groq API Error")
 
         return response
 
@@ -107,7 +108,7 @@ class llm_groq:
                 out['content'] = Utils.get(http_response, 'json.choices.0.message.content')
 
         except Exception as e:
-            print("GROQ API Error", e)
+            print("GROQ API Error")
 
         #raw_content = Utils.get(completion, "choices.0.message.content")
         out['success'] = 1
@@ -131,7 +132,7 @@ class llm_groq:
             print("No tagging response. Aborting")
             return None
         elif not response['success']:
-            print(f"Tagging failed: {response}. Aborting")
+            print(f"Tagging failed. Aborting")
             return response
 
         content = Utils.get(response, 'content')
@@ -162,13 +163,46 @@ class llm_groq:
                 out['vectors'] = await self.get_vector_embeddings_set(tags)
             out['success'] = True
         else:
-            print("No tags returned by OpenAI for Groq", response)
+            print("No tags returned by OpenAI for Groq")
             
         return RawMetadata(
             tags=out["tags"],
             vectors=out["vectors"],
             success=out["success"]
         )
+    
+    async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
+        conversation_xml, _ = Utils.generate_convo_xml(conversation)
+        prompt = prompt_manager.conversation_quality_prompt(transcript_text=conversation_xml)
+        try:
+            if not self.direct_call:
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format={"type": "json_object"},
+                )
+                if not completion.choices or not completion.choices[0].message.content:
+                    print("Warning: LLM returned a response with no choices or no content.")
+                    return None
+                response_content = completion.choices[0].message.content
+            else:
+                data = {
+                  "model": self.model,
+                  "messages": [{"role": "user", "content": prompt}],
+                }
+                http_response = self.do_direct_call(data)
+                response_content = Utils.get(http_response, 'json.choices.0.message.content')
+        except Exception as e:
+            print("Error in LLM call")
+            return None
+        
+        try:
+            return ConversationQualityMetadata(**json.loads(response_content))
+        except json.JSONDecodeError as e:
+            print("Error parsing LLM reply as ConversationQualityMetadata")
+            return None
 
     async def get_vector_embeddings_set(self,  tags):
         llm_embeddings = llm_openai()

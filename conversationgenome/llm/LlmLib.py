@@ -1,6 +1,9 @@
 from conversationgenome.ConfigLib import c
 from conversationgenome.api.models.conversation import Conversation
-from conversationgenome.api.models.conversation_metadata import ConversationMetadata
+from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
+from conversationgenome.llm.llm_anthropic import llm_anthropic
+from conversationgenome.llm.llm_groq import llm_groq
+from conversationgenome.llm.llm_openai import llm_openai
 from conversationgenome.mock.MockBt import MockBt
 
 verbose = False
@@ -15,7 +18,7 @@ except:
 
 class LlmLib:
     verbose = False
-    factory_llm = None
+    factory_llm:llm_openai|llm_groq|llm_anthropic = None
 
     async def generate_llm_instance(self, llm_type_override=None):
         if not llm_type_override:
@@ -57,6 +60,16 @@ class LlmLib:
 
         response = await self.factory_llm.conversation_to_metadata(conversation, generateEmbeddings=generateEmbeddings)
         return response
+    
+    async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+
+            if not self.factory_llm:
+                bt.logging.error("LLM not found. Aborting validate_conversation")
+                return
+
+        return await self.factory_llm.validate_conversation_quality(conversation)
 
     async def get_vector_embeddings_set(self, tags):
         if not self.factory_llm:

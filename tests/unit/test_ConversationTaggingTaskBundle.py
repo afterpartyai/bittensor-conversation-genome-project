@@ -41,6 +41,18 @@ def test_is_ready_false_when_no_metadata_or_windows(sample_input):
     assert not bundle.is_ready()
 
 
+def test_is_ready_false_when_quality_missing(sample_input):
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.quality_score = None
+    assert not bundle.is_ready()
+
+
+def test_is_ready_false_when_quality_below_threshold(sample_input):
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.quality_score = 5  # Assuming threshold is 6
+    assert not bundle.is_ready()
+
+
 def test_is_ready_true_when_metadata_and_windows(sample_input):
     bundle = DummyData.conversation_tagging_task_bundle()
     bundle.input.metadata = ConversationMetadata(participantProfiles=["Alice", "Bob"], tags=[], vectors={})
