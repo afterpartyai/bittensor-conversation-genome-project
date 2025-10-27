@@ -55,7 +55,7 @@ class ConversationInput(BaseModel):
 class ConversationTaggingTaskBundle(TaskBundle):
     type: Literal["conversation_tagging"] = "conversation_tagging"
     input: Optional[ConversationInput] = None
-    _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 6))
+    _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 5))
 
     def is_ready(self) -> bool:
         if self.input.metadata is not None and self.input.data.indexed_windows is not None and self._check_conversation_quality():
