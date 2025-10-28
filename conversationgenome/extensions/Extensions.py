@@ -6,17 +6,19 @@ class Extensions():
 
     @staticmethod
     def execute(className, methodName, params):
-        print(f"Running {className}.{methodName} with {params}...")
+        if Extensions.verbose:
+            print(f"Running {className}.{methodName} with {params}...")
         try:
-            #className = ".Metrics"
             module = importlib.import_module("."+className, package=__package__)
             classRef = getattr(module, className)
             instance = classRef()
         except Exception as e:
-            print(f"Module '{className}' not found. Skipping.")
+            if Extensions.verbose:
+                print(f"Module '{className}' not found. Skipping.")
             return
         if not hasattr(instance, methodName):
-            print(f"Method '{className}.{methodName}' not found. Skipping.")
+            if Extensions.verbose:
+                print(f"Method '{className}.{methodName}' not found. Skipping.")
             return
         method = getattr(instance, methodName)
         result = method(params)
