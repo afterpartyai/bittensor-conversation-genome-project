@@ -51,6 +51,7 @@ class ApiLib:
             http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
             options_str = c.get('env', 'CGP_API_OPTIONS', '')
             url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve"
+            print("____URL", url)
             if len(options_str) > 0:
                 options = options_str.split(",")
                 bt.logging.info(f"Read API options: {options}")

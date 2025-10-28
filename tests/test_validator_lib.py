@@ -1,5 +1,6 @@
 import pytest
 import random
+import json
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
@@ -58,6 +59,7 @@ async def test_full():
     for idx_convo in range(num_convos_per_buffer):
         batch_num = random.randint(100000, 9999999)
         full_conversation = await vl.reserve_conversation(batch_num=batch_num, return_indexed_windows=True)
+        print(json.dumps(full_conversation, default=str, indent=4)[0:300])
         if not full_conversation:
             continue
         conversation_guid = str(Utils.get(full_conversation, "guid"))
