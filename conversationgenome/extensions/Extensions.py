@@ -15,3 +15,8 @@ class Extensions():
         else: #except Exception as e:
             print(f"Module '{className}' not found. Skipping.")
             return
+        if not hasattr(instance, methodName):
+            print(f"Method '{className}.{methodName}' not found. Skipping.")
+            return
+        method = getattr(instance, methodName)
+        result = method(params)

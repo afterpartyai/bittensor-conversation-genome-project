@@ -158,7 +158,7 @@ class TemplateEmaTestCase(unittest.TestCase):
        assert scores[3] == pytest.approx(0.000000000000000, abs=1e-15)
        assert scores[4] == pytest.approx(1.0000000000000000, abs=1e-15)
        ext = Extensions.Extensions()
-       ext.execute("Metrics", "incStat", {})
+       ext.execute("Metrics", "incStat", {"metric_name":"test_ema_zeroes", "inc":2})
 
 
 
