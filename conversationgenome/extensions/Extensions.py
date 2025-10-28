@@ -1,0 +1,2 @@
+class Extensions():
+    verbose = True

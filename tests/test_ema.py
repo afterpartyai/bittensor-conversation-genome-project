@@ -6,6 +6,7 @@ import numpy as np
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.utils.Utils import Utils
+from conversationgenome.extensions import Extensions
 #
 from conversationgenome.validator.ValidatorLib import ValidatorLib
 from typing import List
