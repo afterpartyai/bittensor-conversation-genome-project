@@ -249,6 +249,9 @@ class Validator(BaseValidatorNeuron):
                     except:
                         miner_response = response
 
+                    print('RESPONSE')
+                    print(miner_response)
+                    print('###########################################################################################')
                     miner_result = miner_response[0]
                     miner_result = await task_bundle.format_results(miner_result)
 

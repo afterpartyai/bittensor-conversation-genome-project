@@ -9,6 +9,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from conversationgenome.ConfigLib import c
 from conversationgenome.base.miner import BaseMinerNeuron
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.task.Task import Task
@@ -95,6 +96,13 @@ def validator_with_mock_metagraph():
 
 @pytest.mark.asyncio
 async def test_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, validator_with_mock_metagraph):
+    # Set to true to override env vars and make test way quicker
+    if True:
+        c.set("validator", "miners_per_task", 2)
+        c.set("validator", "number_of_task_bundles", 2)
+        c.set("validator", "number_of_task_per_bundle", 2)
+        c.set("validator", "minimum_number_of_tasks", 2)
+    
     validator, miner = validator_with_mock_metagraph
 
     validator.scores = np.zeros(validator.metagraph.n, dtype=np.float32)
