@@ -1,6 +1,7 @@
 from conversationgenome.ConfigLib import c
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
+from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.llm.llm_anthropic import llm_anthropic
 from conversationgenome.llm.llm_groq import llm_groq
 from conversationgenome.llm.llm_openai import llm_openai
@@ -60,6 +61,16 @@ class LlmLib:
 
         response = await self.factory_llm.conversation_to_metadata(conversation, generateEmbeddings=generateEmbeddings)
         return response
+    
+    async def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata:
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+
+            if not self.factory_llm:
+                bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
+                return
+
+        return await self.factory_llm.survey_to_metadata(survey_question, comment)
     
     async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
         if not self.factory_llm:

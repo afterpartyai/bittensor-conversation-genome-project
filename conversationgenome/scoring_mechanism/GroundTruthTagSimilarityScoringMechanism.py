@@ -13,7 +13,7 @@ from conversationgenome.utils.Utils import Utils
 
 
 class GroundTruthTagSimilarityScoringMechanism(ScoringMechanism):
-    min_tags: ClassVar[int] = 3
+    min_tags: int = 3
     max_scored_tags: ClassVar[int] = 20
     verbose: ClassVar[bool] = False
     scoring_factors: ClassVar[dict] = {

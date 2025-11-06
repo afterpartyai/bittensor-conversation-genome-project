@@ -63,6 +63,33 @@ class llm_openai:
         if embeddings_model:
             self.embeddings_model = embeddings_model
 
+    async def basic_prompt(self, prompt: str, response_format=None) -> str:
+        try:
+            if not self.direct_call:
+                client = AsyncOpenAI()
+                completion = await client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format=response_format,
+                )
+                if not completion.choices or not completion.choices[0].message.content:
+                    print("Warning: LLM returned a response with no choices or no content.")
+                    return None
+                response_content = completion.choices[0].message.content
+            else:
+                data = {
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                completion = self.do_direct_call(data)
+                response_content = completion['json']['choices'][0]['message']['content']
+        except Exception as e:
+            print("Error in LLM call")
+            return None
+        return response_content
+
     # OpenAI Python library dependencies can conflict with other packages. Allow
     # direct call to API to bypass issues.
     def do_direct_call(self, data, url_path="/v1/chat/completions"):
@@ -119,34 +146,24 @@ class llm_openai:
 
         return RawMetadata(tags=out["tags"], vectors=out["vectors"], success=out["success"])
     
+    async def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
+        prompt = prompt_manager.survey_tag_prompt(survey_question, comment)
+        response_content = await self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        try:
+            tags = Utils.clean_tags(response_content.split(","))
+            vectors = await self.get_vector_embeddings_set(tags)
+        except Exception as e:
+            print("Error: Error generating vectors")
+            return None
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+    
     async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
         conversation_xml, _ = Utils.generate_convo_xml(conversation)
         prompt = prompt_manager.conversation_quality_prompt(transcript_text=conversation_xml)
-        try:
-            if not self.direct_call:
-                client = AsyncOpenAI()
-                completion = await client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "user", "content": prompt},
-                    ],
-                    response_format={"type": "json_object"},
-                )
-                if not completion.choices or not completion.choices[0].message.content:
-                    print("Warning: LLM returned a response with no choices or no content.")
-                    return None
-                response_content = completion.choices[0].message.content
-            else:
-                data = {
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                }
-                completion = self.do_direct_call(data)
-                response_content = completion['json']['choices'][0]['message']['content']
-        except Exception as e:
-            print("Error in LLM call")
-            return None
-        
+        response_content = await self.basic_prompt(prompt, response_format={"type": "json_object"})
         try:
             return ConversationQualityMetadata(**json.loads(response_content))
         except json.JSONDecodeError as e:

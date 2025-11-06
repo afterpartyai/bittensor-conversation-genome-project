@@ -1,7 +1,8 @@
 import json
-from typing import List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 import uuid
 
+import bittensor as bt
 from pydantic import BaseModel
 
 from conversationgenome.llm.LlmLib import LlmLib
@@ -33,16 +34,21 @@ class SurveyTaggingTaskInputData(BaseModel):
         """
     )
 
-
-class SurveyTaggingInput(BaseModel):
-    input_type: str = "survey_tagging"
-    guid: str
-    data: SurveyTaggingTaskInputData
-    # Main inputs for survey task
+class SurveyMetadata(BaseModel):
     survey_question: Optional[str] = None
     comment: Optional[str] = None
     possible_choices: Optional[list[str]] = None
     selected_choices: Optional[list[str]] = None
+
+    tags: List[str]
+    vectors: Dict[str, Dict[str, List[float]]]
+    participantProfiles: Optional[List[str]] = None
+
+class SurveyTaggingInput(BaseModel):
+    input_type: Literal['survey'] = "survey"
+    guid: str
+    data: SurveyTaggingTaskInputData
+    metadata: Optional[SurveyMetadata] = None
 
 class SurveyTaggingTaskBundle(TaskBundle):
     type: Literal["survey_tagging"] = "survey_tagging"
@@ -51,25 +57,31 @@ class SurveyTaggingTaskBundle(TaskBundle):
     def is_ready(self) -> bool:
         checks = [
             self.input is not None,
-            self.input.survey_question is not None,
-            self.input.comment is not None,
-            self.input.possible_choices is not None,
-            self.input.selected_choices is not None
+            self.input.metadata.survey_question is not None,
+            self.input.metadata.comment is not None,
+            self.input.metadata.possible_choices is not None,
+            self.input.metadata.selected_choices is not None
         ]
         return all(checks)
 
     async def setup(self) -> None:
-        self._parse_input_json()
+        await self._generate_metadata()
 
-    def _parse_input_json(self) -> None:
+    async def _generate_metadata(self) -> None:
+        bt.logging.info(f"Generating survey metadata for survey tagging task bundle {self.guid}")
         parsed_json = json.loads(self.input.data.lines[0][1])
-        self.input.survey_question = parsed_json['survey_question']
-        self.input.comment = parsed_json['comment']
-        self.input.possible_choices = parsed_json['possible_choices']
-        self.input.selected_choices = parsed_json['selected_choices']
+        llml = LlmLib()
+        self.input.metadata = SurveyMetadata(
+            tags=parsed_json['selected_choices'],
+            vectors= await llml.get_vector_embeddings_set(parsed_json['selected_choices']),
+            survey_question = parsed_json['survey_question'],
+            comment = parsed_json['comment'],
+            possible_choices = parsed_json['possible_choices'],
+            selected_choices = parsed_json['selected_choices']
+        )
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
-        return [self._generate_task for _ in range(number_of_tasks_per_bundle)]
+        return [self._generate_task() for _ in range(number_of_tasks_per_bundle)]
 
     def _generate_task(self) -> SurveyTaggingTask:
         random_id = str(uuid.uuid4())
@@ -83,8 +95,8 @@ class SurveyTaggingTaskBundle(TaskBundle):
             input = SurveyTaggingTaskInput(
                 guid=self.input.guid,
                 input_type=self.input.input_type,
-                survey_question=self.input.survey_question,
-                comment=self.input.comment
+                survey_question=self.input.metadata.survey_question,
+                comment=self.input.metadata.comment
             ),
             prompt_chain=self.prompt_chain,
             example_output=self.example_output
@@ -92,16 +104,10 @@ class SurveyTaggingTaskBundle(TaskBundle):
     
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
-        # Clean and validate tags for duplicates or whitespace matches
         llml = LlmLib()
         miner_result['tags'] = await Utils.validate_tag_set(llml=llml, tags=miner_result['original_tags'])
-        miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
-
+        miner_result['vectors'] = await llml.get_vector_embeddings_set(tags=miner_result['tags'])
         return miner_result
-    
-    async def _get_vector_embeddings_set(self, llml: LlmLib, tags):
-        response = await llml.get_vector_embeddings_set(tags)
-        return response
 
     def generate_result_logs(self, miner_result) -> str:
         return (
@@ -112,4 +118,5 @@ class SurveyTaggingTaskBundle(TaskBundle):
 
     async def evaluate(self, miner_responses):
         evaluator = GroundTruthTagSimilarityScoringMechanism()
+        evaluator.min_tags = 1  # Survey tagging may result in fewer tags, allowing evaluation with at least 1 tag
         return await evaluator.evaluate(self, miner_responses)

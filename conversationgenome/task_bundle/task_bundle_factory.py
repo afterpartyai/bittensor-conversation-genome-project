@@ -35,7 +35,5 @@ def try_parse_task_bundle(payload: Dict[str, Any]) -> Optional[TaskBundle]:
     try:
         return parse_task_bundle(payload)
     except ValidationError as e:
-        raise e
         print(f"Validation error: {e}")
         return None
-
