@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -129,6 +130,116 @@ class DummyData:
     @staticmethod
     def conversation_tagging_task() -> ConversationTaggingTask:
         return try_parse_task(DummyData.conversation_tagging_task_json())
+
+    @staticmethod
+    def survey_tagging_task_json() -> dict:
+        return {
+            "mode": "local",
+            "api_version": 1.4,
+            "guid": DummyData.task_guid(),
+            "bundle_guid": DummyData.guid(),
+            "type": "survey_tagging",
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "survey",
+                "guid": DummyData.guid(),
+                "survey_question": "What do you think about our mobile application?",
+                "comment": "It's very user-friendly and convenient."
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546888",
+                    "crc": 1321321,
+                    "title": "Infer tags from a conversation window",
+                    "name": "infer_tags_from_a_conversation_window",
+                    "description": "Returns tags representing the conversation as a whole from the window received.",
+                    "type": "inference",
+                    "input_path": "conversation",
+                    "prompt_template": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.:\n\n{{ input }}",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
+            ],
+            "example_output": {"tags": ["guitar", "barn", "farm", "nashville"], "type": "List[str]"},
+        }
+
+    @staticmethod
+    def survey_tagging_task_bundle_json() -> dict:
+        survey_tagging_task_guid = "1234567890"
+        survey_input_data =   {
+            "id": "EXAMPLE_001_SOFTWARE_ENGLISH",
+            "survey_question": "What did you like most about our new aCRM software? (Select all that apply)",
+            "comment": "The user interface is incredibly clean and intuitive, which makes training new team members a breeze. Also, the integration with our existing email client was seamless and saved us a lot of time.",
+            "possible_choices": [
+                "Affordable pricing",
+                "Easy to use / Intuitive UI",
+                "Advanced reporting features",
+                "Helpful customer support",
+                "Smooth Third-Party Integrations",
+                "High level of customization"
+            ],
+            "selected_choices": [
+                "Easy to use / Intuitive UI",
+                "Smooth Third-Party Integrations"
+            ]
+        }
+        survey_input_data_lines = [[0, json.dumps(survey_input_data)]]
+
+        survey_input_data_participants = ["UNKNOWN_SPEAKER"]
+        survey_input_data_total = 1
+
+        return {
+            "mode": "local",
+            "type": "survey_tagging",
+            "guid": survey_tagging_task_guid,
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "survey",
+                "guid": survey_tagging_task_guid,
+                "data": {
+                    "lines": survey_input_data_lines,
+                    "participants": survey_input_data_participants,
+                    "total": survey_input_data_total,
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546999",
+                    "crc": 32132132,
+                    "title": "Infer the survey answers from the given free-form comment",
+                    "name": "infer_tags_for_survey_from_comment",
+                    "description": "Returns selected survey answers from the content free-form comment and provided choices.",
+                    "type": "inference",
+                    "input_path": "survey",
+                    "prompt_template": """You are given information regarding a survey response, the data is in json format with the following fields: ["survey_question": str, "comment": str, "possible_choices": list]. Identify wich choices among the "possible choices" the user has made.  Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3""",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
+            ],
+            "example_output": {
+                "tags": ["guitar", "barn", "farm", "nashville"],
+                "type": "List[str]",
+            },
+            "errors": [],
+            "warnings": [],
+            "data_type": 1,
+            "job_type": "survey_metadata_generation",
+            "total": survey_input_data_total,
+            "guid": survey_tagging_task_guid,
+            "participants": survey_input_data_participants,
+            "lines": survey_input_data_lines,
+            "min_convo_windows": 0
+        }
+
+    @staticmethod
+    def survey_tagging_task() -> ConversationTaggingTask:
+        return try_parse_task(DummyData.survey_tagging_task_json())
+
+    @staticmethod
+    def survey_tagging_task_bundle() -> TaskBundle:
+        return try_parse_task_bundle(DummyData.survey_tagging_task_bundle_json())
 
     @staticmethod
     def conversation_tagging_task_bundle_json():

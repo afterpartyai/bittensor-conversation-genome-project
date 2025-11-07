@@ -55,14 +55,7 @@ class SurveyTaggingTaskBundle(TaskBundle):
     input: Optional[SurveyTaggingInput] = None
 
     def is_ready(self) -> bool:
-        checks = [
-            self.input is not None,
-            self.input.metadata.survey_question is not None,
-            self.input.metadata.comment is not None,
-            self.input.metadata.possible_choices is not None,
-            self.input.metadata.selected_choices is not None
-        ]
-        return all(checks)
+        return self.input is not None and self.input.metadata is not None
 
     async def setup(self) -> None:
         await self._generate_metadata()
