@@ -8,12 +8,12 @@ from pydantic import BaseModel
 from conversationgenome.llm.LlmLib import LlmLib
 from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import GroundTruthTagSimilarityScoringMechanism
 from conversationgenome.task.Task import Task
-from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask, SurveyTaggingTaskInput
+from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask, SurveyTaggingTaskInput, SurveyTaggingTaskInputData
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.Utils import Utils
 
 
-class SurveyTaggingTaskInputData(BaseModel):
+class SurveyInputData(BaseModel):
     # For now we reuse the conversation input data type but the API could be modified to simplify the task dispatching
     participants: List[str]
     lines: List[Tuple[int, str]]
@@ -47,7 +47,7 @@ class SurveyMetadata(BaseModel):
 class SurveyTaggingInput(BaseModel):
     input_type: Literal['survey'] = "survey"
     guid: str
-    data: SurveyTaggingTaskInputData
+    data: SurveyInputData
     metadata: Optional[SurveyMetadata] = None
 
 class SurveyTaggingTaskBundle(TaskBundle):
@@ -88,8 +88,10 @@ class SurveyTaggingTaskBundle(TaskBundle):
             input = SurveyTaggingTaskInput(
                 guid=self.input.guid,
                 input_type=self.input.input_type,
-                survey_question=self.input.metadata.survey_question,
-                comment=self.input.metadata.comment
+                data=SurveyTaggingTaskInputData(
+                    survey_question=self.input.metadata.survey_question,
+                    comment=self.input.metadata.comment
+                )
             ),
             prompt_chain=self.prompt_chain,
             example_output=self.example_output

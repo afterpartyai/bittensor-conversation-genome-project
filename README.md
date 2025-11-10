@@ -524,7 +524,7 @@ pm2 start "bash start_conversation_store.sh" --name <process name>
 If you want it to return a specific task for testing purposes, you can add the following body to the post:
 ```json
 {
-  "task_type": "conversation"|"website"|"survey",
+  "task_type": "<conversation|website|survey>",
   "task_guid": "<GUID>"
 }
 ```

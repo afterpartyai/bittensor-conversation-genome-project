@@ -72,6 +72,16 @@ class LlmLib:
 
         return await self.factory_llm.survey_to_metadata(survey_question, comment)
     
+    async def basic_prompt(self, prompt, response_format=None) -> RawMetadata:
+        if not self.factory_llm:
+            self.factory_llm = await self.generate_llm_instance()
+
+            if not self.factory_llm:
+                bt.logging.error("LLM not found. Aborting conversation_to_metadata.")
+                return
+
+        return await self.factory_llm.basic_prompt(prompt, response_format=response_format)
+    
     async def validate_conversation_quality(self, conversation: Conversation) -> ConversationQualityMetadata | None:
         if not self.factory_llm:
             self.factory_llm = await self.generate_llm_instance()

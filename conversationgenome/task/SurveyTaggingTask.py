@@ -7,12 +7,14 @@ from conversationgenome.utils.constants import TaskType
 from conversationgenome.llm.LlmLib import LlmLib
 
 
+class SurveyTaggingTaskInputData(BaseModel):
+    survey_question: Optional[str] = None
+    comment: Optional[str] = None
+
 class SurveyTaggingTaskInput(BaseModel):
     guid: str
     input_type: Literal["survey"]
-    # Main attributes
-    survey_question: Optional[str] = None
-    comment: Optional[str] = None
+    data: SurveyTaggingTaskInputData
 
 class SurveyTaggingTask(Task):
     type: Literal["survey_tagging"] = "survey_tagging"
@@ -21,7 +23,7 @@ class SurveyTaggingTask(Task):
     async def mine(self) -> dict[str, list]:
         try:
             llml = LlmLib()
-            res = await llml.survey_to_metadata(self.input.survey_question, self.input.comment)
+            res = await llml.survey_to_metadata(self.input.data.survey_question, self.input.data.comment)
             return {"tags": res.tags, "vectors": res.vectors}
         
         except Exception as e:
