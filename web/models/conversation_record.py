@@ -5,7 +5,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from conversationgenome.utils.types import ForceStr
+from Utils import ForceStr
 
 
 class Participant(BaseModel):
