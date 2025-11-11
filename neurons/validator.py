@@ -210,11 +210,15 @@ class Validator(BaseValidatorNeuron):
                 # Retry with the old synapse for 5xx
                 if uids_to_retry_old:
                     bt.logging.debug(f"Retrying requests for the following UIDs (old synapse): {uids_to_retry_old}")
-
+                    try:
+                        payload_lines = task.input.data.window
+                    except:
+                        # Fallback for non-conversation tasks
+                        payload_lines = f'Comment: {task.input.data.comment} Question: {task.input.data.survey_question}'
                     window_packet_old = {
                         "guid": "HIDDEN",
                         "window_idx": -1,
-                        "lines": task.input.data.window,
+                        "lines": payload_lines,
                         "task_prompt": task.prompt_chain[0].prompt_template,
                         "task_type": task.type,
                     }
