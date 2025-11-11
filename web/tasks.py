@@ -66,12 +66,7 @@ def get_conversation_task(conversation_guid = None):
         "errors": [],
         "warnings": [],
         "data_type": 1,
-        "job_type": "conversation_tagging",
-        "total": len(convo.get("lines")),
-        "guid": convo.get("guid"),
-        "participants": convo.get("participants"),
-        "lines": convo.get("lines"),
-        "min_convo_windows": 1,
+        "min_convo_windows": 1
     }
 
 def get_website_task(website_task_guid = None):
@@ -121,12 +116,7 @@ def get_website_task(website_task_guid = None):
         "errors": [],
         "warnings": [],
         "data_type": 1,
-        "job_type": "webpage_metadata_generation",
-        "total": webpage_markdown_input_data_total,
-        "guid": webpage_tagging_task_guid,
-        "participants": webpage_markdown_input_data_participants,
-        "lines": webpage_markdown_input_data_lines,
-        "min_convo_windows": 0,
+        "min_convo_windows": 0
     }
 
 def get_survey_task(survey_task_guid = None):
@@ -177,7 +167,7 @@ def get_survey_task(survey_task_guid = None):
                 "description": "Returns selected survey answers from the content free-form comment and provided choices.",
                 "type": "inference",
                 "input_path": "survey",
-                "prompt_template": """You are given information regarding a survey response, the data is in json format with the following fields: ["survey_question": str, "comment": str, "possible_choices": list]. Identify wich choices among the "possible choices" the user has made.  Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3""",
+                "prompt_template": "You are given information regarding a survey response, the data is in json format with the following fields: [survey_question: str, comment: str]. Analyze a participant's free-form survey comment to identify all reasons substantiated by the text. The comment may be in any language. Return a comma-delimited list of tags that summarize the core reasons mentioned in the comment. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
                 "output_variable": "final_output",
                 "output_type": "List[str]",
             }
@@ -189,10 +179,5 @@ def get_survey_task(survey_task_guid = None):
         "errors": [],
         "warnings": [],
         "data_type": 1,
-        "job_type": "survey_metadata_generation",
-        "total": survey_input_data_total,
-        "guid": survey_tagging_task_guid,
-        "participants": survey_input_data_participants,
-        "lines": survey_input_data_lines,
         "min_convo_windows": 0
     }
