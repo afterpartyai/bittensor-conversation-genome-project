@@ -9,6 +9,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from conversationgenome.ConfigLib import c
 from conversationgenome.base.miner import BaseMinerNeuron
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.task.Task import Task

@@ -11,6 +11,8 @@ from tests.mocks.DummyData import DummyData
 
 load_dotenv(find_dotenv(usecwd=True), override=False)
 
+# Set to True for faster tests with smaller task bundles
+fast_tests = False
 
 @pytest.fixture(autouse=True)
 def patch_random_and_config(monkeypatch):
@@ -41,6 +43,15 @@ def patch_random_and_config(monkeypatch):
         ("network", "mainnet"): 33,
         ("network", "testnet"): 138,
     }
+
+    if fast_tests:
+        defaults.update(
+            {
+                ("validator", "number_of_task_bundles"): 2,
+                ("validator", "number_of_task_per_bundle"): 2,
+                ("validator", "minimum_number_of_tasks"): 2
+            }
+        )
 
     def get(section, key, default=None):
         if section == "env":

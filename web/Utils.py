@@ -1,8 +1,10 @@
+from typing import Annotated
 import uuid
 import csv
 import json
 import time
 
+from pydantic import AfterValidator, BeforeValidator
 
 class Utils:
     @staticmethod
@@ -39,3 +41,18 @@ class Utils:
         import time
         return time.strftime(format_str)
 
+    @staticmethod
+    def _coerce_to_str(v):
+        if v is None:
+            raise ValueError("guid cannot be None")
+        return str(v)
+
+    @staticmethod
+    def _not_empty(v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("guid cannot be empty")
+        return v
+
+# Define types
+ForceStr = Annotated[str, BeforeValidator(Utils._coerce_to_str), AfterValidator(Utils._not_empty)]

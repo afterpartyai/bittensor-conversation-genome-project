@@ -1,6 +1,6 @@
 from typing import Literal
 
-TaskType = Literal["conversation_tagging", "webpage_metadata_generation"]
+TaskType = Literal["conversation_tagging", "webpage_metadata_generation", "survey_tagging"]
 ScoringMechanismType = Literal["ground_truth_tag_similarity_scoring"]
 PENALTIES = {
     "no_both_tags": {

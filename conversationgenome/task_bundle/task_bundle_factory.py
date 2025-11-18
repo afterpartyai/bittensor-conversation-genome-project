@@ -17,9 +17,10 @@ def _get_task_bundle_adapter() -> TypeAdapter:
     # ------------- Hardcoded imports / union -------------
     from conversationgenome.task_bundle.ConversationTaggingTaskBundle import ConversationTaggingTaskBundle
     from conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle import WebpageMetadataGenerationTaskBundle
+    from conversationgenome.task_bundle.SurveyTaggingTaskBundle import SurveyTaggingTaskBundle
 
     TaskBundleUnion = Annotated[
-        Union[ConversationTaggingTaskBundle, WebpageMetadataGenerationTaskBundle],
+        Union[ConversationTaggingTaskBundle, WebpageMetadataGenerationTaskBundle, SurveyTaggingTaskBundle],
         Field(discriminator="type"),
     ]
     _TASK_BUNDLE_ADAPTER = TypeAdapter(TaskBundleUnion)

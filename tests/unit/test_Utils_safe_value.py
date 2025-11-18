@@ -73,13 +73,22 @@ def test_safe_value_empty_numpy_array():
         (np.float64(-np.inf), 0.0),
         (float('inf'), 0.0),
         (float('-inf'), 0.0),
-        (np.float32(1.2345), 1.2345),
         (np.int64(42), 42),
     ],
 )
 def test_safe_value_scalars_various(v, expected):
     assert Utils.safe_value(v) == expected
 
+@pytest.mark.parametrize(
+    "v,expected",
+    [
+        (np.float32(1.2345), 1.2345),
+        (np.float32(10000.0), 10000.0),
+        (np.float32(0.000001), 0.000001)
+    ]
+)
+def test_safe_value_scalars_various_are_close(v, expected):
+    assert np.isclose(Utils.safe_value(v), expected)
 
 def test_safe_value_numpy_array_with_inf_pass_through():
     arr = np.array([1.0, np.inf, -np.inf, np.nan])

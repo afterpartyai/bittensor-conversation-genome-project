@@ -12,6 +12,11 @@ class PromptManager:
         if not transcript_text:
             raise ValueError("transcript_text cannot be empty.")
         return self._get("conversation_quality.j2", transcript_text=transcript_text)
+    
+    def survey_tag_prompt(self, survey_question: str, free_form_comment:str) -> str:
+        if not survey_question.strip() or not free_form_comment.strip():
+            raise ValueError("survey_question and comment cannot be empty.")
+        return self._get("survey_tag.j2", survey_question=survey_question, free_form_comment=free_form_comment)
 
     def _get(self, prompt_location: str, **kwargs) -> str:
         try:

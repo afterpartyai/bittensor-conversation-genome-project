@@ -15,7 +15,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-__version__ = "2.19.54"
+__version__ = "2.20.55"
 version_split = __version__.split(".")
 __spec_version__ = (
     (1000 * int(version_split[0]))
