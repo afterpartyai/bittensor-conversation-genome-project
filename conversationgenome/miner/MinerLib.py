@@ -5,7 +5,7 @@ from typing import Optional
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
-from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.miner.default_prompts import get_task_default_prompt
 from conversationgenome.mock.MockBt import MockBt
 from conversationgenome.task.Task import Task
@@ -40,7 +40,7 @@ class MinerLib:
     async def do_old_mining(self, conversation_guid, window_idx, conversation_window, minerUid, task_prompt: Optional[str], task_type: Optional[str], dryrun=False):
         out = {"uid": minerUid, "tags": [], "profiles": [], "convoChecksum": 11}
 
-        llml = LlmLib()
+        llml = get_llm_backend()
         lines = copy.deepcopy(conversation_window)
 
         # Default prompts is fetched here so no miners are penalized by an non-updated validator.

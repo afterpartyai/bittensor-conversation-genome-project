@@ -13,7 +13,7 @@ from conversationgenome.api.models.conversation_metadata import ConversationMeta
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.conversation.ConvoLib import ConvoLib
-from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.mock.MockBt import MockBt
 from conversationgenome.task.TaskLib import TaskLib
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
@@ -38,7 +38,7 @@ class ValidatorLib:
     mode = "test"  # test|local_llm|openai|anthropic
     hotkey = "v1234"
     verbose = False
-    llml = LlmLib()
+    llml = get_llm_backend()
     readyai_api_key = None
 
     def __init__(self):
@@ -340,7 +340,7 @@ class ValidatorLib:
         else:
             bt.logging.info(f"Execute generate_full_convo_metadata")
 
-        llml = LlmLib()
+        llml = get_llm_backend()
         self.llml = llml
         result: RawMetadata = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
 
@@ -362,8 +362,7 @@ class ValidatorLib:
         return True
 
     async def prompt_call_csv(self, convoXmlStr=None, participants=None, override_prompt=None):
-        llml = LlmLib()
-        return await llml.prompt_call_csv(convoXmlStr, participants, override_prompt)
+        return None
 
     async def validate_tag_set(self, originalTagList):
         cleanTagList = Utils.get_clean_tag_set(originalTagList)

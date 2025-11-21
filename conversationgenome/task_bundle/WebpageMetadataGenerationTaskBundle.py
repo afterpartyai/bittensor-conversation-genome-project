@@ -13,7 +13,9 @@ from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
+
 from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
     GroundTruthTagSimilarityScoringMechanism,
 )
@@ -113,12 +115,10 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
 
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
-
         # Clean and validate tags for duplicates or whitespace matches
-        llml = LlmLib()
-        miner_result['tags'] = await Utils.validate_tag_set(llml=llml, tags=miner_result['original_tags'])
+        llml = get_llm_backend()
+        miner_result['tags'] = await llml.validate_tag_set(tags=miner_result['original_tags'])
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
-
         return miner_result
 
     async def evaluate(self, miner_responses):
@@ -155,7 +155,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
     async def _generate_metadata(self) -> None:
         bt.logging.info(f"Generating metadata")
 
-        llml = LlmLib()
+        llml = get_llm_backend()
 
         conversation = Conversation(
             guid=self.input.guid,
@@ -180,5 +180,4 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         )
 
     async def _get_vector_embeddings_set(self, llml: LlmLib, tags):
-        response = await llml.get_vector_embeddings_set(tags)
-        return response
+        return llml.get_vector_embeddings_set(tags)

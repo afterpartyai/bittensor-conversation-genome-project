@@ -5,12 +5,11 @@ import uuid
 import bittensor as bt
 from pydantic import BaseModel
 
-from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import GroundTruthTagSimilarityScoringMechanism
 from conversationgenome.task.Task import Task
 from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask, SurveyTaggingTaskInput, SurveyTaggingTaskInputData
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
-from conversationgenome.utils.Utils import Utils
 
 
 class SurveyInputData(BaseModel):
@@ -63,7 +62,7 @@ class SurveyTaggingTaskBundle(TaskBundle):
     async def _generate_metadata(self) -> None:
         bt.logging.info(f"Generating survey metadata for survey tagging task bundle {self.guid}")
         parsed_json = json.loads(self.input.data.lines[0][1])
-        llml = LlmLib()
+        llml = get_llm_backend()
         self.input.metadata = SurveyMetadata(
             tags=parsed_json['selected_choices'],
             vectors= await llml.get_vector_embeddings_set(parsed_json['selected_choices']),
@@ -99,8 +98,8 @@ class SurveyTaggingTaskBundle(TaskBundle):
     
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
-        llml = LlmLib()
-        miner_result['tags'] = await Utils.validate_tag_set(llml=llml, tags=miner_result['original_tags'])
+        llml = get_llm_backend()
+        miner_result['tags'] = await llml.validate_tag_set(tags=miner_result['original_tags'])
         miner_result['vectors'] = await llml.get_vector_embeddings_set(tags=miner_result['tags'])
         return miner_result
 

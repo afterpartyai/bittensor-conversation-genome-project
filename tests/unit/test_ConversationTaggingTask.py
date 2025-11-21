@@ -5,11 +5,11 @@ import pytest
 
 from tests.mocks.DummyData import DummyData
 
-
+# TODO FIX THOSE TESTS
 @pytest.mark.asyncio
 async def test_mine_returns_expected_tags_and_vectors():
     # Mock LlmLib and its conversation_to_metadata method
-    with patch("conversationgenome.task.ConversationTaggingTask.LlmLib") as MockLlmLib:
+    with patch("conversationgenome.llm.") as MockLlmLib:
         mock_llml = MockLlmLib.return_value
         mock_result = AsyncMock()
         mock_result.tags = ["greeting"]

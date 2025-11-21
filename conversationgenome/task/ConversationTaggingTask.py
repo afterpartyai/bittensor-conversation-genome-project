@@ -7,7 +7,7 @@ import bittensor as bt
 from pydantic import BaseModel
 
 from conversationgenome.api.models.conversation import Conversation
-from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.task.Task import Task
 
 
@@ -28,7 +28,7 @@ class ConversationTaggingTask(Task):
     input: Optional[ConversationTaskInput] = None
 
     async def mine(self) -> dict[str, list]:
-        llml = LlmLib()
+        llml = get_llm_backend()
 
         try:
             conversation = Conversation(
