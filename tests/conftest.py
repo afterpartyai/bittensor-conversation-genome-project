@@ -86,15 +86,6 @@ def fake_libs(monkeypatch):
             self.calls["reserve_task_bundle"] += 1
             return DummyData.conversation_tagging_task_bundle()
 
-        async def get_convo_metadata(self, *a, **k):
-            return DummyData.metadata()
-
-        async def validate_tag_set(self, tags):
-            return DummyData.tags()
-
-        async def get_vector_embeddings_set(self, tags):
-            return DummyData.vectors()
-
         async def put_task(self, *a, **k):
             self.calls["put_task"] += 1
             return True
