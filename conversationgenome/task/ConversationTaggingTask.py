@@ -37,7 +37,7 @@ class ConversationTaggingTask(Task):
                 miner_task_prompt=self.prompt_chain[0].prompt_template,
             )
 
-            result = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)
+            result = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)
             output = {"tags": result.tags, "vectors": result.vectors}
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")

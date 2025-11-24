@@ -117,7 +117,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         miner_result['original_tags'] = miner_result['tags']
         # Clean and validate tags for duplicates or whitespace matches
         llml = get_llm_backend()
-        miner_result['tags'] = await llml.validate_tag_set(tags=miner_result['original_tags'])
+        miner_result['tags'] = llml.validate_tag_set(tags=miner_result['original_tags'])
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
         return miner_result
 
@@ -164,7 +164,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
             miner_task_prompt=self.input.data.prompt,
         )
 
-        result: RawMetadata = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
+        result: RawMetadata = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
 
         if not result:
             bt.logging.error(f"ERROR:2873226353. No metadata returned. Aborting.")

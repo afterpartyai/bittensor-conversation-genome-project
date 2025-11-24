@@ -1,6 +1,6 @@
 # tests/conftest.py
 import os
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from dotenv import find_dotenv
@@ -69,14 +69,6 @@ def patch_uids(monkeypatch):
 
     assert validator_module.conversationgenome.utils.uids is uids
     monkeypatch.setattr(uids, "get_random_uids", lambda self, k: [0, 1, 2][:k])
-
-@pytest.fixture(autouse=True)
-def patch_llm_backend(monkeypatch):
-    import conversationgenome.llm.llm_factory as llm_factory
-    llml = LlmOpenAI()
-    llml.basic_prompt = Mock(side_effect=lambda x:"")
-    llml.get_vector_embeddings = Mock(side_effect=lambda x:"")
-    monkeypatch.setattr(llm_factory, "get_llm_backend", lambda x:llml)
 
 
 @pytest.fixture

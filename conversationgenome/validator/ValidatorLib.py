@@ -342,7 +342,7 @@ class ValidatorLib:
 
         llml = get_llm_backend()
         self.llml = llml
-        result: RawMetadata = await llml.conversation_to_metadata(convo, generateEmbeddings=True)
+        result: RawMetadata = llml.conversation_to_metadata(convo, generateEmbeddings=True)
 
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")

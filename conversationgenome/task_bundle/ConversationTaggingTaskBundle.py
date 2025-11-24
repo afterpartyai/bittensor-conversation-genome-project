@@ -83,7 +83,7 @@ class ConversationTaggingTaskBundle(TaskBundle):
             participants=self.input.data.participants,
             miner_task_prompt=self.input.data.prompt,
         )
-        result: ConversationQualityMetadata|None = await llml.validate_conversation_quality(conversation=conversation)
+        result: ConversationQualityMetadata|None = llml.validate_conversation_quality(conversation=conversation)
         if result:
             # For now, only store quality score, down the line we can expand to store more detailed metadata if we want to use it
             self.input.quality_score = result.quality_score

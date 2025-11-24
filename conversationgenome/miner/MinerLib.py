@@ -29,6 +29,7 @@ class MinerLib:
     verbose = False
 
     async def do_mining(self, task: Task):
+        print(f"Miner: Received {task.type} task for mining...")
         bt.logging.info(f"Miner: Received {task.type} task for mining...")
 
         result = await task.mine()
@@ -58,7 +59,7 @@ class MinerLib:
             bt.logging.error(f"Wrong task type {task_type} provided to miner. Falling back to None.")
             conversation = Conversation(guid=conversation_guid, lines=lines, miner_task_prompt=task_prompt, miner_task_type=None)
 
-        result = await llml.conversation_to_metadata(conversation=conversation)
+        result = llml.conversation_to_metadata(conversation=conversation)
 
         out["tags"] = result.tags
         out["vectors"] = result.vectors

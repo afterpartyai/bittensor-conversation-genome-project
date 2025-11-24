@@ -65,7 +65,7 @@ class SurveyTaggingTaskBundle(TaskBundle):
         llml = get_llm_backend()
         self.input.metadata = SurveyMetadata(
             tags=parsed_json['selected_choices'],
-            vectors= await llml.get_vector_embeddings_set(parsed_json['selected_choices']),
+            vectors= llml.get_vector_embeddings_set(parsed_json['selected_choices']),
             survey_question = parsed_json['survey_question'],
             comment = parsed_json['comment'],
             possible_choices = parsed_json['possible_choices'],
@@ -99,8 +99,8 @@ class SurveyTaggingTaskBundle(TaskBundle):
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
         llml = get_llm_backend()
-        miner_result['tags'] = await llml.validate_tag_set(tags=miner_result['original_tags'])
-        miner_result['vectors'] = await llml.get_vector_embeddings_set(tags=miner_result['tags'])
+        miner_result['tags'] = llml.validate_tag_set(tags=miner_result['original_tags'])
+        miner_result['vectors'] = llml.get_vector_embeddings_set(tags=miner_result['tags'])
         return miner_result
 
     def generate_result_logs(self, miner_result) -> str:
