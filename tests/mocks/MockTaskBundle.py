@@ -1,6 +1,8 @@
-from asyncio import Task
+
 from copy import deepcopy
 from unittest.mock import MagicMock
+
+from conversationgenome.task.Task import Task
 
 
 class MockTask:

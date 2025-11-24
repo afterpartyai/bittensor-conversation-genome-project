@@ -55,7 +55,7 @@ class LlmLib(ABC):
     ###############################################################################################
     ########################################## Prompts ############################################
     ###############################################################################################
-    def conversation_to_metadata(self, conversation: Conversation, generateEmbeddings=False) -> ConversationMetadata:
+    def conversation_to_metadata(self, conversation: Conversation, generateEmbeddings=False) -> RawMetadata|None:
         convo_xml, participants = Utils.generate_convo_xml(conversation)
         prompt = prompt_manager.conversation_to_metadata_prompt(convo_xml)
         response_content = self.basic_prompt(prompt)
@@ -73,7 +73,7 @@ class LlmLib(ABC):
         if generateEmbeddings:
             vectors = self.get_vector_embeddings_set(tags)
 
-        return ConversationMetadata(tags=tags, vectors=vectors)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
 
     def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
         prompt = prompt_manager.survey_tag_prompt(survey_question, comment)
