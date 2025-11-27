@@ -26,6 +26,7 @@ from conversationgenome.ConfigLib import c
 from conversationgenome.miner.MinerLib import MinerLib
 from conversationgenome.protocol import CgSynapse
 from conversationgenome.task import Task
+from conversationgenome.task.task_factory import parse_task
 from conversationgenome.utils.Utils import Utils
 
 
@@ -50,7 +51,8 @@ class Miner(BaseMinerNeuron):
         ml = MinerLib()
 
         try:
-            task: Task = synapse.cgp_input[0]["task"]
+            task: Task = parse_task(synapse.cgp_input[0]["task"])
+
             bt.logging.info(f"Miner received task of type {task.type}")
             result = await ml.do_mining(task=task)
         except Exception as e:
