@@ -1,6 +1,5 @@
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationQualityMetadata
-from conversationgenome.llm.LlmLib import LlmLib
 from conversationgenome.llm.llm_factory import get_llm_backend
 from tests.mocks.DummyTranscripts import (
     high_quality_transcript,
