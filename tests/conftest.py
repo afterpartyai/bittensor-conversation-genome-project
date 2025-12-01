@@ -1,18 +1,19 @@
 # tests/conftest.py
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from dotenv import find_dotenv
 from dotenv import load_dotenv
 
+from conversationgenome.llm.llm_openai import LlmOpenAI
 import neurons.validator as validator_module
 from tests.mocks.DummyData import DummyData
 
 load_dotenv(find_dotenv(usecwd=True), override=False)
 
 # Set to True for faster tests with smaller task bundles
-fast_tests = False
+fast_tests = True
 
 @pytest.fixture(autouse=True)
 def patch_random_and_config(monkeypatch):

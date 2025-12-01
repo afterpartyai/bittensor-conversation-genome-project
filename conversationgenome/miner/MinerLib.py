@@ -5,7 +5,7 @@ from typing import Optional
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.ConfigLib import c
-from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.miner.default_prompts import get_task_default_prompt
 from conversationgenome.mock.MockBt import MockBt
 from conversationgenome.task.Task import Task
@@ -29,6 +29,7 @@ class MinerLib:
     verbose = False
 
     async def do_mining(self, task: Task):
+        print(f"Miner: Received {task.type} task for mining...")
         bt.logging.info(f"Miner: Received {task.type} task for mining...")
 
         result = await task.mine()

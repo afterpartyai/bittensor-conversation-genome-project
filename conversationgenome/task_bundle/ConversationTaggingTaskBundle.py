@@ -14,6 +14,7 @@ from conversationgenome.api.models.conversation_metadata import ConversationMeta
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
     GroundTruthTagSimilarityScoringMechanism,
 )
@@ -75,14 +76,14 @@ class ConversationTaggingTaskBundle(TaskBundle):
 
     async def _get_conversation_quality(self) -> None:
         bt.logging.info(f"Validating conversation quality")
-        llml = LlmLib()
+        llml = get_llm_backend()
         conversation = Conversation(
             guid=self.input.guid,
             lines=self.input.data.lines,
             participants=self.input.data.participants,
             miner_task_prompt=self.input.data.prompt,
         )
-        result: ConversationQualityMetadata|None = await llml.validate_conversation_quality(conversation=conversation)
+        result: ConversationQualityMetadata|None = llml.validate_conversation_quality(conversation=conversation)
         if result:
             # For now, only store quality score, down the line we can expand to store more detailed metadata if we want to use it
             self.input.quality_score = result.quality_score
@@ -129,13 +130,10 @@ class ConversationTaggingTaskBundle(TaskBundle):
 
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
-
         # Clean and validate tags for duplicates or whitespace matches
-        llml = LlmLib()
-
-        miner_result['tags'] = await Utils.validate_tag_set(llml=llml, tags=miner_result['original_tags'])
+        llml = get_llm_backend()
+        miner_result['tags'] = llml.validate_tag_set(miner_result['original_tags'])
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
-
         return miner_result
 
     def generate_result_logs(self, miner_result) -> str:
@@ -186,17 +184,14 @@ class ConversationTaggingTaskBundle(TaskBundle):
 
     async def _generate_metadata(self) -> None:
         bt.logging.info(f"Generating metadata")
-
-        llml = LlmLib()
-
+        llml = get_llm_backend()
         conversation = Conversation(
             guid=self.input.guid,
             lines=self.input.data.lines,
             participants=self.input.data.participants,
             miner_task_prompt=self.input.data.prompt,
         )
-
-        result: RawMetadata = await llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
+        result: RawMetadata = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
 
         if not result:
             bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
@@ -213,5 +208,4 @@ class ConversationTaggingTaskBundle(TaskBundle):
         )
 
     async def _get_vector_embeddings_set(self, llml: LlmLib, tags):
-        response = await llml.get_vector_embeddings_set(tags)
-        return response
+        return llml.get_vector_embeddings_set(tags)

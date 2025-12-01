@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 from unittest.mock import patch
 
 import pytest
@@ -85,7 +85,7 @@ def test_enforce_minimum_convo_windows_removes_windows_if_not_enough(sample_inpu
 async def test_format_results_validates_and_embeds_tags(sample_input):
     bundle = DummyData.conversation_tagging_task_bundle()
     miner_result = {"tags": ["tag1", "tag2"]}
-    with patch("conversationgenome.utils.Utils.Utils.validate_tag_set", AsyncMock(return_value=["tag1", "tag2"])):
+    with patch("conversationgenome.llm.LlmLib.LlmLib.validate_tag_set", Mock(return_value=["tag1", "tag2"])):
         with patch.object(bundle, "_get_vector_embeddings_set", AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})):
             result = await bundle.format_results(miner_result)
     assert result["original_tags"] == ["tag1", "tag2"]

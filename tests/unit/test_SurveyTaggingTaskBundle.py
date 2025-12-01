@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 from unittest.mock import patch
 
 import pytest
@@ -27,8 +27,8 @@ def test_is_ready_true_when_metadata():
 async def test_format_results_validates_and_embeds_tags():
     bundle = DummyData.survey_tagging_task_bundle()
     miner_result = {"tags": ["tag1", "tag2"]}
-    with patch("conversationgenome.utils.Utils.Utils.validate_tag_set", AsyncMock(return_value=["tag1", "tag2"])):
-        with patch("conversationgenome.llm.LlmLib.LlmLib.get_vector_embeddings_set", AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})):
+    with patch("conversationgenome.llm.LlmLib.LlmLib.validate_tag_set", Mock(return_value=["tag1", "tag2"])):
+        with patch("conversationgenome.llm.LlmLib.LlmLib.get_vector_embeddings_set", Mock(return_value={"tag1": [0.1], "tag2": [0.2]})):
             result = await bundle.format_results(miner_result)
     assert result["original_tags"] == ["tag1", "tag2"]
     assert result["tags"] == ["tag1", "tag2"]
