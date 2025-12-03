@@ -247,6 +247,7 @@ class ValidatorLib:
 
         # Assign burn allocation if requested
         if burn_uid is not None and burn_rate > 0:
+            bt.logging.debug(f"Burning {burn_rate} to UID {burn_uid}")
             raw_weights[int(burn_uid)] = burn_rate
 
         # Final sanity normalization: ensure sum of weights == 1 (or zeros if everything zero)

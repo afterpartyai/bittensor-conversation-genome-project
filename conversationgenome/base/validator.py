@@ -234,12 +234,14 @@ class BaseValidatorNeuron(BaseNeuron):
             "SubnetOwnerHotkey",
             params=[self.config.netuid],
         )
+        bt.logging.debug(f"Burn key (Subnet Owner Hotkey): {sn_owner_hotkey}")
 
         # Get the UID of this hotkey
         sn_owner_uid = self.subtensor.get_uid_for_hotkey_on_subnet(
             hotkey_ss58=sn_owner_hotkey,
             netuid=self.config.netuid,
         )
+        bt.logging.debug(f"Burn UID: {sn_owner_uid}")
 
         return sn_owner_uid
 
