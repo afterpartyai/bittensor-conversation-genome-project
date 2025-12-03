@@ -10,6 +10,7 @@ from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechani
 from conversationgenome.task.Task import Task
 from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask, SurveyTaggingTaskInput, SurveyTaggingTaskInputData
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
+from conversationgenome.utils.types import ForceStr
 
 
 class SurveyInputData(BaseModel):
@@ -45,7 +46,7 @@ class SurveyMetadata(BaseModel):
 
 class SurveyTaggingInput(BaseModel):
     input_type: Literal['survey'] = "survey"
-    guid: str
+    guid: ForceStr
     data: SurveyInputData
     metadata: Optional[SurveyMetadata] = None
 
