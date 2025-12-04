@@ -253,3 +253,28 @@ async def test_forward_handles_missing_cgp_output(bare_validator, fake_libs, mon
 
     result = await validator.forward(test_mode=True)
     assert result is True
+
+
+def test_get_burn_uid(bare_validator):
+    """Ensure `get_burn_uid` queries the subnet owner hotkey and resolves its UID."""
+    v = bare_validator
+
+    # Prepare expected values and mocks
+    expected_hotkey = "owner_hk"
+    expected_uid = 1234
+
+    # Ensure netuid is defined on config (bare_validator provides one)
+    v.config.netuid = 99
+
+    # Mock subtensor with the two calls used in get_burn_uid
+    v.subtensor = MagicMock()
+    v.subtensor.query_subtensor.return_value = expected_hotkey
+    v.subtensor.get_uid_for_hotkey_on_subnet.return_value = expected_uid
+
+    # Call the method under test
+    uid = v.get_burn_uid()
+
+    # Assertions
+    assert uid == expected_uid
+    v.subtensor.query_subtensor.assert_called_once_with("SubnetOwnerHotkey", params=[v.config.netuid])
+    v.subtensor.get_uid_for_hotkey_on_subnet.assert_called_once_with(hotkey_ss58=expected_hotkey, netuid=v.config.netuid)

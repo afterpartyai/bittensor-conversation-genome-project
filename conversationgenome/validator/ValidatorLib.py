@@ -178,54 +178,102 @@ class ValidatorLib:
 
         return y_scaled
 
-    def get_raw_weights(self, scores):
+    def get_raw_weights(
+        self,
+        scores,
+        burn_uid: Optional[int] = None,
+        burn_rate: Optional[float] = 0.0,
+    ):
         if scores is None or scores.size == 0 or np.isnan(scores).any():
             bt.logging.error("Nan detected in Weights. Returning None.")
             return None
 
-        raw_weights = np.copy(scores)
+        burn_rate = max(0.0, min(1.0, burn_rate))
 
-        # Order the UIDs for weight assignment
-        ordered_uids = np.argsort(raw_weights)[::-1]
-        zero_uids = np.where(raw_weights == 0)[0]
+        # If burn_uid is invalid index, ignore burn
+        if burn_uid is not None:
+            if not (0 <= int(burn_uid) < scores.shape[0]):
+                # bt.logging.warning(f"Invalid burn_uid {burn_uid}; ignoring burn allocation")
+                burn_uid = None
 
-        # Determine if there are any ties in raw_weights
-        unique_weights, counts = np.unique(raw_weights, return_counts=True)
+        # Prepare arrays
+        original_scores = np.copy(scores)
+        raw_weights = np.zeros_like(original_scores, dtype=float)
+
+        distributed_weights = max(0.0, 1.0 - burn_rate)
+
+        # Order the UIDs for weight assignment (based on original scores)
+        ordered_uids = np.argsort(original_scores)[::-1]
+        zero_uids = np.where(original_scores == 0)[0]
+
+        # Determine if there are any ties in original_scores
+        unique_weights, counts = np.unique(original_scores, return_counts=True)
         ties = unique_weights[counts > 1]
 
         # If there are ties, randomly shuffle the order of tied UIDs
         for tie in ties:
             if tie == 0:
                 continue
-            # Find the indices in raw_weights that have the tied value
-            tied_indices = np.nonzero(raw_weights == tie)[0]
-
-            # Find the positions of these tied indices within ordered_uids
+            tied_indices = np.nonzero(original_scores == tie)[0]
             positions_in_ordered_uids = np.nonzero(np.isin(ordered_uids, tied_indices))[0]
-
-            # Shuffle these positions amongst themselves
             shuffled_positions = np.random.permutation(positions_in_ordered_uids)
-
-            # Apply the shuffle to ordered_uids
             ordered_uids[positions_in_ordered_uids] = ordered_uids[shuffled_positions]
 
-        # Calculate proper length for calculating weight values
-        num_uids = len(ordered_uids) - len(zero_uids)
+        # Build the list of uids that should receive distributed weights (exclude zeros and burn_uid)
         ordered_uids_no_zeros = ordered_uids[~np.isin(ordered_uids, zero_uids)]
-        # calculate proper weight values for each non-zero uid
-        if num_uids > 0:
-            for i, uid in enumerate(ordered_uids_no_zeros):
-                weight = self.transposed_cubic_distribution(i, num_uids)
+        if burn_uid is not None:
+            ordered_uids_no_zeros = ordered_uids_no_zeros[ordered_uids_no_zeros != burn_uid]
 
-                # Assign the weight to the raw_weights tensor
-                if weight:
-                    raw_weights[uid] = weight
+        num_uids = len(ordered_uids_no_zeros)
+
+        # If there are non-burn uids to allocate to, compute their base weights
+        if num_uids > 0 and distributed_weights > 0:
+            temp_weights = np.zeros_like(original_scores, dtype=float)
+            for i, uid in enumerate(ordered_uids_no_zeros):
+                w = self.transposed_cubic_distribution(i, num_uids)
+                if w:
+                    temp_weights[uid] = w
                 else:
                     bt.logging.error("Error in Weights calculation. Setting this UID to 0")
-                    raw_weights[uid] = 0
+                    temp_weights[uid] = 0.0
 
-            # Normalize the final raw_weights
-            raw_weights = raw_weights / np.sum(np.abs(raw_weights))
+            sum_temp = float(np.sum(np.abs(temp_weights)))
+            if sum_temp > 0:
+                # scale non-burn weights to sum to `distributed_weights`
+                scale = distributed_weights / sum_temp
+                raw_weights += temp_weights * scale
+            else:
+                bt.logging.warning("Computed non-burn weights sum to 0; leaving distributed weights as zeros")
+
+        # Assign burn allocation if requested
+        if burn_uid is not None and burn_rate > 0:
+            bt.logging.debug(f"Burning {burn_rate} to UID {burn_uid}")
+            raw_weights[int(burn_uid)] = burn_rate
+
+        # Final sanity normalization: ensure sum of weights == 1 (or zeros if everything zero)
+        total = float(np.sum(np.abs(raw_weights)))
+        if total > 0:
+            # Minor re-normalization to correct numerical drift (preserve burn_uid exact proportion)
+            # If burn_uid present, ensure it remains burn_rate after normalization
+            if burn_uid is not None and burn_rate > 0:
+                # Preserve burn as exact fraction of final sum
+                others_sum = total - abs(raw_weights[int(burn_uid)])
+                if others_sum > 0:
+                    # scale others so burn == burn_rate and others == distributed_weights
+                    current_burn = abs(raw_weights[int(burn_uid)])
+                    if current_burn != burn_rate:
+                        # scale factor to map current_burn -> burn_rate while preserving non-burn ratios
+                        factor = (1.0 - burn_rate) / others_sum
+                        for i in range(len(raw_weights)):
+                            if i == int(burn_uid):
+                                raw_weights[i] = burn_rate
+                            else:
+                                raw_weights[i] = raw_weights[i] * factor
+                else:
+                    # only burn exists; normalize directly
+                    raw_weights[int(burn_uid)] = burn_rate
+            else:
+                raw_weights = raw_weights / total
 
         return raw_weights
 
