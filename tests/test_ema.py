@@ -46,7 +46,7 @@ class TemplateEmaTestCase(unittest.TestCase):
        assert np.isnan(scores).any() == False
        assert ema_scores[0] == pytest.approx(0.1, abs=1e-3)
        assert ema_scores[1] == pytest.approx(0.1900, abs=1e-3)
-       assert ema_scores[2] == pytest.approx(0.2700, abs=1e-3)       
+       assert ema_scores[2] == pytest.approx(0.2700, abs=1e-3)
        assert ema_scores[3] == pytest.approx(0.3900, abs=1e-3)
        assert ema_scores[4] == pytest.approx(0.5, abs=1e-3)
        assert scores[0] == pytest.approx(0.0047, abs=1e-3)

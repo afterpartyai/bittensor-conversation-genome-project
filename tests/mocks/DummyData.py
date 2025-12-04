@@ -6,6 +6,7 @@ from typing import Tuple
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
 from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
+from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask
 from conversationgenome.task.task_factory import try_parse_task
 from conversationgenome.task_bundle.task_bundle_factory import try_parse_task_bundle
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
@@ -107,7 +108,7 @@ class DummyData:
                     "prompt": "Analyze conversation in terms of topic interests of the participants. Analyze the conversation (provided in structured XML format) where <p0> has the questions and <p1> has the answers . Return comma-delimited tags.  Only return the tags without any English commentary.:\n\n{{ input }}",
                     "min_convo_windows": 1,
                 },
-                "quality_score": 9
+                "quality_score": 9,
             },
             "prompt_chain": [
                 {
@@ -143,8 +144,10 @@ class DummyData:
             "input": {
                 "input_type": "survey",
                 "guid": DummyData.guid(),
-                "survey_question": "What do you think about our mobile application?",
-                "comment": "It's very user-friendly and convenient."
+                "data": {
+                    "survey_question": "What do you think about our mobile application?",
+                    "comment": "It's very user-friendly and convenient."
+                }
             },
             "prompt_chain": [
                 {
@@ -234,7 +237,7 @@ class DummyData:
         }
 
     @staticmethod
-    def survey_tagging_task() -> ConversationTaggingTask:
+    def survey_tagging_task() -> SurveyTaggingTask:
         return try_parse_task(DummyData.survey_tagging_task_json())
 
     @staticmethod

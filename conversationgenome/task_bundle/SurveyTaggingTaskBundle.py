@@ -5,12 +5,12 @@ import uuid
 import bittensor as bt
 from pydantic import BaseModel
 
-from conversationgenome.llm.LlmLib import LlmLib
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import GroundTruthTagSimilarityScoringMechanism
 from conversationgenome.task.Task import Task
 from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask, SurveyTaggingTaskInput, SurveyTaggingTaskInputData
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
-from conversationgenome.utils.Utils import Utils
+from conversationgenome.utils.types import ForceStr
 
 
 class SurveyInputData(BaseModel):
@@ -46,7 +46,7 @@ class SurveyMetadata(BaseModel):
 
 class SurveyTaggingInput(BaseModel):
     input_type: Literal['survey'] = "survey"
-    guid: str
+    guid: ForceStr
     data: SurveyInputData
     metadata: Optional[SurveyMetadata] = None
 
@@ -63,10 +63,10 @@ class SurveyTaggingTaskBundle(TaskBundle):
     async def _generate_metadata(self) -> None:
         bt.logging.info(f"Generating survey metadata for survey tagging task bundle {self.guid}")
         parsed_json = json.loads(self.input.data.lines[0][1])
-        llml = LlmLib()
+        llml = get_llm_backend()
         self.input.metadata = SurveyMetadata(
             tags=parsed_json['selected_choices'],
-            vectors= await llml.get_vector_embeddings_set(parsed_json['selected_choices']),
+            vectors= llml.get_vector_embeddings_set(parsed_json['selected_choices']),
             survey_question = parsed_json['survey_question'],
             comment = parsed_json['comment'],
             possible_choices = parsed_json['possible_choices'],
@@ -99,9 +99,9 @@ class SurveyTaggingTaskBundle(TaskBundle):
     
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
-        llml = LlmLib()
-        miner_result['tags'] = await Utils.validate_tag_set(llml=llml, tags=miner_result['original_tags'])
-        miner_result['vectors'] = await llml.get_vector_embeddings_set(tags=miner_result['tags'])
+        llml = get_llm_backend()
+        miner_result['tags'] = llml.validate_tag_set(tags=miner_result['original_tags'])
+        miner_result['vectors'] = llml.get_vector_embeddings_set(tags=miner_result['tags'])
         return miner_result
 
     def generate_result_logs(self, miner_result) -> str:

@@ -2,9 +2,8 @@ from typing import Literal, Optional
 
 import bittensor as bt
 from pydantic import BaseModel
+from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.task.Task import Task
-from conversationgenome.utils.constants import TaskType
-from conversationgenome.llm.LlmLib import LlmLib
 
 
 class SurveyTaggingTaskInputData(BaseModel):
@@ -22,8 +21,8 @@ class SurveyTaggingTask(Task):
 
     async def mine(self) -> dict[str, list]:
         try:
-            llml = LlmLib()
-            res = await llml.survey_to_metadata(self.input.data.survey_question, self.input.data.comment)
+            llml = get_llm_backend()
+            res = llml.survey_to_metadata(self.input.data.survey_question, self.input.data.comment)
             return {"tags": res.tags, "vectors": res.vectors}
         
         except Exception as e:

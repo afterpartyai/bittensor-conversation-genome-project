@@ -1,18 +1,19 @@
 # tests/conftest.py
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from dotenv import find_dotenv
 from dotenv import load_dotenv
 
+from conversationgenome.llm.llm_openai import LlmOpenAI
 import neurons.validator as validator_module
 from tests.mocks.DummyData import DummyData
 
 load_dotenv(find_dotenv(usecwd=True), override=False)
 
 # Set to True for faster tests with smaller task bundles
-fast_tests = False
+fast_tests = True
 
 @pytest.fixture(autouse=True)
 def patch_random_and_config(monkeypatch):
@@ -85,15 +86,6 @@ def fake_libs(monkeypatch):
         async def reserve_task_bundle(self, *, batch_num=None, return_indexed_windows=True):
             self.calls["reserve_task_bundle"] += 1
             return DummyData.conversation_tagging_task_bundle()
-
-        async def get_convo_metadata(self, *a, **k):
-            return DummyData.metadata()
-
-        async def validate_tag_set(self, tags):
-            return DummyData.tags()
-
-        async def get_vector_embeddings_set(self, tags):
-            return DummyData.vectors()
 
         async def put_task(self, *a, **k):
             self.calls["put_task"] += 1

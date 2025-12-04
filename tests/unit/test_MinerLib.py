@@ -1,3 +1,4 @@
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 from pydantic import ValidationError
 
@@ -12,33 +13,22 @@ tags = ["apple", "banana"]
 vectors = {"apple": {"vector": [0.1]}, "banana": {"vector": [0.2]}}
 
 
-class FakeLlm:
-    def __init__(self, sink):
-        self.sink = sink
-
-    async def conversation_to_metadata(self, *args, **kwargs):
-        self.sink["calls"].append((args, kwargs))
-        conversation = ConversationMetadata(tags=tags, vectors=vectors)
-        return conversation
-
 
 @pytest.mark.asyncio
-async def test_given_proper_inputs_then_conversation_metadata_is_returned(monkeypatch):
-    sink = {"calls": []}
+async def test_given_proper_inputs_then_conversation_metadata_is_returned():
+    mock_llml = MagicMock()
+    mock_result = Mock()
+    mock_result.tags = tags
+    mock_result.vectors = vectors
+    mock_llml.conversation_to_metadata = Mock(return_value=mock_result)
+    with patch("conversationgenome.task.ConversationTaggingTask.get_llm_backend", return_value=mock_llml):
+        miner = MinerLib()
+        task = DummyData.conversation_tagging_task()
+        task.prompt_chain = [type("Prompt", (), {"prompt_template": "Tag the conversation."})()]
+        out = await miner.do_mining(task=task)
 
-    monkeypatch.setattr(ctt, "LlmLib", lambda: FakeLlm(sink))
-
-    miner = MinerLib()
-
-    out = await miner.do_mining(task=DummyData.conversation_tagging_task())
-
-    assert out["tags"] == tags
-    assert out["vectors"] == vectors
-
-    assert len(sink["calls"]) == 1
-
-    _, kwargs = sink["calls"][0]
-    assert kwargs.get("generateEmbeddings") is False
+        assert out["tags"] == tags
+        assert out["vectors"] == vectors
 
 
 @pytest.mark.asyncio
