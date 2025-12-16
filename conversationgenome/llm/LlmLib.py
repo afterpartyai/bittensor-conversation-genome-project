@@ -89,9 +89,6 @@ class LlmLib(ABC):
         vectors = None
         if generateEmbeddings:
             vectors = self.get_vector_embeddings_set(tags)
-
-        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-        print(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
 
     def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
