@@ -66,7 +66,7 @@ class LlmLib(ABC):
         
         tags = Utils.clean_tags(response_content.split(","))
         if Utils.empty(tags):
-            print("No tags returned by OpenAI")
+            print("No tags returned")
             return None
         
         vectors = None
@@ -75,10 +75,24 @@ class LlmLib(ABC):
 
         return RawMetadata(tags=tags, vectors=vectors, success=True)
     
-    def raw_transcript_to_named_entities(self, raw_transcript: str) -> str|None:
+    def raw_transcript_to_named_entities(self, raw_transcript: str, generateEmbeddings=False) -> RawMetadata|None:
         prompt = prompt_manager.raw_transcript_to_named_entities_prompt(raw_transcript)
-        response_content = self.basic_prompt(prompt, response_format="json")
-        return response_content
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+
+        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        print(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
 
     def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
         prompt = prompt_manager.survey_tag_prompt(survey_question, comment)

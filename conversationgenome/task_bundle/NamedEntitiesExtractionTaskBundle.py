@@ -114,7 +114,6 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         for extraction_path in extraction_paths:
             with open(extraction_path, 'r') as f:
                 raw_extractions.extend(json.load(f))
-        print(len(raw_extractions))
         return TranscriptMetadata(**random.choice(raw_extractions))
 
     def is_ready(self) -> bool:
@@ -175,26 +174,15 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
     def _generate_metadata(self) -> None:
         bt.logging.info(f"Generating metadata")
         llml = get_llm_backend()
-        result = llml.raw_transcript_to_named_entities(self.input.to_raw_text())
+        result = llml.raw_transcript_to_named_entities(self.input.to_raw_text(), generateEmbeddings=True)
         if not result:
             bt.logging.error(f"ERROR:2873226353. No metadata returned. Aborting.")
             return
-        try:
-            result = json.loads(result)
-        except Exception:
-            bt.logging.error(f"ERROR: Failed to parse the json response in metadata processing: {result}. Aborting.")
-            return
-        
-        tags = []
-        # For now we combine all categories in order to reuse the current scoring mechanism
-        for category in NAMED_ENTITIES_CATEGORIES:
-            tags.extend(result.get(category, []))
-        vectors = llml.get_vector_embeddings_set(tags)
 
         self.input.metadata = ConversationMetadata(
             participantProfiles=None,
-            tags=tags,
-            vectors=vectors,
+            tags=result.tags,
+            vectors=result.vectors,
         )
 
     async def _get_vector_embeddings_set(self, llml: LlmLib, tags):

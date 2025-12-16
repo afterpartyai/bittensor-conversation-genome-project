@@ -33,12 +33,8 @@ class NamedEntitiesExtractionTask(Task):
 
         try:
             transcript = '/n'.join(line[1] for line in self.input.data.window)
-            result = json.loads(llml.raw_transcript_to_named_entities(transcript))
-            tags = []
-            for values in result.values():
-                tags.extend(values)
-
-            output = {"tags": tags}
+            result = llml.raw_transcript_to_named_entities(transcript)
+            output = {"tags": result.tags}
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")
             raise e
