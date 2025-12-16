@@ -11,11 +11,8 @@ from bs4 import BeautifulSoup
 import bittensor as bt
 from pydantic import BaseModel
 
-from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
-from conversationgenome.api.models.conversation_metadata import (
-    ConversationQualityMetadata,
-)
+
 from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_factory import get_llm_backend
@@ -23,9 +20,6 @@ from conversationgenome.llm.LlmLib import LlmLib
 from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
     GroundTruthTagSimilarityScoringMechanism,
 )
-from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
-from conversationgenome.task.ConversationTaggingTask import ConversationTaskInput
-from conversationgenome.task.ConversationTaggingTask import ConversationTaskInputData
 from conversationgenome.task.NamedEntitiesExtrationTask import NamedEntitiesExtractionTask, NamedEntitiesExtractionTaskInput, NamedEntitiesExtractionTaskInputData
 from conversationgenome.task.Task import Task
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
@@ -75,6 +69,7 @@ class NamedEntitiesExtractionTaskBundleInput(BaseModel):
     input_type: Literal["document"]
     guid: ForceStr
     data: NamedEntitiesExtractionTaskBundleInputData
+    metadata: Optional[ConversationMetadata] = None
     def to_raw_text(self):
         return "\n".join((line[1] for line in self.data.lines))
 
@@ -90,16 +85,19 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         transcript_metadata = self._get_random_transcript()
         transcript_lines = self._load_transcript(transcript_metadata.transcript_link)
         parsed_lines = self._parse_raw_transcript(transcript_lines)
+        # For now we limit to 1000 lines
+        parsed_lines = parsed_lines[:1000]
         data = NamedEntitiesExtractionTaskBundleInputData(
             lines = parsed_lines,
             total = len(transcript_lines)
         )
+        self.guid = str(uuid.uuid4())
         self.input = NamedEntitiesExtractionTaskBundleInput(
             input_type='document',
-            guid=str(uuid.uuid4()),
+            guid=self.guid,
             data=data
         )
-    
+
     def _parse_raw_transcript(self, raw_transcript: str) -> Tuple[int, str]:
         soup = BeautifulSoup(raw_transcript, 'html.parser')
         # Kill all script and style elements
@@ -131,7 +129,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
             return True
         return False
 
-    def setup(self) -> None:
+    async def setup(self) -> None:
         self._generate_metadata()
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
@@ -160,7 +158,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         miner_result['original_tags'] = miner_result['tags']
         # Clean and validate tags for duplicates or whitespace matches
         llml = get_llm_backend()
-        miner_result['tags'] = llml.validate_tag_set(miner_result['original_tags'])
+        miner_result['tags'] = llml.validate_named_entities_tag_set(miner_result['original_tags'])
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
         return miner_result
 
@@ -201,7 +199,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         vectors = llml.get_vector_embeddings_set(tags)
 
         self.input.metadata = ConversationMetadata(
-            participantProfiles=self.input.data.participants,
+            participantProfiles=None,
             tags=tags,
             vectors=vectors,
         )

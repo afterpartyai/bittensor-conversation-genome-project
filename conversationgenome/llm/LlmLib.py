@@ -122,7 +122,15 @@ class LlmLib(ABC):
         valid_tags = good_keywords_str.split(",")
         valid_tags = Utils.get_clean_tag_set(valid_tags)
         return [element for element in valid_tags if element in tags]
-        
+    
+
+    def validate_named_entities_tag_set(self, tags: List[str]) -> List[str] | None:
+        # Only perform a basic filtering for named_entities
+        clean_tag_list = Utils.get_clean_tag_set(tags)
+        if len(clean_tag_list) >= 20:
+            random_indices = random.sample(range(len(clean_tag_list)), 20)
+            clean_tag_list = [clean_tag_list[i] for i in random_indices]
+        return clean_tag_list
 
 ###############################################################################################
 ##################################### Override decorators #####################################

@@ -2,7 +2,7 @@ import random
 
 from conversationgenome import __version__ as CGP_VERSION
 from conversationgenome.api.ApiLib import ApiLib
-from conversationgenome.task_bundle import NamedEntitiesExtractionTaskBundle
+from conversationgenome.task_bundle.NamedEntitiesExtractionTaskBundle import NamedEntitiesExtractionTaskBundle
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 
 
