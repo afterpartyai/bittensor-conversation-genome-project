@@ -8,7 +8,8 @@ from conversationgenome.task_bundle.TaskBundle import TaskBundle
 
 class TaskBundleLib:
     async def get_task_bundle(self, hotkey, api_key=None) -> TaskBundle:
-        if random.random() > 0.66:
+        # 10% of the tasks should be Named entities extraction for now
+        if random.random() > 0.90:
             # For now we build this task locally - Eventually will be moved to the API
             task_bundle: TaskBundle = NamedEntitiesExtractionTaskBundle()
         else:

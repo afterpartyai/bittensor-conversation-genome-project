@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
+# This script is only used to manually generate the json that is consumed by the validator, it is not called at runtime
 def get_la_transcription_links(url='https://lacity.granicus.com/ViewPublisher.php?view_id=129'):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36'}
     try:

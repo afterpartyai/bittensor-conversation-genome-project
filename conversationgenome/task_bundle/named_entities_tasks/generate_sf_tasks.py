@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 import json
 import time
 
+# This script is only used to manually generate the json that is consumed by the validator, it is not called at runtime
 class LegistarScraper:
     def __init__(self):
         self.base_url = "https://sfgov.legistar.com/Calendar.aspx"

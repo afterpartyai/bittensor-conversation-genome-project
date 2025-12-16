@@ -52,15 +52,8 @@ class NamedEntitiesExtractionTaskBundleInputData(BaseModel):
            Normalize the names (e.g., "Mayor Adams" and "Adams" should be aggregated into one entry).
            Only return the list object. Do not include any conversational text or surrounding arrays.
 
-           Example Data: {
-               "document": "Mayor Adams proposed an amendment to Local Law 55 regarding the Downtown Grant. Adams stated that the Grant is essential for the city."
-           }
-
-           Example Response: {
-               "Mayor Adams": 0.08,
-               "Local Law 55": 0.04,
-               "Downtown Grant": 0.08
-           }
+           Example Data: "Mayor Adams proposed an amendment to Local Law 55 regarding the Downtown Grant. Adams stated that the Grant is essential for the city."
+           Example Response: ["Mayor Adams", "Local Law 55", "Downtown Grant"]
         """
     )
 
@@ -100,7 +93,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
 
     def _parse_raw_transcript(self, raw_transcript: str) -> Tuple[int, str]:
         soup = BeautifulSoup(raw_transcript, 'html.parser')
-        # Kill all script and style elements
+        # Remove all script and style elements
         for script in soup(["script", "style"]):
             script.extract()
             
