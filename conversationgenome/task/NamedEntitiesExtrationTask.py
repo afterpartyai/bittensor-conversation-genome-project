@@ -1,3 +1,4 @@
+import json
 from typing import List
 from typing import Literal
 from typing import Optional
@@ -31,14 +32,13 @@ class NamedEntitiesExtractionTask(Task):
         llml = get_llm_backend()
 
         try:
-            conversation = Conversation(
-                guid=self.input.guid,
-                lines=self.input.data.window,
-                miner_task_prompt=self.prompt_chain[0].prompt_template,
-            )
+            transcript = '/n'.join(line[1] for line in self.input.data.window)
+            result = json.loads(llml.raw_transcript_to_named_entities(transcript))
+            tags = []
+            for values in result.values():
+                tags.extend(values)
 
-            result = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)
-            output = {"tags": result.tags, "vectors": result.vectors}
+            output = {"tags": tags}
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")
             raise e

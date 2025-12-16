@@ -74,6 +74,11 @@ class LlmLib(ABC):
             vectors = self.get_vector_embeddings_set(tags)
 
         return RawMetadata(tags=tags, vectors=vectors, success=True)
+    
+    def raw_transcript_to_named_entities(self, raw_transcript: str) -> str|None:
+        prompt = prompt_manager.raw_transcript_to_named_entities_prompt(raw_transcript)
+        response_content = self.basic_prompt(prompt, response_format="json")
+        return response_content
 
     def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
         prompt = prompt_manager.survey_tag_prompt(survey_question, comment)

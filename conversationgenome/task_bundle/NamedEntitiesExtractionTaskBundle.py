@@ -1,12 +1,13 @@
+import json
 import random
 import uuid
-from copy import deepcopy
-from typing import Dict
 from typing import List
 from typing import Literal
 from typing import Optional
 from typing import Tuple
+import requests
 
+from bs4 import BeautifulSoup
 import bittensor as bt
 from pydantic import BaseModel
 
@@ -25,13 +26,25 @@ from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechani
 from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
 from conversationgenome.task.ConversationTaggingTask import ConversationTaskInput
 from conversationgenome.task.ConversationTaggingTask import ConversationTaskInputData
+from conversationgenome.task.NamedEntitiesExtrationTask import NamedEntitiesExtractionTask, NamedEntitiesExtractionTaskInput, NamedEntitiesExtractionTaskInputData
 from conversationgenome.task.Task import Task
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.types import ForceStr
 from conversationgenome.utils.Utils import Utils
 
+NAMED_ENTITIES_CATEGORIES = ["people", "organizations", "locations", "laws_statutes", "budgets", "specific_projects"]
 
-class NamedEntitiesExtractionTaskBundleInput(BaseModel):
+class TranscriptMetadata(BaseModel):
+    name: str
+    timestamp: float
+    transcript_link: str
+
+    # Optionnal
+    duration: Optional[str] = None
+    context: Optional[str] = None
+
+
+class NamedEntitiesExtractionTaskBundleInputData(BaseModel):
     lines: List[Tuple[int, str]]
     total: int
     min_convo_windows: int = 1
@@ -40,12 +53,10 @@ class NamedEntitiesExtractionTaskBundleInput(BaseModel):
         """Analyze the text provided to identify all specific Named Entities.
            Focus on: People, Organizations, Locations, Laws/Statutes, Budgets, and Specific Projects.
 
-           Return a single JSON object (dictionary) containing key-value pairs where:
-           - The **Key** is the extracted Entity Name.
-           - The **Value** is the frequency score (float between 0 and 1, calculated as occurrence count / total word count).
+           Return a single list that contains all named entities.
 
            Normalize the names (e.g., "Mayor Adams" and "Adams" should be aggregated into one entry).
-           Only return the JSON object. Do not include any conversational text or surrounding arrays.
+           Only return the list object. Do not include any conversational text or surrounding arrays.
 
            Example Data: {
                "document": "Mayor Adams proposed an amendment to Local Law 55 regarding the Downtown Grant. Adams stated that the Grant is essential for the city."
@@ -63,86 +74,86 @@ class NamedEntitiesExtractionTaskBundleInput(BaseModel):
 class NamedEntitiesExtractionTaskBundleInput(BaseModel):
     input_type: Literal["document"]
     guid: ForceStr
-    data: NamedEntitiesExtractionTaskBundleInput
-    quality_score: Optional[int] = None
-
-    def trim_input(self) -> None:
-        max_lines = Utils._int(c.get('env', 'MAX_CONVO_LINES', 300))
-
-        if max_lines and len(self.data.lines) > max_lines:
-            self.data.lines = self.data.lines[:max_lines]
-            self.data.total = len(self.data.lines)
-
+    data: NamedEntitiesExtractionTaskBundleInputData
+    def to_raw_text(self):
+        return "\n".join((line[1] for line in self.data.lines))
 
 class NamedEntitiesExtractionTaskBundle(TaskBundle):
+    mode:str = 'validator'
     type: Literal["named_entities_extraction"] = "named_entities_extraction"
     input: Optional[NamedEntitiesExtractionTaskBundleInput] = None
     _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 5))
 
+    def __init__(self):
+        super().__init__()
+        bt.logging.info(f"Initializing named-entities task")
+        transcript_metadata = self._get_random_transcript()
+        transcript_lines = self._load_transcript(transcript_metadata.transcript_link)
+        parsed_lines = self._parse_raw_transcript(transcript_lines)
+        data = NamedEntitiesExtractionTaskBundleInputData(
+            lines = parsed_lines,
+            total = len(transcript_lines)
+        )
+        self.input = NamedEntitiesExtractionTaskBundleInput(
+            input_type='document',
+            guid=str(uuid.uuid4()),
+            data=data
+        )
+    
+    def _parse_raw_transcript(self, raw_transcript: str) -> Tuple[int, str]:
+        soup = BeautifulSoup(raw_transcript, 'html.parser')
+        # Kill all script and style elements
+        for script in soup(["script", "style"]):
+            script.extract()
+            
+        text = soup.get_text()
+        return [[i, line] for i, line in enumerate(text.splitlines())]
+
+    def _load_transcript(self, transcript_link: str) -> str:
+        res = requests.get(transcript_link)
+        return res.content
+
+    def _get_random_transcript(self) -> TranscriptMetadata:
+        # Build the task locally from the pre-processed extractions
+        extraction_paths = [
+            "conversationgenome/task_bundle/named_entities_tasks/la_transcript_data.json",
+            "conversationgenome/task_bundle/named_entities_tasks/sf_transcript_data.json"
+        ]
+        raw_extractions = []
+        for extraction_path in extraction_paths:
+            with open(extraction_path, 'r') as f:
+                raw_extractions.extend(json.load(f))
+        print(len(raw_extractions))
+        return TranscriptMetadata(**random.choice(raw_extractions))
+
     def is_ready(self) -> bool:
-        if self.input.metadata is not None and self.input.data.indexed_windows is not None and self._check_conversation_quality():
+        if self.input.metadata is not None and self.input.data.lines is not None:
             return True
         return False
 
-    async def setup(self) -> None:
-        self.input.trim_input()
-        self._split_conversation_in_windows()
-        self._enforce_minimum_convo_windows()
-        await self._get_conversation_quality()
-        # Only generate metadata and make bundle ready for conversations that pass quality threshold
-        if self._check_conversation_quality():
-            await self._generate_metadata()
-        else:
-            bt.logging.info(f"Conversation did not pass quality check or could not be validated. Skipping metadata generation.")
-
-    async def _get_conversation_quality(self) -> None:
-        bt.logging.info(f"Validating conversation quality")
-        llml = get_llm_backend()
-        conversation = Conversation(
-            guid=self.input.guid,
-            lines=self.input.data.lines,
-            participants=self.input.data.participants,
-            miner_task_prompt=self.input.data.prompt,
-        )
-        result: ConversationQualityMetadata | None = llml.validate_conversation_quality(conversation=conversation)
-        if result:
-            # For now, only store quality score, down the line we can expand to store more detailed metadata if we want to use it
-            self.input.quality_score = result.quality_score
-        else:
-            bt.logging.error(f"ERROR - No conversation quality metadata returned. Aborting.")
-
-    def _check_conversation_quality(self) -> bool:
-        if self.input.quality_score is not None:
-            return self.input.quality_score >= self._QUALITY_THRESHOLD
-        return False
+    def setup(self) -> None:
+        self._generate_metadata()
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         tasks = []
-
-        if len(self.input.data.indexed_windows) > number_of_tasks_per_bundle:
-            indexed_windows_subset = random.sample(self.input.data.indexed_windows, number_of_tasks_per_bundle)
-        else:
-            indexed_windows_subset = self.input.data.indexed_windows
-
-        for _, indexed_window in enumerate(indexed_windows_subset):
+        for _ in range(number_of_tasks_per_bundle):
             random_id = str(uuid.uuid4())
-            task: ConversationTaggingTask = ConversationTaggingTask(
+            task: NamedEntitiesExtractionTask = NamedEntitiesExtractionTask(
                 mode=self.mode,
                 api_version=self.api_version,
                 guid=random_id,
                 bundle_guid=self.guid,
                 type=self.type,
                 scoring_mechanism=self.scoring_mechanism,
-                input=ConversationTaskInput(
+                input=NamedEntitiesExtractionTaskInput(
                     input_type=self.input.input_type,
                     guid=self.input.guid,
-                    data=ConversationTaskInputData(window_idx=indexed_window[0], window=indexed_window[1], participants=[]),
+                    data=NamedEntitiesExtractionTaskInputData(window=self.input.data.lines),
                 ),
                 prompt_chain=self.prompt_chain,
                 example_output=self.example_output,
             )
             tasks.append(task)
-
         return tasks
 
     async def format_results(self, miner_result) -> str:
@@ -166,62 +177,33 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
 
     def mask_task_for_miner(self, task: Task) -> Task:
         masked_task = super().mask_task_for_miner(task)
-
         HIDDEN_WINDOW_IDX = -1
         masked_task.input.data.window_idx = HIDDEN_WINDOW_IDX
-
         return masked_task
 
-    def _split_conversation_in_windows(self) -> None:
-        minLines = c.get("convo_window", "min_lines", 2)
-        maxLines = c.get("convo_window", "max_lines", 10)
-        overlapLines = c.get("convo_window", "overlap_lines", 2)
-
-        windows = Utils.split_overlap_array(self.input.data.lines, size=maxLines, overlap=overlapLines)
-        if len(windows) < 2:
-            windows = Utils.split_overlap_array(self.input.data.lines, size=minLines, overlap=overlapLines)
-
-        # TODO: Write convo windows into local database with full convo metadata
-        indexed_windows = []
-
-        for idx, window in enumerate(windows):
-            indexed_windows.append((idx, window))
-
-        self.input.data.indexed_windows = indexed_windows
-
-    def _enforce_minimum_convo_windows(self) -> None:
-        minimum_convo_windows = 1
-        if self.input.data.min_convo_windows is not None and self.input.data.min_convo_windows >= 0:
-            bt.logging.info(f"Change in minimum required convo windows from API from {minimum_convo_windows} to {self.input.data.min_convo_windows}.")
-            minimum_convo_windows = self.input.data.min_convo_windows
-
-        if len(self.input.data.indexed_windows) <= minimum_convo_windows:
-            bt.logging.info(f"Not enough convo windows -- only {len(self.input.data.indexed_windows)}. Passing.")
-            self.input.data.indexed_windows = []
-
-    async def _generate_metadata(self) -> None:
+    def _generate_metadata(self) -> None:
         bt.logging.info(f"Generating metadata")
         llml = get_llm_backend()
-        conversation = Conversation(
-            guid=self.input.guid,
-            lines=self.input.data.lines,
-            participants=self.input.data.participants,
-            miner_task_prompt=self.input.data.prompt,
-        )
-        result: RawMetadata = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
-
+        result = llml.raw_transcript_to_named_entities(self.input.to_raw_text())
         if not result:
-            bt.logging.error(f"ERROR:2873226353. No conversation metadata returned. Aborting.")
+            bt.logging.error(f"ERROR:2873226353. No metadata returned. Aborting.")
             return
-
-        if not result.success:
-            bt.logging.error(f"ERROR:2873226354. Conversation metadata failed: {result}. Aborting.")
+        try:
+            result = json.loads(result)
+        except Exception:
+            bt.logging.error(f"ERROR: Failed to parse the json response in metadata processing: {result}. Aborting.")
             return
+        
+        tags = []
+        # For now we combine all categories in order to reuse the current scoring mechanism
+        for category in NAMED_ENTITIES_CATEGORIES:
+            tags.extend(result.get(category, []))
+        vectors = llml.get_vector_embeddings_set(tags)
 
         self.input.metadata = ConversationMetadata(
             participantProfiles=self.input.data.participants,
-            tags=getattr(result, "tags", []),
-            vectors=getattr(result, "vectors", {}),
+            tags=tags,
+            vectors=vectors,
         )
 
     async def _get_vector_embeddings_set(self, llml: LlmLib, tags):

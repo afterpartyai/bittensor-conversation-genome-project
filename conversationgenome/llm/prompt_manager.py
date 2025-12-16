@@ -9,6 +9,11 @@ class PromptManager:
             raise FileNotFoundError(f"Prompt directory not found: {prompt_dir}")
         self.env = Environment(loader=FileSystemLoader(prompt_dir))
 
+    def raw_transcript_to_named_entities_prompt(self, raw_transcript: str) -> str:
+        if not raw_transcript.strip():
+            raise ValueError("raw_transcript cannot be empty.")
+        return self._get("raw_transcript_to_named_entities.j2", raw_transcript=raw_transcript)
+
     def conversation_to_metadata_prompt(self, conversation_to_analyze: str) -> str:
         if not conversation_to_analyze.strip():
             raise ValueError("conversation_to_analyze cannot be empty.")
