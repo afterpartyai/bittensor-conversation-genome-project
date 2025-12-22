@@ -13,13 +13,10 @@ from pydantic import BaseModel
 
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 
-from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.llm.LlmLib import LlmLib
-from conversationgenome.scoring_mechanism.GroundTruthTagSimilarityScoringMechanism import (
-    GroundTruthTagSimilarityScoringMechanism,
-)
+from conversationgenome.scoring_mechanism.NoPenaltyGroundTruthTagSimilarityScoringMechanism import NoPenaltyGroundTruthTagSimilarityScoringMechanism
 from conversationgenome.task.NamedEntitiesExtrationTask import NamedEntitiesExtractionTask, NamedEntitiesExtractionTaskInput, NamedEntitiesExtractionTaskInputData
 from conversationgenome.task.Task import Task
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
@@ -162,7 +159,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         )
 
     async def evaluate(self, miner_responses):
-        evaluator = GroundTruthTagSimilarityScoringMechanism()
+        evaluator = NoPenaltyGroundTruthTagSimilarityScoringMechanism()
         return await evaluator.evaluate(self, miner_responses)
 
     def mask_task_for_miner(self, task: Task) -> Task:
