@@ -13,7 +13,7 @@ class Conversation(BaseModel):
     guid: Annotated[str, ...]
     lines: List[Tuple[int, str]]
     miner_task_prompt: Optional[str] = None
-    miner_task_type: Optional[Literal["conversation_tagging", "webpage_metadata_generation", "survey_tagging"]] = None
+    miner_task_type: Optional[Literal["conversation_tagging", "webpage_metadata_generation", "survey_tagging", "named_entities_extraction"]] = None
     participants: Optional[List[str]] = None
     min_convo_windows: Optional[int] = None
     indexed_windows: Optional[List[Tuple[int, List[Tuple[int, str]]]]] = None

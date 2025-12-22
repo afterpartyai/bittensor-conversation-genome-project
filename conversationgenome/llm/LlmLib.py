@@ -66,13 +66,29 @@ class LlmLib(ABC):
         
         tags = Utils.clean_tags(response_content.split(","))
         if Utils.empty(tags):
-            print("No tags returned by OpenAI")
+            print("No tags returned")
             return None
         
         vectors = None
         if generateEmbeddings:
             vectors = self.get_vector_embeddings_set(tags)
 
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+    
+    def raw_transcript_to_named_entities(self, raw_transcript: str, generateEmbeddings=False) -> RawMetadata|None:
+        prompt = prompt_manager.raw_transcript_to_named_entities_prompt(raw_transcript)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
 
     def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
@@ -117,7 +133,15 @@ class LlmLib(ABC):
         valid_tags = good_keywords_str.split(",")
         valid_tags = Utils.get_clean_tag_set(valid_tags)
         return [element for element in valid_tags if element in tags]
-        
+    
+
+    def validate_named_entities_tag_set(self, tags: List[str]) -> List[str] | None:
+        # Only perform a basic filtering for named_entities
+        clean_tag_list = Utils.get_clean_tag_set(tags)
+        if len(clean_tag_list) >= 20:
+            random_indices = random.sample(range(len(clean_tag_list)), 20)
+            clean_tag_list = [clean_tag_list[i] for i in random_indices]
+        return clean_tag_list
 
 ###############################################################################################
 ##################################### Override decorators #####################################
