@@ -160,6 +160,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
 
     async def evaluate(self, miner_responses):
         evaluator = NoPenaltyGroundTruthTagSimilarityScoringMechanism()
+        evaluator.min_tags = 1  # NER may result in fewer tags, allowing evaluation with at least 1 tag
         return await evaluator.evaluate(self, miner_responses)
 
     def mask_task_for_miner(self, task: Task) -> Task:
