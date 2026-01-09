@@ -404,6 +404,13 @@ class DummyData:
         return try_parse_task_bundle(DummyData.webpage_metadata_generation_task_bundle_json())
 
     @staticmethod
+    def setup_webpage_metadata_generation_task_bundle() -> TaskBundle:
+        task_bundle = try_parse_task_bundle(DummyData.webpage_metadata_generation_task_bundle_json())
+        task_bundle.input.data.indexed_windows = DummyData.windows()
+        task_bundle.input.metadata = DummyData.metadata()
+        return task_bundle
+
+    @staticmethod
     def conversation_quality_metadata_high():
         from conversationgenome.api.models.conversation_metadata import ConversationQualityMetadata
         return ConversationQualityMetadata(
