@@ -245,6 +245,24 @@ class DummyData:
         return try_parse_task_bundle(DummyData.survey_tagging_task_bundle_json())
 
     @staticmethod
+    def setup_survey_tagging_task_bundle() -> TaskBundle:
+        from conversationgenome.task_bundle.SurveyTaggingTaskBundle import SurveyMetadata
+        task_bundle = try_parse_task_bundle(DummyData.survey_tagging_task_bundle_json())
+        # Simulate the metadata generation
+        import json
+        parsed_json = json.loads(task_bundle.input.data.lines[0][1])
+        task_bundle.input.metadata = SurveyMetadata(
+            survey_question=parsed_json['survey_question'],
+            comment=parsed_json['comment'],
+            possible_choices=parsed_json['possible_choices'],
+            selected_choices=parsed_json['selected_choices'],
+            tags=parsed_json['selected_choices'],
+            vectors={"tag1": {"vectors": [0.1]}},
+            participantProfiles=task_bundle.input.data.participants
+        )
+        return task_bundle
+
+    @staticmethod
     def conversation_tagging_task_bundle_json():
         return {
             "mode": "local",
