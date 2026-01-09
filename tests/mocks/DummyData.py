@@ -341,3 +341,53 @@ class DummyData:
         task_bundle = try_parse_task_bundle(DummyData.named_entities_extraction_task_bundle_json())
         task_bundle.input.metadata = DummyData.metadata()
         return task_bundle
+
+    @staticmethod
+    def webpage_metadata_generation_task_bundle_json():
+        return {
+            "mode": "validator",
+            "api_version": 1.4,
+            "type": "webpage_metadata_generation",
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "webpage_markdown",
+                "guid": DummyData.guid(),
+                "data": {
+                    "lines": DummyData.lines(),
+                    "total": len(DummyData.lines()),
+                    "participants": DummyData.participants(),
+                },
+                "metadata": DummyData.metadata()
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546890",
+                    "crc": 1321323,
+                    "title": "Extract metadata from webpage markdown",
+                    "name": "extract_metadata_from_webpage_markdown",
+                    "description": "Returns metadata tags from webpage markdown content.",
+                    "type": "inference",
+                    "input_path": "webpage_markdown",
+                    "prompt_template": "You are given the content of a webpage inside <markdown>...</markdown> tags. Identify the most relevant high-level topics, entities, and concepts that describe the page. Focus only on the core subject matter and ignore navigation menus, boilerplate, or contact info. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
+            ],
+            "example_output": {"tags": ["artificial intelligence", "machine learning", "data science"], "type": "List[str]"},
+            "errors": [],
+            "warnings": [],
+            "guid": DummyData.guid(),
+            "data_type": 1,
+        }
+
+    @staticmethod
+    def webpage_metadata_generation_task_bundle() -> TaskBundle:
+        return try_parse_task_bundle(DummyData.webpage_metadata_generation_task_bundle_json())
+
+    @staticmethod
+    def setup_webpage_metadata_generation_task_bundle() -> TaskBundle:
+        task_bundle = try_parse_task_bundle(DummyData.webpage_metadata_generation_task_bundle_json())
+        task_bundle.input.data.indexed_windows = DummyData.windows()
+        task_bundle.input.metadata = DummyData.metadata()
+        return task_bundle
