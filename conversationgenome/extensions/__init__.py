@@ -1,7 +1,2 @@
-print("Loading extensions...")
+# Extensions are auto-discovered
 
-Metrics = None
-try:
-   from .Metrics import Metrics
-except Exception as e:
-    pass
