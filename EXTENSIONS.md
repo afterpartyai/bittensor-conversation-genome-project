@@ -191,13 +191,7 @@ class Profiler:
         return True
 ```
 
----
 
-## Notes for extension authors
-
-- Keep extensions lightweight and failure-tolerant.
-- Prefer aggregation (counts, histograms) over storing raw payloads.
-- Treat extensions as “strategy/instrumentation modules” you can swap without touching core.
 
 
 
