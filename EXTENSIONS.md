@@ -1,3 +1,21 @@
+## What extensions are good for
+
+Extensions give you a safe place to add **measurement, experimentation, and tuning** to your miner without touching core SN33 code.
+
+They’re useful when you want to:
+- try different prompts, models, or response styles
+- see what actually correlates with higher validator scores
+- specialize behavior by task type
+- optimize latency without guessing
+- adapt when validator incentives change
+
+Instead of baking assumptions into core logic, extensions let you layer these ideas on top — and remove them just as easily if they don’t work.
+
+If an extension isn’t present, nothing breaks.
+If core code upgrades, your extensions stay isolated.
+
+---
+
 # SN33 User Extensions (Plugins)
 
 Extensions let miners and validators add custom functionality **without forking core code**.
