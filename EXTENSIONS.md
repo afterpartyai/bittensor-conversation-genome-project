@@ -1,3 +1,24 @@
+# SN33 User Extensions (Plugins)
+
+## Table of Contents
+- [What extensions are good for](#what-extensions-are-good-for)
+- [Ways to use extensions to improve monetization](#ways-to-use-extensions-to-improve-monetization)
+- [Why miners should care](#why-miners-should-care-monetization--survivability)
+- [High-value extension categories](#high-value-extension-categories)
+- [Using extensions for task-specific behavior](#using-extensions-for-task-specific-behavior)
+- [Design objectives](#design-objectives)
+- [Quickstart](#quickstart)
+- [Minimal contract](#minimal-contract)
+- [Pseudo-code implementations](#pseudo-code-implementations)
+  - [A/B testing](#ab-testing)
+  - [Attribution / correlation](#attribution--correlation)
+  - [Latency profiling](#latency-profiling)
+  - [Task-specific behavior](#task-specific-behavior)
+  - [Model routing](#model-routing)
+  - [Bandits / auto-tuners](#bandits--auto-tuners)
+
+---
+
 ## What extensions are good for
 
 Extensions give you a safe place to add **measurement, experimentation, and tuning** to your miner without touching core SN33 code.
@@ -11,20 +32,8 @@ They’re useful when you want to:
 
 Instead of baking assumptions into core logic, extensions let you layer these ideas on top — and remove them just as easily if they don’t work.
 
-If an extension isn’t present, nothing breaks.
+If an extension isn’t present, nothing breaks.  
 If core code upgrades, your extensions stay isolated.
-
----
-
-# SN33 User Extensions (Plugins)
-
-Extensions let miners and validators add custom functionality **without forking core code**.
-
-The goal is to make experimentation safe:
-- Drop an extension into `conversationgenome/extensions/`
-- Upgrade core normally
-- Your custom logic stays isolated and optional
-- If an extension isn’t installed, calls are **no-ops** (non-breaking)
 
 ---
 
@@ -35,36 +44,32 @@ Extensions give you room to experiment and adjust your miner without committing 
 Some common ways miners can use them:
 
 - **Try multiple approaches safely**  
-  Test different prompts, response formats, or models side-by-side instead of guessing which one works best.
+  Test different prompts, response formats, or models side-by-side instead of guessing.
 
 - **Measure instead of assuming**  
-  Track things like latency, output length, or response structure so you can see what changes when scores go up or down.
+  Track latency, output size, or structure and see what changes when scores move.
 
 - **Tune behavior by task type**  
-  Use different defaults for different tasks instead of forcing everything through the same response path.
+  Use different defaults per task instead of forcing everything through one path.
 
 - **Balance speed and quality intentionally**  
-  Experiment with faster responses, truncation, or simpler reasoning paths when latency matters more than depth.
+  Experiment with truncation or faster paths when latency matters more than depth.
 
 - **Adapt over time**  
-  When scoring patterns change, extensions let you adjust quickly without rewriting core logic.
-
-None of these require forking the codebase, and any experiment can be removed if it doesn’t help.
+  Adjust quickly when scoring patterns shift, without rewriting core logic.
 
 ---
 
 ## Why miners should care (monetization + survivability)
 
-Validators reward behavior that can drift over time. Extensions let you **measure and adapt** quickly without risky core edits.
+Extensions make it easier to experiment without risking miner stability.
 
-High-ROI extension ideas:
-- **A/B testing**: prompts, models, output formats, truncation strategies
-- **Attribution / correlation**: latency vs score, verbosity vs score, style markers vs score
-- **Latency profiling**: identify bottlenecks and enforce latency budgets
-- **Task-type policies**: specialized behavior per task type without custom forks
-- **Bandits / auto-tuners**: allocate more traffic to higher-scoring strategies
+They allow you to:
+- test ideas without maintaining a fork
+- roll back changes that don’t help
+- keep custom logic isolated from core upgrades
 
-Extensions are a way to turn your miner from “one size fits all” into “adaptive specialist” with minimal upgrade risk.
+Over time, this makes your miner easier to maintain and easier to adapt.
 
 ---
 
@@ -72,14 +77,12 @@ Extensions are a way to turn your miner from “one size fits all” into “ada
 
 | Category | What it does | Why it matters |
 |--------|--------------|----------------|
-| A/B testing | Compare prompts, models, truncation strategies | Finds what validators actually reward |
-| Attribution / correlation | Relate score to latency, verbosity, style | Turns black-box scoring into signal |
-| Latency profiling | Measure end-to-end and step latency | Faster acceptable answers often win |
-| Task-type policies | Different behavior per task type | One-size-fits-all is dominated |
-| Model routing | Choose models per request | Cost and quality optimization |
-| Bandits / auto-tuners | Auto-allocate traffic to winners | Continuous optimization |
-
-Extensions can be private, shared, or eventually merged into core.
+| A/B testing | Compare prompts or models | Finds what works instead of guessing |
+| Attribution / correlation | Relate score to latency or structure | Turns outcomes into signal |
+| Latency profiling | Measure response timing | Speed often matters |
+| Task-type policies | Different behavior per task | Avoids one-size-fits-all |
+| Model routing | Choose model per request | Cost / quality tradeoffs |
+| Bandits / auto-tuners | Shift traffic to winners | Continuous adaptation |
 
 ---
 
@@ -88,15 +91,11 @@ Extensions can be private, shared, or eventually merged into core.
 SN33 supports different task types, and it’s often useful to handle them differently.
 
 Extensions give you a way to:
-- apply different prompts or models per task type
-- adjust verbosity, latency targets, or output structure
-- experiment with task-specific behavior without hardcoding it
+- apply different prompts or models per task
+- adjust verbosity or latency targets
+- experiment without hardcoding task logic
 
-This lets you avoid two common pitfalls:
-- treating all tasks the same, even when they behave differently
-- writing brittle, task-specific logic directly into core code
-
-With extensions, task-specific ideas can live on the side and evolve independently.
+Task-specific ideas can live on the side and evolve independently.
 
 ---
 
@@ -104,41 +103,31 @@ With extensions, task-specific ideas can live on the side and evolve independent
 
 This extension system is intentionally simple.
 
-It’s designed to:
+It aims to:
 - make it easy to add or remove custom behavior
 - keep core code stable and upgradeable
 - avoid tight coupling between extensions and internals
 - fail safely when extensions are missing or misbehave
 
-There are no required base classes, frameworks, or registration steps.
 Extensions are plain Python files that can be added or removed as needed.
 
-
-
+---
 
 ## Quickstart
 
 ### 1) Create an extension file
 
-Create an extension file:
-
 `conversationgenome/extensions/Example.py`
-
-It should define a class with the same name as the file (`Example`) and any methods you want to call.
-
-Example:
 
 ```python
 class Example:
     def incStat(self, params):
-        # params is always a dict
         metricName = params.get("metricName")
         inc = params.get("inc", 1)
-        # do something with metricName/inc
         return True
 ```
 
-### 2) Call extensions safely from anywhere
+### 2) Call extensions safely
 
 ```python
 from conversationgenome.extensions.Extensions import Extensions
@@ -147,51 +136,63 @@ ext = Extensions()
 ext.execute("Example", "incStat", {"metricName": "windowsProcessed", "inc": 1})
 ```
 
-If `Example` (or `incStat`) doesn’t exist, `execute()` returns `None` and your miner continues normally.
-
 ---
 
 ## Minimal contract
 
 - Extensions are optional.
 - Each extension method receives a single `params` dict.
-- Extension call failures never crash the miner/validator loop; errors are logged.
+- Extension failures never crash the miner or validator.
 
 ---
 
-## Latency timing hook (pseudo-code)
+## Pseudo-code implementations
 
-The idea: measure end-to-end latency (or step latency) and emit a metric.
+### A/B testing
 
 ```python
-# core code
-start = nowMs()
+variant = ext.execute("Experiment", "pickVariant", {"taskType": taskType}) or "A"
+response = runVariant(variant, window)
+ext.execute("Experiment", "recordOutcome", {"variant": variant, "score": score})
+```
 
-# ... do work ...
+### Attribution / correlation
 
-elapsedMs = nowMs() - start
-ext.execute("Profiler", "observeLatency", {
-    "event": "miner.handleWindow",
-    "elapsedMs": elapsedMs,
-    "taskType": window.get("taskType"),
-    "validatorUid": request.get("validatorUid"),
+```python
+ext.execute("Attribution", "observe", {
+    "latencyMs": latencyMs,
+    "outputSize": len(output),
+    "score": score,
 })
 ```
 
-And the extension:
+### Latency profiling
 
 ```python
-# conversationgenome/extensions/Profiler.py
-class Profiler:
-    def observeLatency(self, params):
-        event = params["event"]
-        elapsedMs = params["elapsedMs"]
-        # Example: bucketize, log, or export to Prometheus / wandb
-        # Keep it lightweight: no heavy storage, aggregate counters/histograms
-        return True
+t0 = nowMs()
+handleWindow()
+elapsed = nowMs() - t0
+ext.execute("Profiler", "observeLatency", {"elapsedMs": elapsed})
 ```
 
+### Task-specific behavior
 
+```python
+profile = ext.execute("TaskPolicy", "selectProfile", {"taskType": taskType}) or defaultProfile
+runModel(profile, window)
+```
 
+### Model routing
 
+```python
+model = ext.execute("ModelRouter", "chooseModel", {"taskType": taskType}) or "default"
+runModel(model, window)
+```
 
+### Bandits / auto-tuners
+
+```python
+choice = ext.execute("Bandit", "choose", {"context": taskType}) or "A"
+reward = runChoice(choice)
+ext.execute("Bandit", "update", {"choice": choice, "reward": reward})
+```
