@@ -4,7 +4,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,6 +21,14 @@ jobs:
         pip install -r requirements_test.txt
 
     - name: Run tests
-      run: python -m pytest tests/unit/ --disable-warnings
+      id: run-tests
+      run: |
+        python -m pytest tests/unit/ --disable-warnings --junitxml=test-results.xml
       env:
         OPENAI_API_KEY: fake-api-key-for-unit-tests
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: test-results.xml
