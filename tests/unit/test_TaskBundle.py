@@ -33,7 +33,9 @@ async def test_task_bundle_to_mining_tasks_returns_tasks(monkeypatch):
     bundle: ConversationTaggingTaskBundle = DummyData.conversation_tagging_task_bundle()
 
     generate_metadata_mock = AsyncMock(return_value=None)
+    quality_mock = AsyncMock(return_value=None)
     monkeypatch.setattr(bundle, "_generate_metadata", generate_metadata_mock)
+    monkeypatch.setattr(bundle, "_get_conversation_quality", quality_mock)
 
     await bundle.setup()
     tasks = bundle.to_mining_tasks(number_of_tasks_per_bundle=1)
@@ -48,7 +50,9 @@ async def test_mask_task_for_miner_masks_sensitive_fields(monkeypatch):
     bundle: ConversationTaggingTaskBundle = DummyData.conversation_tagging_task_bundle()
 
     generate_metadata_mock = AsyncMock(return_value=None)
+    quality_mock = AsyncMock(return_value=None)
     monkeypatch.setattr(bundle, "_generate_metadata", generate_metadata_mock)
+    monkeypatch.setattr(bundle, "_get_conversation_quality", quality_mock)
 
     await bundle.setup()
     tasks = bundle.to_mining_tasks(number_of_tasks_per_bundle=1)

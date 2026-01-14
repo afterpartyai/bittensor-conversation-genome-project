@@ -23,3 +23,5 @@ jobs:
 
     - name: Run tests
       run: python -m pytest tests/unit/ --disable-warnings
+      env:
+        OPENAI_API_KEY: fake-api-key-for-unit-tests
