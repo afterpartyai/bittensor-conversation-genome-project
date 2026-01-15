@@ -1,0 +1,2 @@
+# Extensions are auto-discovered
+
