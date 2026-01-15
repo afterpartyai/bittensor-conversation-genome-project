@@ -245,6 +245,24 @@ class DummyData:
         return try_parse_task_bundle(DummyData.survey_tagging_task_bundle_json())
 
     @staticmethod
+    def setup_survey_tagging_task_bundle() -> TaskBundle:
+        from conversationgenome.task_bundle.SurveyTaggingTaskBundle import SurveyMetadata
+        task_bundle = try_parse_task_bundle(DummyData.survey_tagging_task_bundle_json())
+        # Simulate the metadata generation
+        import json
+        parsed_json = json.loads(task_bundle.input.data.lines[0][1])
+        task_bundle.input.metadata = SurveyMetadata(
+            survey_question=parsed_json['survey_question'],
+            comment=parsed_json['comment'],
+            possible_choices=parsed_json['possible_choices'],
+            selected_choices=parsed_json['selected_choices'],
+            tags=parsed_json['selected_choices'],
+            vectors={"tag1": {"vectors": [0.1]}},
+            participantProfiles=task_bundle.input.data.participants
+        )
+        return task_bundle
+
+    @staticmethod
     def conversation_tagging_task_bundle_json():
         return {
             "mode": "local",
@@ -295,17 +313,108 @@ class DummyData:
         return task_bundle
 
     @staticmethod
-    def conversation() -> Conversation:
-        return Conversation(
-            guid=DummyData.guid(),
-            lines=DummyData.lines(),
-            participants=DummyData.participants(),
-            indexed_windows=DummyData.windows(),
-            metadata=DummyData.metadata(),
-        )
+    def named_entities_extraction_task_bundle_json():
+        return {
+            "mode": "validator",
+            "api_version": 1.4,
+            "type": "named_entities_extraction",
+            "scoring_mechanism": "no_penalty_ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "document",
+                "guid": DummyData.guid(),
+                "data": {
+                    "lines": DummyData.lines(),
+                    "total": len(DummyData.lines()),
+                },
+                "metadata": DummyData.metadata()
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546889",
+                    "crc": 1321322,
+                    "title": "Extract named entities from transcript",
+                    "name": "extract_named_entities_from_transcript",
+                    "description": "Returns named entities from the transcript.",
+                    "type": "inference",
+                    "input_path": "transcript",
+                    "prompt_template": "Analyze the text provided to identify all specific Named Entities. Focus on: People, Organizations, Locations, Laws/Statutes, Budgets, and Specific Projects. Return a single list that contains all named entities.",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
+            ],
+            "example_output": {"tags": ["Mayor Adams", "Local Law 55", "Downtown Grant"], "type": "List[str]"},
+            "errors": [],
+            "warnings": [],
+            "guid": DummyData.guid(),
+            "data_type": 1,
+        }
+
+    @staticmethod
+    def named_entities_extraction_task_bundle() -> TaskBundle:
+        return try_parse_task_bundle(DummyData.named_entities_extraction_task_bundle_json())
+
+    @staticmethod
+    def setup_named_entities_extraction_task_bundle() -> TaskBundle:
+        task_bundle = try_parse_task_bundle(DummyData.named_entities_extraction_task_bundle_json())
+        task_bundle.input.metadata = DummyData.metadata()
+        return task_bundle
+
+    @staticmethod
+    def webpage_metadata_generation_task_bundle_json():
+        return {
+            "mode": "validator",
+            "api_version": 1.4,
+            "type": "webpage_metadata_generation",
+            "scoring_mechanism": "ground_truth_tag_similarity_scoring",
+            "input": {
+                "input_type": "webpage_markdown",
+                "guid": DummyData.guid(),
+                "data": {
+                    "lines": DummyData.lines(),
+                    "total": len(DummyData.lines()),
+                    "participants": DummyData.participants(),
+                },
+                "metadata": DummyData.metadata()
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "12346546890",
+                    "crc": 1321323,
+                    "title": "Extract metadata from webpage markdown",
+                    "name": "extract_metadata_from_webpage_markdown",
+                    "description": "Returns metadata tags from webpage markdown content.",
+                    "type": "inference",
+                    "input_path": "webpage_markdown",
+                    "prompt_template": "You are given the content of a webpage inside <markdown>...</markdown> tags. Identify the most relevant high-level topics, entities, and concepts that describe the page. Focus only on the core subject matter and ignore navigation menus, boilerplate, or contact info. Return only a flat list of tags in lowercase, separated by commas, with no explanations, formatting, or extra text. Example of required format: tag1, tag2, tag3",
+                    "output_variable": "final_output",
+                    "output_type": "List[str]",
+                }
+            ],
+            "example_output": {"tags": ["artificial intelligence", "machine learning", "data science"], "type": "List[str]"},
+            "errors": [],
+            "warnings": [],
+            "guid": DummyData.guid(),
+            "data_type": 1,
+        }
+
+    @staticmethod
+    def webpage_metadata_generation_task_bundle() -> TaskBundle:
+        return try_parse_task_bundle(DummyData.webpage_metadata_generation_task_bundle_json())
+
+    @staticmethod
+    def setup_webpage_metadata_generation_task_bundle() -> TaskBundle:
+        task_bundle = try_parse_task_bundle(DummyData.webpage_metadata_generation_task_bundle_json())
+        task_bundle.input.data.indexed_windows = DummyData.windows()
+        task_bundle.input.metadata = DummyData.metadata()
+        return task_bundle
 
     @staticmethod
     def conversation_quality_metadata_high():
+        from conversationgenome.api.models.conversation_metadata import ConversationQualityMetadata
         return ConversationQualityMetadata(
-            quality_score=9
+            quality_score=9,
+            primary_reason="High quality conversation",
+            reason_details="Detailed analysis shows high engagement"
         )

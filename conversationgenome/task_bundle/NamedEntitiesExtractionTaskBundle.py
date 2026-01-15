@@ -69,8 +69,8 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
     input: Optional[NamedEntitiesExtractionTaskBundleInput] = None
     _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 5))
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         bt.logging.info(f"Initializing named-entities task")
         transcript_metadata = self._get_random_transcript()
         transcript_lines = self._load_transcript(transcript_metadata.transcript_link)
