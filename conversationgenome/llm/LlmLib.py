@@ -90,6 +90,40 @@ class LlmLib(ABC):
         if generateEmbeddings:
             vectors = self.get_vector_embeddings_set(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
+    
+    def raw_webpage_to_named_entities(self, raw_webpage: str, generateEmbeddings=False) -> RawMetadata|None:
+        prompt = prompt_manager.raw_webpage_to_named_entities_prompt(raw_webpage)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+    
+
+    def combine_named_entities(self, named_entities:list, generateEmbeddings=False) -> RawMetadata|None:
+        prompt = prompt_manager.combine_named_entities_prompt(named_entities)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+
 
     def survey_to_metadata(self, survey_question: str, comment:str) -> RawMetadata|None:
         prompt = prompt_manager.survey_tag_prompt(survey_question, comment)
