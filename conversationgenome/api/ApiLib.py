@@ -85,7 +85,7 @@ class ApiLib:
         try:
             response = requests.put(url, headers=headers, json=json_data, timeout=http_timeout)
 
-            if response.status_code == 200:
+            if response.status_code == 200 or response.status_code == 201:
                 if self.verbose:
                     print("PUT success", response.json())
             else:
