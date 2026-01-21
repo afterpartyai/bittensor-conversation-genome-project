@@ -6,8 +6,13 @@ from typing import Literal
 from typing import Optional
 from typing import Tuple
 import requests
+from io import BytesIO
 
 from bs4 import BeautifulSoup
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
 import bittensor as bt
 from pydantic import BaseModel
 
@@ -74,7 +79,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         self._generate_metadata()
 
     def _generate_metadata(self) -> None:
-        bt.logging.info(f"Generating metadata for enhanced NER recognition")
+        bt.logging.info(f"Generating metadata for NER recognition")
         parsed_json = json.loads(self.input.data.lines[0][1])
         llml = get_llm_backend()
 
@@ -83,13 +88,18 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         transcript_metadata = llml.raw_transcript_to_named_entities(transcript_text)
         tags = [transcript_metadata.tags]
 
+        web_texts = []
         if parsed_json['enrichment']:
+            bt.logging.info(f"Generating enrichment metadata for NER")
             for query, results in parsed_json['enrichment']['search_results'].items():
                 chosen_res = random.choice(results)
                 # Max 1000 characters
                 web_text = self.get_webpage_text(chosen_res['url'])[:1000]
                 if web_text:
+                    web_texts.append((0, web_text))
                     tags.append(llml.raw_webpage_to_named_entities(web_text).tags)
+        else:
+            bt.logging.info(f"Generating non-enriched metadata for NER")
 
         result: RawMetadata = llml.combine_named_entities(tags, generateEmbeddings=True)
         self.input.metadata = NERMetadata(
@@ -97,8 +107,8 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
             vectors=getattr(result, "vectors", {}),
             participantProfiles = None
         )
-        # Only give the transcript to miners
-        self.input.data.lines = [(0, transcript_text)]
+        # Give transcript + selected web pages to miner
+        self.input.data.lines = [(0, transcript_text)] + web_texts
 
 
     def get_webpage_text(self, url):
@@ -107,14 +117,29 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
             response = requests.get(url)
             response.raise_for_status() # Raise error for bad status (404, 500, etc.)
 
-            # Parse the HTML
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # Check if the content is a PDF
+            content_type = response.headers.get('content-type', '').lower()
+            is_pdf = 'application/pdf' in content_type or url.lower().endswith('.pdf')
 
-            # Extract text, using a space as a separator between HTML tags
-            # strip=True removes leading/trailing whitespace
-            text_content = soup.get_text(separator=' ', strip=True)
-            
-            return text_content
+            if is_pdf and PyPDF2:
+                bt.logging.info('Extracting enrichment from PDF')
+                # Extract text from PDF
+                pdf_file = BytesIO(response.content)
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                text_content = ""
+                for page in pdf_reader.pages:
+                    text_content += page.extract_text() + " "
+                return text_content.strip()
+            else:
+                bt.logging.info('Extracting enrichment from HTML')
+                # Parse the HTML
+                soup = BeautifulSoup(response.text, 'html.parser')
+
+                # Extract text, using a space as a separator between HTML tags
+                # strip=True removes leading/trailing whitespace
+                text_content = soup.get_text(separator=' ', strip=True)
+                
+                return text_content
 
         except Exception as e:
             return ''

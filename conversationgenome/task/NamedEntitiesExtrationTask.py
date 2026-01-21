@@ -32,9 +32,21 @@ class NamedEntitiesExtractionTask(Task):
         llml = get_llm_backend()
 
         try:
-            transcript = '/n'.join(line[1] for line in self.input.data.window)
-            result = llml.raw_transcript_to_named_entities(transcript)
-            output = {"tags": result.tags}
+            transcript = self.input.data.window[0][1]
+            if self.input.data.window[1:]:
+                web_pages = [element[1] for element in self.input.data.window[1:]]
+            else:
+                # No enrichment provided
+                web_pages = []
+
+            tag_sets = []
+            tag_sets.append(llml.raw_transcript_to_named_entities(transcript).tags)
+            for page_contents in web_pages:
+                tag_sets.append(llml.raw_webpage_to_named_entities(page_contents).tags)
+
+            combined_tags = llml.combine_named_entities(tag_sets).tags
+
+            output = {"tags": combined_tags}
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")
             raise e
