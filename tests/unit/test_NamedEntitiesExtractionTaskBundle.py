@@ -10,6 +10,7 @@ def test_get_webpage_text_returns_text_content():
     with patch('requests.get') as mock_get:
         mock_response = Mock()
         mock_response.text = "<html><body><script>alert('test')</script><p>Line 1</p><p>Line 2</p></body></html>"
+        mock_response.headers = {'content-type': 'html'}
         mock_get.return_value = mock_response
         
         result = bundle.get_webpage_text("http://example.com")

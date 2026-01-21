@@ -31,6 +31,10 @@ class NamedEntitiesExtractionTask(Task):
     async def mine(self) -> dict[str, list]:
         llml = get_llm_backend()
 
+        if not len(self.input.data.window):
+            bt.logging.warning('Received empty window in miner, returning no tags')
+            return {"tags": []}
+        
         try:
             transcript = self.input.data.window[0][1]
             if self.input.data.window[1:]:

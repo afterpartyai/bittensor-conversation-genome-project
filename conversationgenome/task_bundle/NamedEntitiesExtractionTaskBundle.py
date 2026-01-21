@@ -10,9 +10,9 @@ from io import BytesIO
 
 from bs4 import BeautifulSoup
 try:
-    import PyPDF2
+    import pypdf
 except ImportError:
-    PyPDF2 = None
+    pypdf = None
 import bittensor as bt
 from pydantic import BaseModel
 
@@ -121,11 +121,11 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
             content_type = response.headers.get('content-type', '').lower()
             is_pdf = 'application/pdf' in content_type or url.lower().endswith('.pdf')
 
-            if is_pdf and PyPDF2:
+            if is_pdf and pypdf:
                 bt.logging.info('Extracting enrichment from PDF')
                 # Extract text from PDF
                 pdf_file = BytesIO(response.content)
-                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                pdf_reader = pypdf.PdfReader(pdf_file)
                 text_content = ""
                 for page in pdf_reader.pages:
                     text_content += page.extract_text() + " "
