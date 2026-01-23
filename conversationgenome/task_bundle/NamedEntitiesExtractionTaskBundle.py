@@ -1,19 +1,25 @@
 import json
 import random
 import uuid
-from typing import List
+from typing import Any, Dict, List
 from typing import Literal
 from typing import Optional
 from typing import Tuple
 import requests
+from io import BytesIO
 
 from bs4 import BeautifulSoup
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
 import bittensor as bt
 from pydantic import BaseModel
 
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 
 from conversationgenome.ConfigLib import c
+from conversationgenome.api.models.raw_metadata import RawMetadata
 from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.llm.LlmLib import LlmLib
 from conversationgenome.scoring_mechanism.NoPenaltyGroundTruthTagSimilarityScoringMechanism import NoPenaltyGroundTruthTagSimilarityScoringMechanism
@@ -25,14 +31,10 @@ from conversationgenome.utils.Utils import Utils
 
 NAMED_ENTITIES_CATEGORIES = ["people", "organizations", "locations", "laws_statutes", "budgets", "specific_projects"]
 
-class TranscriptMetadata(BaseModel):
-    name: str
-    timestamp: float
-    transcript_link: str
-
-    # Optionnal
-    duration: Optional[str] = None
-    context: Optional[str] = None
+class NERMetadata(BaseModel):
+    tags: List[str]
+    vectors: Dict[str, Dict[str, List[float]]]
+    participantProfiles: Optional[List[str]] = None
 
 
 class NamedEntitiesExtractionTaskBundleInputData(BaseModel):
@@ -67,51 +69,6 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
     mode:str = 'validator'
     type: Literal["named_entities_extraction"] = "named_entities_extraction"
     input: Optional[NamedEntitiesExtractionTaskBundleInput] = None
-    _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 5))
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        bt.logging.info(f"Initializing named-entities task")
-        transcript_metadata = self._get_random_transcript()
-        transcript_lines = self._load_transcript(transcript_metadata.transcript_link)
-        parsed_lines = self._parse_raw_transcript(transcript_lines)
-        # For now we limit to 1000 lines
-        parsed_lines = parsed_lines[:1000]
-        data = NamedEntitiesExtractionTaskBundleInputData(
-            lines = parsed_lines,
-            total = len(transcript_lines)
-        )
-        self.guid = str(uuid.uuid4())
-        self.input = NamedEntitiesExtractionTaskBundleInput(
-            input_type='document',
-            guid=self.guid,
-            data=data
-        )
-
-    def _parse_raw_transcript(self, raw_transcript: str) -> Tuple[int, str]:
-        soup = BeautifulSoup(raw_transcript, 'html.parser')
-        # Remove all script and style elements
-        for script in soup(["script", "style"]):
-            script.extract()
-            
-        text = soup.get_text()
-        return [[i, line] for i, line in enumerate(text.splitlines())]
-
-    def _load_transcript(self, transcript_link: str) -> str:
-        res = requests.get(transcript_link)
-        return res.content
-
-    def _get_random_transcript(self) -> TranscriptMetadata:
-        # Build the task locally from the pre-processed extractions
-        extraction_paths = [
-            "conversationgenome/task_bundle/named_entities_tasks/la_transcript_data.json",
-            "conversationgenome/task_bundle/named_entities_tasks/sf_transcript_data.json"
-        ]
-        raw_extractions = []
-        for extraction_path in extraction_paths:
-            with open(extraction_path, 'r') as f:
-                raw_extractions.extend(json.load(f))
-        return TranscriptMetadata(**random.choice(raw_extractions))
 
     def is_ready(self) -> bool:
         if self.input.metadata is not None and self.input.data.lines is not None:
@@ -120,6 +77,73 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
 
     async def setup(self) -> None:
         self._generate_metadata()
+
+    def _generate_metadata(self) -> None:
+        bt.logging.info(f"Generating metadata for NER recognition")
+        parsed_json = json.loads(self.input.data.lines[0][1])
+        llml = get_llm_backend()
+
+        # Max 1000 characters
+        transcript_text = parsed_json['transcript_text'][:1000]
+        transcript_metadata = llml.raw_transcript_to_named_entities(transcript_text)
+        tags = [transcript_metadata.tags]
+
+        web_texts = []
+        if parsed_json['enrichment']:
+            bt.logging.info(f"Generating enrichment metadata for NER")
+            for query, results in parsed_json['enrichment']['search_results'].items():
+                chosen_res = random.choice(results)
+                # Max 1000 characters
+                web_text = self.get_webpage_text(chosen_res['url'])[:1000]
+                if web_text:
+                    web_texts.append((0, web_text))
+                    tags.append(llml.raw_webpage_to_named_entities(web_text).tags)
+        else:
+            bt.logging.info(f"Generating non-enriched metadata for NER")
+
+        result: RawMetadata = llml.combine_named_entities(tags, generateEmbeddings=True)
+        self.input.metadata = NERMetadata(
+            tags=getattr(result, "tags", []),
+            vectors=getattr(result, "vectors", {}),
+            participantProfiles = None
+        )
+        # Give transcript + selected web pages to miner
+        self.input.data.lines = [(0, transcript_text)] + web_texts
+
+
+    def get_webpage_text(self, url):
+        try:
+            # Fetch the content
+            response = requests.get(url)
+            response.raise_for_status() # Raise error for bad status (404, 500, etc.)
+
+            # Check if the content is a PDF
+            content_type = response.headers.get('content-type', '').lower()
+            is_pdf = 'application/pdf' in content_type or url.lower().endswith('.pdf')
+
+            if is_pdf and pypdf:
+                bt.logging.info('Extracting enrichment from PDF')
+                # Extract text from PDF
+                pdf_file = BytesIO(response.content)
+                pdf_reader = pypdf.PdfReader(pdf_file)
+                text_content = ""
+                for page in pdf_reader.pages:
+                    text_content += page.extract_text() + " "
+                return text_content.strip()
+            else:
+                bt.logging.info('Extracting enrichment from HTML')
+                # Parse the HTML
+                soup = BeautifulSoup(response.text, 'html.parser')
+
+                # Extract text, using a space as a separator between HTML tags
+                # strip=True removes leading/trailing whitespace
+                text_content = soup.get_text(separator=' ', strip=True)
+                
+                return text_content
+
+        except Exception as e:
+            return ''
+
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         tasks = []
@@ -168,20 +192,6 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         HIDDEN_WINDOW_IDX = -1
         masked_task.input.data.window_idx = HIDDEN_WINDOW_IDX
         return masked_task
-
-    def _generate_metadata(self) -> None:
-        bt.logging.info(f"Generating metadata")
-        llml = get_llm_backend()
-        result = llml.raw_transcript_to_named_entities(self.input.to_raw_text(), generateEmbeddings=True)
-        if not result:
-            bt.logging.error(f"ERROR:2873226353. No metadata returned. Aborting.")
-            return
-
-        self.input.metadata = ConversationMetadata(
-            participantProfiles=None,
-            tags=result.tags,
-            vectors=result.vectors,
-        )
 
     async def _get_vector_embeddings_set(self, llml: LlmLib, tags):
         return llml.get_vector_embeddings_set(tags)

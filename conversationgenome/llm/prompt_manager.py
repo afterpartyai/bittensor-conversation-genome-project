@@ -13,6 +13,17 @@ class PromptManager:
         if not raw_transcript.strip():
             raise ValueError("raw_transcript cannot be empty.")
         return self._get("raw_transcript_to_named_entities.j2", raw_transcript=raw_transcript)
+    
+    def raw_webpage_to_named_entities_prompt(self, raw_webpage: str) -> str:
+        if not raw_webpage.strip():
+            raise ValueError("raw_transcript cannot be empty.")
+        return self._get("raw_webpage_to_named_entities.j2", raw_webpage=raw_webpage)
+    
+    def combine_named_entities_prompt(self, named_entities: list[list]) -> str:
+        entities_str = ''
+        for i in range(len(named_entities)):
+            entities_str += f"Set {i} :\n{','.join(named_entities[i])}\n\n"
+        return self._get("combine_named_entities_prompt.j2", entities_str=entities_str)
 
     def conversation_to_metadata_prompt(self, conversation_to_analyze: str) -> str:
         if not conversation_to_analyze.strip():

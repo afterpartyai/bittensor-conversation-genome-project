@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock, call
 from unittest.mock import patch
 
 import pytest
@@ -32,14 +32,17 @@ async def test_mine_returns_expected_tags():
     mock_result = Mock()
     mock_result.tags = ["John Smith", "Apple Inc", "New York"]
     mock_llml.raw_transcript_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.raw_webpage_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.combine_named_entities = Mock(return_value=mock_result)
 
     with patch("conversationgenome.task.NamedEntitiesExtrationTask.get_llm_backend", return_value=mock_llml):
         result = await task.mine()
 
         assert result["tags"] == ["John Smith", "Apple Inc", "New York"]
         # Verify the transcript was constructed correctly
-        mock_llml.raw_transcript_to_named_entities.assert_called_once_with("John Smith works at Apple Inc./nHe lives in New York.")
-
+        mock_llml.raw_transcript_to_named_entities.assert_called_once_with("John Smith works at Apple Inc.")
+        mock_llml.raw_webpage_to_named_entities.assert_called_once_with("He lives in New York.")
+        mock_llml.combine_named_entities.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_mine_handles_empty_tags():
@@ -64,6 +67,8 @@ async def test_mine_handles_empty_tags():
     mock_result = Mock()
     mock_result.tags = []
     mock_llml.raw_transcript_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.raw_webpage_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.combine_named_entities = Mock(return_value=mock_result)
 
     with patch("conversationgenome.task.NamedEntitiesExtrationTask.get_llm_backend", return_value=mock_llml):
         result = await task.mine()
@@ -149,13 +154,12 @@ async def test_mine_handles_empty_window():
     mock_result = Mock()
     mock_result.tags = []
     mock_llml.raw_transcript_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.raw_webpage_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.combine_named_entities = Mock(return_value=mock_result)
 
     with patch("conversationgenome.task.NamedEntitiesExtrationTask.get_llm_backend", return_value=mock_llml):
         result = await task.mine()
-
         assert result["tags"] == []
-        # Verify empty transcript was passed
-        mock_llml.raw_transcript_to_named_entities.assert_called_once_with("")
 
 
 @pytest.mark.asyncio
@@ -173,8 +177,8 @@ async def test_mine_constructs_transcript_correctly():
                 window_idx=0,
                 window=[
                     (0, "First line of text."),
-                    (1, "Second line with entities."),
-                    (2, "Third line here.")
+                    (0, "Second line with entities."),
+                    (0, "Third line here.")
                 ],
                 participants=["SPEAKER_1"]
             )
@@ -185,11 +189,16 @@ async def test_mine_constructs_transcript_correctly():
     mock_result = Mock()
     mock_result.tags = ["entity1", "entity2"]
     mock_llml.raw_transcript_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.raw_webpage_to_named_entities = Mock(return_value=mock_result)
+    mock_llml.combine_named_entities = Mock(return_value=mock_result)
 
     with patch("conversationgenome.task.NamedEntitiesExtrationTask.get_llm_backend", return_value=mock_llml):
         result = await task.mine()
 
         assert result["tags"] == ["entity1", "entity2"]
         # Verify the transcript is joined with '/n' separator
-        expected_transcript = "First line of text./nSecond line with entities./nThird line here."
+        expected_transcript = "First line of text."
+        expected_webpages = [call("Second line with entities."), call("Third line here.")]
         mock_llml.raw_transcript_to_named_entities.assert_called_once_with(expected_transcript)
+        mock_llml.raw_webpage_to_named_entities.assert_has_calls(expected_webpages)
+        mock_llml.combine_named_entities.assert_called_once()

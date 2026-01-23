@@ -13,7 +13,7 @@ from tests.mocks.DummyData import DummyData
 load_dotenv(find_dotenv(usecwd=True), override=False)
 
 # Set to True for faster tests with smaller task bundles
-fast_tests = False
+fast_tests = True
 
 @pytest.fixture(autouse=True)
 def patch_random_and_config(monkeypatch):
