@@ -130,9 +130,21 @@ If you wish to use a provider other than OpenAI, you select your LLM Override by
 ...
 #export LLM_TYPE_OVERRIDE=groq
 #export LLM_TYPE_OVERRIDE=anthropic
+#export LLM_TYPE_OVERRIDE=openrouter
 ```
 
 Please ensure you only have one `LLM_TYPE_OVERRIDE` config parameter uncommented before moving on. Once you have selected the `LLM_TYPE`, follow prompts in the .env file to fill in required fields for your override LLM provider.
+
+#### OpenRouter Configuration
+
+If you selected `LLM_TYPE_OVERRIDE=openrouter`, you'll need to provide an `OPENROUTER_API_KEY`. By default, this backend is configured to use the `deepseek/deepseek-chat` model with a provider preference for `chutes`.
+
+```
+# ____________ OPENROUTER Configuration: ________________
+export OPENROUTER_API_KEY=your_openrouter_api_key_here
+export OPENROUTER_MODEL=deepseek/deepseek-chat
+export OPENROUTER_PROVIDER_PREFERENCE=chutes
+```
 
 
 ### Running the Tests
