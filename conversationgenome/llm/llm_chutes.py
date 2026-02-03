@@ -1,3 +1,4 @@
+import requests
 from typing import List
 from openai import OpenAI
 
@@ -7,16 +8,16 @@ from conversationgenome.llm.LlmLib import LlmLib
 
 class LlmChutes(LlmLib):
     def __init__(self):
-        api_key = c.get('env', "CHUTES_API_KEY")
-        if not api_key:
+        self.api_key = c.get('env', "CHUTES_API_KEY")
+        if not self.api_key:
             raise ValueError("CHUTES_API_KEY environment variable not set. Please set it in the .env file or as an environment variable.")
         
         self.client = OpenAI(
             base_url="https://llm.chutes.ai/v1",
-            api_key=api_key
+            api_key=self.api_key
         )
         self.model = c.get('env', "CHUTES_MODEL", "deepseek-ai/DeepSeek-V3")
-        self.embedding_model = c.get('env', "CHUTES_EMBEDDING_MODEL", "text-embedding-3-small")
+        self.embedding_url = c.get('env', "CHUTES_EMBEDDING_URL", "https://chutes-qwen-qwen3-embedding-8b.chutes.ai/v1/embeddings")
 
 
     ###############################################################################################
@@ -40,16 +41,31 @@ class LlmChutes(LlmLib):
 
     def get_vector_embeddings(self, tag: str, dimensions=1536) -> List[float]|None:
         tag = tag.replace("\n", " ")
-        # Note: Chutes might not support embeddings for all models via the direct API.
-        # We use a default embedding model (likely requiring OpenAI key if not local) or a configured one.
         try:
-            response = self.client.embeddings.create(
-                input=tag,
-                model=self.embedding_model,
+            headers = {
+                "Authorization": "Bearer " + self.api_key,
+                "Content-Type": "application/json"
+            }
+            
+            body = {
+                "input": tag,
+                "model": None
+            }
+
+            response = requests.post(
+                self.embedding_url,
+                headers=headers,
+                json=body
             )
-            return response.data[0].embedding
+
+            if response.status_code == 200:
+                result = response.json()
+                return result['data'][0]['embedding']
+            else:
+                print(f"Chutes Embedding Error: Status {response.status_code}")
+                # print(response.text)
+                return None
         except Exception as e:
             print(f"Chutes Embedding Error")
-            # Uncomment the line below for debugging purposes
             # print(e)
             return None
