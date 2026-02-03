@@ -1,5 +1,4 @@
 from typing import List
-
 from openai import OpenAI
 
 from conversationgenome.ConfigLib import c

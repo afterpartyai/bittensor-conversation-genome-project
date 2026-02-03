@@ -40,7 +40,9 @@ class LlmOpenRouter(LlmLib):
             )
             return response.choices[0].message.content or ""
         except Exception as e:
-            print(f"OpenRouter Completion Error: {e}")
+            print(f"OpenRouter Completion Error")
+            # Uncomment the line below for debugging purposes
+            # print(e)
             return None
 
     def get_vector_embeddings(self, tag: str, dimensions=1536) -> List[float]|None:
@@ -55,5 +57,7 @@ class LlmOpenRouter(LlmLib):
             )
             return response.data[0].embedding
         except Exception as e:
-            print(f"OpenRouter Embedding Error: {e}")
+            print(f"OpenRouter Embedding Error")
+            # Uncomment the line below for debugging purposes
+            # print(e)
             return None
