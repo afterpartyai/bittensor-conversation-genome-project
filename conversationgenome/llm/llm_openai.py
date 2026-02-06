@@ -11,8 +11,9 @@ class LlmOpenAI(LlmLib):
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set. Please set it in the .env file or as an environment variable.")
         self.client = OpenAI(api_key=api_key)
-        self.model = "gpt-4o"
+        self.model = c.get('env', "OPENAI_MODEL", "gpt-5.2")
         self.embedding_model = "text-embedding-3-small"
+        self.reasoning_effort = c.get('env', "OPENAI_REASONING_EFFORT", "none")
 
 
     ###############################################################################################
@@ -20,12 +21,18 @@ class LlmOpenAI(LlmLib):
     ###############################################################################################
     def basic_prompt(self, prompt: str, response_format: str = "text") -> str|None:
         api_format = {"type": "json_object"} if response_format == "json" else None
+        
+        completion_params = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "response_format": api_format,
+        }
+        
+        if self.reasoning_effort != "none":
+            completion_params["reasoning_effort"] = self.reasoning_effort
+
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format=api_format
-            )
+            response = self.client.chat.completions.create(**completion_params)
             return response.choices[0].message.content or ""
         except Exception as e:
             print(f"OpenAI Completion Error")
