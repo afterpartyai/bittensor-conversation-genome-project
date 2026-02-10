@@ -22,5 +22,13 @@ def get_llm_backend(llm_type_override=None) -> LlmLib:
         from .llm_groq import LlmGroq
         return LlmGroq()
     
+    elif llm_type_override == "openrouter":
+        from .llm_openrouter import LlmOpenRouter
+        return LlmOpenRouter()
+    
+    elif llm_type_override == "chutes":
+        from .llm_chutes import LlmChutes
+        return LlmChutes()
+    
     else:
         raise ValueError(f"Unsupported LLM_PROVIDER: {llm_type_override}")
