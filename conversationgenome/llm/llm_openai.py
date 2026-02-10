@@ -13,7 +13,6 @@ class LlmOpenAI(LlmLib):
         self.client = OpenAI(api_key=api_key)
         self.model = c.get('env', "OPENAI_MODEL", "gpt-5.2")
         self.embedding_model = "text-embedding-3-small"
-        self.reasoning_effort = c.get('env', "OPENAI_REASONING_EFFORT", "none")
 
 
     ###############################################################################################
@@ -27,9 +26,6 @@ class LlmOpenAI(LlmLib):
             "messages": [{"role": "user", "content": prompt}],
             "response_format": api_format,
         }
-        
-        if self.reasoning_effort != "none":
-            completion_params["reasoning_effort"] = self.reasoning_effort
 
         try:
             response = self.client.chat.completions.create(**completion_params)
@@ -60,7 +56,7 @@ class LlmOpenAI(LlmLib):
     ###############################################################################################
     ################################## Concrete methods override ##################################
     ###############################################################################################
-    @model_override('gpt-4.1-mini')
+    @model_override('gpt-5-mini')
     def validate_conversation_quality(self, conversation):
         return super().validate_conversation_quality(conversation)
 
