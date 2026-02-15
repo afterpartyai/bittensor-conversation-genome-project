@@ -48,7 +48,7 @@ class GroundTruthTagSimilarityScoringMechanism(ScoringMechanism):
     async def _evaluate_single_response(self, idx, response, task_bundle, full_conversation_neighborhood, zero_score_mask):
         try:
             miner_response = response.cgp_output
-        except Exception:
+        except AttributeError:
             miner_response = response
 
         uuid = f"uuid-{idx}"
@@ -56,7 +56,7 @@ class GroundTruthTagSimilarityScoringMechanism(ScoringMechanism):
         try:
             uuid = response.axon.uuid
             hotkey = response.axon.hotkey
-        except Exception:
+        except AttributeError:
             pass
 
         if not miner_response:
