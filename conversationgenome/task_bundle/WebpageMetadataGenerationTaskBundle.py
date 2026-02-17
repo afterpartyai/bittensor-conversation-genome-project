@@ -1,3 +1,4 @@
+import json
 import random
 import uuid
 from copy import deepcopy
@@ -36,6 +37,7 @@ from conversationgenome.utils.Utils import Utils
 
 class WebpageMarkdownInputData(BaseModel):
     lines: List[Tuple[int, str]]
+
     total: int
     participants: List[str]
     min_convo_windows: int = 0
@@ -76,13 +78,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         tasks = []
-
-        if len(self.input.data.indexed_windows) > number_of_tasks_per_bundle:
-            indexed_windows_subset = random.sample(self.input.data.indexed_windows, number_of_tasks_per_bundle)
-        else:
-            indexed_windows_subset = self.input.data.indexed_windows
-
-        for _, indexed_window in enumerate(indexed_windows_subset):
+        for _ in range(number_of_tasks_per_bundle):
             random_id = str(uuid.uuid4())
             task: WebpageMetadataGenerationTask = WebpageMetadataGenerationTask(
                 mode=self.mode,
@@ -95,7 +91,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                     input_type=self.input.input_type,
                     guid=self.input.guid,
                     data=WebpageMarkdownTaskInputData(
-                        window=indexed_window[1],
+                        window=self.input.data.lines,
                         participants=[]
                     ),
                 ),
@@ -153,19 +149,42 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
             self.input.data.indexed_windows = []
 
     async def _generate_metadata(self) -> None:
-        bt.logging.info(f"Generating metadata")
-
+        bt.logging.info(f"Generating metadata for webpage metadata generation")
+        parsed_json = json.loads(self.input.data.lines[0][1])
         llml = get_llm_backend()
-
-        conversation = Conversation(
-            guid=self.input.guid,
-            lines=self.input.data.lines,
-            participants=self.input.data.participants,
-            miner_task_prompt=self.input.data.prompt,
-        )
-
-        result: RawMetadata = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
-
+        
+        # Max 1000 characters from the main website markdown
+        website_markdown = parsed_json['website_markdown'][:1000]
+        website_metadata = llml.website_to_metadata(website_markdown)
+        tags = [website_metadata.tags]
+        
+        enrichment_lines = []
+        if parsed_json.get('enrichment'):
+            bt.logging.info(f"Generating enrichment metadata for webpage")
+            for query, results in parsed_json['enrichment']['search_results'].items():
+                # Randomly select some results instead of all
+                num_to_select = random.randint(1, min(3, len(results)))
+                selected_results = random.sample(results, num_to_select)
+                
+                for chosen_res in selected_results:
+                    # Use snippet and title directly instead of fetching the page
+                    snippet = chosen_res.get('snippet', '')
+                    title = chosen_res.get('title', '')
+                    enrichment_text = f"{title}\n{snippet}"[:1000]
+                    
+                    if enrichment_text.strip():
+                        enrichment_lines.append((len(enrichment_lines), enrichment_text))
+                        enrichment_metadata = llml.enrichment_to_metadata(enrichment_text)
+                        tags.append(enrichment_metadata.tags)
+        else:
+            bt.logging.info(f"Generating non-enriched metadata for webpage")
+        
+        # Update input data with main website content + selected enrichment results
+        self.input.data.lines = [(0, website_markdown)] + enrichment_lines
+        
+        # Combine all tags from main page and enrichment
+        result: RawMetadata = llml.combine_metadata_tags(tags, generateEmbeddings=True)
+        
         if not result:
             bt.logging.error(f"ERROR:2873226353. No metadata returned. Aborting.")
             return
@@ -173,7 +192,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         if not result.success:
             bt.logging.error(f"ERROR:2873226354. Metadata failed: {result}. Aborting.")
             return
-
+        
         self.input.metadata = ConversationMetadata(
             tags=getattr(result, "tags", []),
             vectors=getattr(result, "vectors", {}),

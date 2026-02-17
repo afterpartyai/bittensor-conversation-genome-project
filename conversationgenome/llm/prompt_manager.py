@@ -45,6 +45,16 @@ class PromptManager:
             raise ValueError("tags cannot be empty.")
         return self._get("validate_tags.j2", tags_string=",".join(tags))
 
+    def website_to_metadata_prompt(self, website_content: str) -> str:
+        if not website_content.strip():
+            raise ValueError("website_content cannot be empty.")
+        return self._get("website_to_metadata.j2", website_content=website_content)
+
+    def enrichment_to_metadata_prompt(self, enrichment_content: str) -> str:
+        if not enrichment_content.strip():
+            raise ValueError("enrichment_content cannot be empty.")
+        return self._get("enrichment_to_metadata.j2", enrichment_content=enrichment_content)
+
     def _get(self, prompt_location: str, **kwargs) -> str:
         try:
             template = self.env.get_template(prompt_location)
