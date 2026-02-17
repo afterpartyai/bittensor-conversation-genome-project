@@ -116,34 +116,54 @@ def test_enforce_minimum_convo_windows_keeps_when_above_minimum():
 @pytest.mark.asyncio
 async def test_generate_metadata_calls_llm_and_sets_metadata():
     bundle = DummyData.webpage_metadata_generation_task_bundle()
-    bundle.input.data.lines = DummyData.lines()
+    # Set up data in the expected JSON format
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage content", "enrichment": null}')]
     bundle.input.data.participants = DummyData.participants()
     bundle.input.guid = DummyData.guid()
     
     with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
         mock_llm = Mock()
-        mock_result = Mock()
-        mock_result.success = True
-        mock_result.tags = ["tag1", "tag2"]
-        mock_result.vectors = {"tag1": {"vectors": [0.1]}}
-        mock_llm.conversation_to_metadata.return_value = mock_result
+        
+        # Mock website_to_metadata
+        website_result = Mock()
+        website_result.tags = ["tag1", "tag2"]
+        mock_llm.website_to_metadata.return_value = website_result
+        
+        # Mock combine_metadata_tags
+        combine_result = Mock()
+        combine_result.success = True
+        combine_result.tags = ["tag1", "tag2"]
+        combine_result.vectors = {"tag1": {"vectors": [0.1]}}
+        mock_llm.combine_metadata_tags.return_value = combine_result
+        
         mock_llm_factory.return_value = mock_llm
         
         await bundle._generate_metadata()
         
         assert bundle.input.metadata.tags == ["tag1", "tag2"]
         assert bundle.input.metadata.vectors == {"tag1": {"vectors": [0.1]}}
+        
+        # Verify website_to_metadata was called
+        mock_llm.website_to_metadata.assert_called_once_with("Main webpage content")
+        
+        # Verify combine_metadata_tags was called
+        mock_llm.combine_metadata_tags.assert_called_once_with([["tag1", "tag2"]], generateEmbeddings=True)
 
 
 @pytest.mark.asyncio
 async def test_generate_metadata_handles_failure():
     bundle = DummyData.webpage_metadata_generation_task_bundle()
+    # Set up data in the expected JSON format
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage content", "enrichment": null}')]
     bundle.input.metadata = None  # Clear existing metadata
     with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
         mock_llm = Mock()
-        mock_result = Mock()
-        mock_result.success = False
-        mock_llm.conversation_to_metadata.return_value = mock_result
+        
+        # Mock combine_metadata_tags to return failure
+        combine_result = Mock()
+        combine_result.success = False
+        mock_llm.combine_metadata_tags.return_value = combine_result
+        
         mock_llm_factory.return_value = mock_llm
         
         await bundle._generate_metadata()
