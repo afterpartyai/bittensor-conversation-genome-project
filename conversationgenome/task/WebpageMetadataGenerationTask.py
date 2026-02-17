@@ -29,14 +29,27 @@ class WebpageMetadataGenerationTask(Task):
         llml = get_llm_backend()
 
         try:
-            conversation = Conversation(
-                guid=self.input.guid,
-                lines=self.input.data.window,
-                miner_task_prompt=self.prompt_chain[0].prompt_template,
-            )
-
-            result = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)
-            output = {"tags": result.tags, "vectors": result.vectors}
+            all_tags = []
+            
+            # Process each line in the window
+            for idx, (line_idx, content) in enumerate(self.input.data.window):
+                if idx == 0:
+                    # First line is always the main webpage content
+                    result = llml.website_to_metadata(content, generateEmbeddings=False)
+                else:
+                    # Subsequent lines are enrichment content
+                    result = llml.enrichment_to_metadata(content, generateEmbeddings=False)
+                
+                if result and result.tags:
+                    all_tags.append(result.tags)
+            
+            # Combine all tags from webpage and enrichment content
+            if all_tags:
+                combined_result = llml.combine_metadata_tags(all_tags, generateEmbeddings=False)
+                output = {"tags": combined_result.tags if combined_result else [], "vectors": combined_result.vectors if combined_result else None}
+            else:
+                output = {"tags": [], "vectors": None}
+                
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")
             raise e

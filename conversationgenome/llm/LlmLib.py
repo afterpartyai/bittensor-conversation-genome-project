@@ -213,6 +213,8 @@ class LlmLib(ABC):
         return RawMetadata(tags=tags, vectors=vectors, success=True)
 
     def combine_metadata_tags(self, metadata_tags: list, generateEmbeddings=False) -> RawMetadata|None:
+        if not metadata_tags:
+            return None
         prompt = prompt_manager.combine_named_entities_prompt(metadata_tags)
         response_content = self.basic_prompt(prompt)
         if not isinstance(response_content, str):

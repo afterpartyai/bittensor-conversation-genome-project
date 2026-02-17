@@ -158,3 +158,173 @@ async def test_get_vector_embeddings_set_calls_llm():
     mock_llm.get_vector_embeddings_set.return_value = {"tag": [0.1]}
     result = await bundle._get_vector_embeddings_set(llml=mock_llm, tags=["tag"])
     assert result == {"tag": [0.1]}
+
+
+@pytest.mark.asyncio
+async def test_generate_metadata_with_enrichment():
+    bundle = DummyData.webpage_metadata_generation_task_bundle()
+    # Mock webpage data with enrichment
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage about AI", "enrichment": {"search_results": {"query1": [{"title": "AI News", "snippet": "Latest AI developments"}]}}}')]
+    
+    with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        
+        # Mock website_to_metadata
+        website_result = Mock()
+        website_result.tags = ["artificial intelligence"]
+        mock_llm.website_to_metadata.return_value = website_result
+        
+        # Mock enrichment_to_metadata
+        enrichment_result = Mock()
+        enrichment_result.tags = ["machine learning"]
+        mock_llm.enrichment_to_metadata.return_value = enrichment_result
+        
+        # Mock combine_metadata_tags
+        combine_result = Mock()
+        combine_result.success = True
+        combine_result.tags = ["artificial intelligence", "machine learning"]
+        combine_result.vectors = {"artificial intelligence": {"vectors": [0.1]}}
+        mock_llm.combine_metadata_tags.return_value = combine_result
+        
+        mock_llm_factory.return_value = mock_llm
+        
+        await bundle._generate_metadata()
+        
+        # Verify website_to_metadata was called for main content
+        mock_llm.website_to_metadata.assert_called_with("Main webpage about AI")
+        
+        # Verify enrichment_to_metadata was called for enrichment content
+        mock_llm.enrichment_to_metadata.assert_called_with("AI News\nLatest AI developments")
+        
+        # Verify combine_metadata_tags was called with both tag sets
+        mock_llm.combine_metadata_tags.assert_called_with([["artificial intelligence"], ["machine learning"]], generateEmbeddings=True)
+        
+        # Verify input data lines were updated
+        assert len(bundle.input.data.lines) == 2
+        assert bundle.input.data.lines[0] == (0, "Main webpage about AI")
+        assert bundle.input.data.lines[1] == (0, "AI News\nLatest AI developments")
+
+
+@pytest.mark.asyncio
+async def test_generate_metadata_without_enrichment():
+    bundle = DummyData.webpage_metadata_generation_task_bundle()
+    # Mock webpage data without enrichment
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage about AI", "enrichment": null}')]
+    
+    with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        
+        # Mock website_to_metadata
+        website_result = Mock()
+        website_result.tags = ["artificial intelligence"]
+        mock_llm.website_to_metadata.return_value = website_result
+        
+        # Mock combine_metadata_tags
+        combine_result = Mock()
+        combine_result.success = True
+        combine_result.tags = ["artificial intelligence"]
+        combine_result.vectors = {"artificial intelligence": {"vectors": [0.1]}}
+        mock_llm.combine_metadata_tags.return_value = combine_result
+        
+        mock_llm_factory.return_value = mock_llm
+        
+        await bundle._generate_metadata()
+        
+        # Verify website_to_metadata was called
+        mock_llm.website_to_metadata.assert_called_with("Main webpage about AI")
+        
+        # Verify enrichment_to_metadata was not called
+        mock_llm.enrichment_to_metadata.assert_not_called()
+        
+        # Verify combine_metadata_tags was called with only website tags
+        mock_llm.combine_metadata_tags.assert_called_with([["artificial intelligence"]], generateEmbeddings=True)
+        
+        # Verify input data lines contain only main content
+        assert len(bundle.input.data.lines) == 1
+        assert bundle.input.data.lines[0] == (0, "Main webpage about AI")
+
+
+@pytest.mark.asyncio
+async def test_generate_metadata_randomly_selects_enrichment_results():
+    bundle = DummyData.webpage_metadata_generation_task_bundle()
+    # Mock webpage data with multiple enrichment results
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage about AI", "enrichment": {"search_results": {"query1": [{"title": "AI News 1", "snippet": "Snippet 1"}, {"title": "AI News 2", "snippet": "Snippet 2"}, {"title": "AI News 3", "snippet": "Snippet 3"}]}}}')]
+    
+    with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory, \
+         patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.random.sample') as mock_sample, \
+         patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.random.randint') as mock_randint:
+        
+        # Mock random selection to return 2 results
+        mock_randint.return_value = 2
+        mock_sample.return_value = [{"title": "AI News 1", "snippet": "Snippet 1"}, {"title": "AI News 2", "snippet": "Snippet 2"}]
+        
+        mock_llm = Mock()
+        
+        # Mock website_to_metadata
+        website_result = Mock()
+        website_result.tags = ["artificial intelligence"]
+        mock_llm.website_to_metadata.return_value = website_result
+        
+        # Mock enrichment_to_metadata
+        enrichment_result = Mock()
+        enrichment_result.tags = ["machine learning"]
+        mock_llm.enrichment_to_metadata.return_value = enrichment_result
+        
+        # Mock combine_metadata_tags
+        combine_result = Mock()
+        combine_result.success = True
+        combine_result.tags = ["artificial intelligence", "machine learning"]
+        combine_result.vectors = {"artificial intelligence": {"vectors": [0.1]}}
+        mock_llm.combine_metadata_tags.return_value = combine_result
+        
+        mock_llm_factory.return_value = mock_llm
+        
+        await bundle._generate_metadata()
+        
+        # Verify random.sample was called to select 2 results from 3 available
+        mock_sample.assert_called_once()
+        args, kwargs = mock_sample.call_args
+        assert len(args[0]) == 3  # 3 results available
+        assert args[1] == 2  # Selected 2 results
+
+
+@pytest.mark.asyncio
+async def test_generate_metadata_handles_llm_failure():
+    bundle = DummyData.webpage_metadata_generation_task_bundle()
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage about AI", "enrichment": null}')]
+    bundle.input.metadata = None  # Clear existing metadata
+    
+    with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        
+        # Mock combine_metadata_tags to return failure
+        combine_result = Mock()
+        combine_result.success = False
+        mock_llm.combine_metadata_tags.return_value = combine_result
+        
+        mock_llm_factory.return_value = mock_llm
+        
+        await bundle._generate_metadata()
+        
+        # Verify metadata remains None on failure
+        assert bundle.input.metadata is None
+
+
+@pytest.mark.asyncio
+async def test_generate_metadata_handles_no_result():
+    bundle = DummyData.webpage_metadata_generation_task_bundle()
+    bundle.input.data.lines = [(0, '{"website_markdown": "Main webpage about AI", "enrichment": null}')]
+    bundle.input.metadata = None  # Clear existing metadata
+    
+    with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        
+        # Mock combine_metadata_tags to return None
+        mock_llm.combine_metadata_tags.return_value = None
+        
+        mock_llm_factory.return_value = mock_llm
+        
+        await bundle._generate_metadata()
+        
+        # Verify metadata remains None when no result
+        assert bundle.input.metadata is None
