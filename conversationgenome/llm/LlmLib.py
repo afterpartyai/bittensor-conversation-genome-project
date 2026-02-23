@@ -75,6 +75,8 @@ class LlmLib(ABC):
 
         return RawMetadata(tags=tags, vectors=vectors, success=True)
     
+
+
     def raw_transcript_to_named_entities(self, raw_transcript: str, generateEmbeddings=False) -> RawMetadata|None:
         prompt = prompt_manager.raw_transcript_to_named_entities_prompt(raw_transcript)
         response_content = self.basic_prompt(prompt)
@@ -90,7 +92,8 @@ class LlmLib(ABC):
         if generateEmbeddings:
             vectors = self.get_vector_embeddings_set(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
-    
+
+
     def raw_webpage_to_named_entities(self, raw_webpage: str, generateEmbeddings=False) -> RawMetadata|None:
         prompt = prompt_manager.raw_webpage_to_named_entities_prompt(raw_webpage)
         response_content = self.basic_prompt(prompt)
@@ -176,6 +179,56 @@ class LlmLib(ABC):
             random_indices = random.sample(range(len(clean_tag_list)), 20)
             clean_tag_list = [clean_tag_list[i] for i in random_indices]
         return clean_tag_list
+
+    def website_to_metadata(self, website_content: str, generateEmbeddings=False) -> RawMetadata|None:
+        prompt = prompt_manager.website_to_metadata_prompt(website_content)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+
+    def enrichment_to_metadata(self, enrichment_content: str, generateEmbeddings=False) -> RawMetadata|None:
+        prompt = prompt_manager.enrichment_to_metadata_prompt(enrichment_content)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+
+    def combine_metadata_tags(self, metadata_tags: list, generateEmbeddings=False) -> RawMetadata|None:
+        if not metadata_tags:
+            return None
+        prompt = prompt_manager.combine_named_entities_prompt(metadata_tags)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No tags returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
 
 ###############################################################################################
 ##################################### Override decorators #####################################
