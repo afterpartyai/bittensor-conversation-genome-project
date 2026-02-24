@@ -1,4 +1,3 @@
-from typing import Annotated
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -10,7 +9,7 @@ from conversationgenome.api.models.conversation_metadata import ConversationMeta
 
 
 class Conversation(BaseModel):
-    guid: Annotated[str, ...]
+    guid: str
     lines: List[Tuple[int, str]]
     miner_task_prompt: Optional[str] = None
     miner_task_type: Optional[Literal["conversation_tagging", "webpage_metadata_generation", "survey_tagging", "named_entities_extraction"]] = None
