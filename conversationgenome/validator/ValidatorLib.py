@@ -23,9 +23,9 @@ except:
     bt = MockBt()
 
 if c.get('env', 'FORCE_LOG') == 'debug':
-    bt.logging.enable_debug(True)
+    bt.logging.set_debug(True)
 elif c.get('env', 'FORCE_LOG') == 'info':
-    bt.logging.enable_default(True)
+    bt.logging.set_default(True)
 
 
 class ValidatorLib:

@@ -1,6 +1,6 @@
 # Core dependencies
 python-dotenv==1.0.1
-bittensor==9.0.0
+bittensor==10.1.0
 torch==2.1.1
 openai==1.30.3
 loguru==0.7.0
