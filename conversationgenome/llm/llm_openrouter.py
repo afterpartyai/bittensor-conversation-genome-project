@@ -1,6 +1,6 @@
 from typing import List
 import json
-from openai import OpenAI
+from openai import OpenAI, NOT_GIVEN
 
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.LlmLib import LlmLib, model_override
@@ -25,7 +25,7 @@ class LlmOpenRouter(LlmLib):
     ################################## Abstract methods override ##################################
     ###############################################################################################
     def basic_prompt(self, prompt: str, response_format: str = "text") -> str|None:
-        api_format = {"type": "json_object"} if response_format == "json" else None
+        api_format = {"type": "json_object"} if response_format == "json" else NOT_GIVEN
         
         extra_body = {}
         if self.provider_preference:
