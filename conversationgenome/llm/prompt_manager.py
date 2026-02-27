@@ -55,6 +55,11 @@ class PromptManager:
             raise ValueError("enrichment_content cannot be empty.")
         return self._get("enrichment_to_metadata.j2", enrichment_content=enrichment_content)
 
+    def enrichment_to_named_entities_prompt(self, enrichment_content: str) -> str:
+        if not enrichment_content.strip():
+            raise ValueError("enrichment_content cannot be empty.")
+        return self._get("enrichment_to_named_entities.j2", enrichment_content=enrichment_content)
+
     def _get(self, prompt_location: str, **kwargs) -> str:
         try:
             template = self.env.get_template(prompt_location)

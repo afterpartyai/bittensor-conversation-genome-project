@@ -4,30 +4,6 @@ import pytest
 from conversationgenome.task_bundle.NamedEntitiesExtractionTaskBundle import NamedEntitiesExtractionTaskBundle
 from tests.mocks.DummyData import DummyData
 
-
-def test_get_webpage_text_returns_text_content():
-    bundle = NamedEntitiesExtractionTaskBundle()
-    with patch('requests.get') as mock_get:
-        mock_response = Mock()
-        mock_response.text = "<html><body><script>alert('test')</script><p>Line 1</p><p>Line 2</p></body></html>"
-        mock_response.headers = {'content-type': 'html'}
-        mock_get.return_value = mock_response
-        
-        result = bundle.get_webpage_text("http://example.com")
-        assert "Line 1" in result
-        assert "Line 2" in result
-        assert "alert" not in result  # Script content should be removed
-
-
-def test_get_webpage_text_handles_request_errors():
-    bundle = NamedEntitiesExtractionTaskBundle()
-    with patch('requests.get') as mock_get:
-        mock_get.side_effect = Exception("Connection error")
-        
-        result = bundle.get_webpage_text("http://example.com")
-        assert result == ""
-
-
 def test_is_ready_false_when_no_metadata():
     bundle = DummyData.named_entities_extraction_task_bundle()
     bundle.input.metadata = None
@@ -103,45 +79,6 @@ def test_mask_task_for_miner_sets_window_idx():
     masked = bundle.mask_task_for_miner(task)
     assert masked.input.data.window_idx == -1
 
-
-@pytest.mark.asyncio
-async def test_generate_metadata_calls_llm():
-    bundle = DummyData.named_entities_extraction_task_bundle()
-    # Prepare proper JSON structure with transcript_text and enrichment data
-    transcript_json = {
-        "transcript_text": "Mayor Adams proposed an amendment to Local Law 55.",
-        "enrichment": {
-            "search_results": {
-                "query1": [{"url": "http://example.com/1"}]
-            }
-        }
-    }
-    bundle.input.data.lines = [(0, json.dumps(transcript_json))]
-    
-    with patch('conversationgenome.task_bundle.NamedEntitiesExtractionTaskBundle.get_llm_backend') as mock_llm_factory, \
-         patch.object(NamedEntitiesExtractionTaskBundle, 'get_webpage_text', return_value="web content"):
-        mock_llm = Mock()
-        mock_result_transcript = Mock()
-        mock_result_transcript.tags = ["Mayor Adams", "Local Law 55"]
-        mock_result_web = Mock()
-        mock_result_web.tags = ["Downtown Project"]
-        combined_result = Mock()
-        combined_result.tags = ["Mayor Adams", "Local Law 55", "Downtown Project"]
-        combined_result.vectors = {
-            "Mayor Adams": {"vectors": [0.1]},
-            "Local Law 55": {"vectors": [0.2]},
-            "Downtown Project": {"vectors": [0.3]}
-        }
-        
-        mock_llm.raw_transcript_to_named_entities.return_value = mock_result_transcript
-        mock_llm.raw_webpage_to_named_entities.return_value = mock_result_web
-        mock_llm.combine_named_entities.return_value = combined_result
-        mock_llm_factory.return_value = mock_llm
-        
-        bundle._generate_metadata()
-        
-        assert bundle.input.metadata.tags == ["Mayor Adams", "Local Law 55", "Downtown Project"]
-        assert "Mayor Adams" in bundle.input.metadata.vectors
 
 
 @pytest.mark.asyncio

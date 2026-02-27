@@ -212,6 +212,23 @@ class LlmLib(ABC):
             vectors = self.get_vector_embeddings_set(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
 
+    def enrichment_to_NER(self, enrichment_content: str, generateEmbeddings=False) -> RawMetadata|None:
+        """Extract named entities from enrichment content (title/snippet)."""
+        prompt = prompt_manager.enrichment_to_named_entities_prompt(enrichment_content)
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+        tags = Utils.clean_tags(response_content.split(","))
+        if Utils.empty(tags):
+            print("No named entities returned")
+            return None
+        
+        vectors = None
+        if generateEmbeddings:
+            vectors = self.get_vector_embeddings_set(tags)
+        return RawMetadata(tags=tags, vectors=vectors, success=True)
+
     def combine_metadata_tags(self, metadata_tags: list, generateEmbeddings=False) -> RawMetadata|None:
         if not metadata_tags:
             return None
