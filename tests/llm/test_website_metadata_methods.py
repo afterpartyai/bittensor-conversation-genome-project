@@ -98,6 +98,53 @@ def test_enrichment_to_metadata_cleans_tags():
     assert 'sustainable development' in res.tags
 
 
+def test_enrichment_to_NER_produces_RawMetadata():
+    llml = get_llm_backend()
+    enrichment_content = "AI News\nLatest AI developments"
+    res = llml.enrichment_to_NER(enrichment_content)
+    assert res is not None
+    assert type(res) == RawMetadata
+
+
+def test_enrichment_to_NER_does_not_produce_embeds():
+    llml = get_llm_backend()
+    enrichment_content = "AI News\nLatest AI developments"
+    res = llml.enrichment_to_NER(enrichment_content, False)
+    assert res is not None
+    assert len(res.tags)
+    assert res.success == True
+    assert res.vectors is None
+
+
+def test_enrichment_to_NER_produces_embeds_if_specified():
+    llml = get_llm_backend()
+    enrichment_content = "AI News\nLatest AI developments"
+    res = llml.enrichment_to_NER(enrichment_content, True)
+    assert res is not None
+    assert len(res.tags)
+    assert res.success == True
+    assert len(res.vectors)
+    assert len(res.tags) == len(res.vectors)
+
+
+def test_enrichment_to_NER_returns_none_on_empty_content():
+    llml = get_llm_backend()
+    with pytest.raises(ValueError, match="enrichment_content cannot be empty"):
+        llml.enrichment_to_NER("")
+
+
+def test_enrichment_to_NER_cleans_tags():
+    llml = get_llm_backend()
+    llml.basic_prompt = Mock(side_effect=lambda x: 'Company A          , Location B,\n Person C, \tProject D')
+    res = llml.enrichment_to_NER("test content")
+    assert res is not None
+    assert len(res.tags) == 4
+    assert 'company a' in res.tags
+    assert 'location b' in res.tags
+    assert 'person c' in res.tags
+    assert 'project d' in res.tags
+
+
 def test_combine_metadata_tags_produces_RawMetadata():
     llml = get_llm_backend()
     metadata_tags = [["artificial intelligence", "machine learning"], ["data science", "deep learning"]]

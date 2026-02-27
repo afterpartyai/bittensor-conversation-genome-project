@@ -88,16 +88,24 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
         transcript_metadata = llml.raw_transcript_to_named_entities(transcript_text)
         tags = [transcript_metadata.tags]
 
-        web_texts = []
-        if parsed_json['enrichment']:
+        enrichment_lines = []
+        if parsed_json.get('enrichment'):
             bt.logging.info(f"Generating enrichment metadata for NER")
             for query, results in parsed_json['enrichment']['search_results'].items():
-                chosen_res = random.choice(results)
-                # Max 1000 characters
-                web_text = self.get_webpage_text(chosen_res['url'])[:1000]
-                if web_text:
-                    web_texts.append((0, web_text))
-                    tags.append(llml.raw_webpage_to_named_entities(web_text).tags)
+                # Randomly select some results instead of all
+                num_to_select = random.randint(1, min(3, len(results)))
+                selected_results = random.sample(results, num_to_select)
+                
+                for chosen_res in selected_results:
+                    # Use snippet and title directly instead of fetching the page
+                    snippet = chosen_res.get('snippet', '')
+                    title = chosen_res.get('title', '')
+                    enrichment_text = f"{title}\n{snippet}"[:1000]
+                    
+                    if enrichment_text.strip():
+                        enrichment_lines.append((len(enrichment_lines), enrichment_text))
+                        enrichment_metadata = llml.enrichment_to_NER(enrichment_text)
+                        tags.append(enrichment_metadata.tags)
         else:
             bt.logging.info(f"Generating non-enriched metadata for NER")
 
@@ -108,42 +116,7 @@ class NamedEntitiesExtractionTaskBundle(TaskBundle):
             participantProfiles = None
         )
         # Give transcript + selected web pages to miner
-        self.input.data.lines = [(0, transcript_text)] + web_texts
-
-
-    def get_webpage_text(self, url):
-        try:
-            # Fetch the content
-            response = requests.get(url)
-            response.raise_for_status() # Raise error for bad status (404, 500, etc.)
-
-            # Check if the content is a PDF
-            content_type = response.headers.get('content-type', '').lower()
-            is_pdf = 'application/pdf' in content_type or url.lower().endswith('.pdf')
-
-            if is_pdf and pypdf:
-                bt.logging.info('Extracting enrichment from PDF')
-                # Extract text from PDF
-                pdf_file = BytesIO(response.content)
-                pdf_reader = pypdf.PdfReader(pdf_file)
-                text_content = ""
-                for page in pdf_reader.pages:
-                    text_content += page.extract_text() + " "
-                return text_content.strip()
-            else:
-                bt.logging.info('Extracting enrichment from HTML')
-                # Parse the HTML
-                soup = BeautifulSoup(response.text, 'html.parser')
-
-                # Extract text, using a space as a separator between HTML tags
-                # strip=True removes leading/trailing whitespace
-                text_content = soup.get_text(separator=' ', strip=True)
-                
-                return text_content
-
-        except Exception as e:
-            return ''
-
+        self.input.data.lines = [(0, transcript_text)] + enrichment_lines
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         tasks = []
