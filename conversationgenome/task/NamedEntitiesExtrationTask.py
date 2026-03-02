@@ -36,21 +36,26 @@ class NamedEntitiesExtractionTask(Task):
             return {"tags": []}
         
         try:
-            transcript = self.input.data.window[0][1]
-            if self.input.data.window[1:]:
-                web_pages = [element[1] for element in self.input.data.window[1:]]
+            all_tags = []
+            # Process each line in the window
+            for idx, (line_idx, content) in enumerate(self.input.data.window):
+                if idx == 0:
+                    # First line is always the main transcript content
+                    result = llml.raw_transcript_to_named_entities(content, generateEmbeddings=False)
+                else:
+                    # Subsequent lines are enrichment content
+                    result = llml.enrichment_to_NER(content, generateEmbeddings=False)
+
+                if result and result.tags:
+                    all_tags.append(result.tags)
+
+            # Combine all tags from transcript and enrichment content
+            if all_tags:
+                combined_result = llml.combine_named_entities(all_tags, generateEmbeddings=False)
+                output = {"tags": combined_result.tags if combined_result else [], "vectors": combined_result.vectors if combined_result else None}
             else:
-                # No enrichment provided
-                web_pages = []
+                output = {"tags": [], "vectors": None}
 
-            tag_sets = []
-            tag_sets.append(llml.raw_transcript_to_named_entities(transcript).tags)
-            for page_contents in web_pages:
-                tag_sets.append(llml.raw_webpage_to_named_entities(page_contents).tags)
-
-            combined_tags = llml.combine_named_entities(tag_sets).tags
-
-            output = {"tags": combined_tags}
         except Exception as e:
             bt.logging.error(f"Error during mining: {e}")
             raise e
