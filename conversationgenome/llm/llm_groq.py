@@ -20,13 +20,14 @@ class LlmGroq(LlmLib):
     ###############################################################################################
     def basic_prompt(self, prompt: str, response_format: str = "text") -> str:
         # Groq supports the 'json_object' response format on specific models
-        api_format = {"type": "json_object"} if response_format == "json" else None
+        completion_params = {
+            "messages": [{"role": "user", "content": prompt}],
+            "model": self.model,
+        }
+        if response_format == "json":
+            completion_params["response_format"] = {"type": "json_object"}
         try:
-            response = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model=self.model,
-                response_format=api_format
-            )
+            response = self.client.chat.completions.create(**completion_params)
             return response.choices[0].message.content or ""
         except Exception as e:
             print(f"Groq Completion Error")

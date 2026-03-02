@@ -25,19 +25,20 @@ class LlmOpenRouter(LlmLib):
     ################################## Abstract methods override ##################################
     ###############################################################################################
     def basic_prompt(self, prompt: str, response_format: str = "text") -> str|None:
-        api_format = {"type": "json_object"} if response_format == "json" else None
-        
         extra_body = {}
         if self.provider_preference:
             extra_body["provider"] = {"order": [self.provider_preference]}
 
+        completion_params = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "extra_body": extra_body,
+        }
+        if response_format == "json":
+            completion_params["response_format"] = {"type": "json_object"}
+
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format=api_format,
-                extra_body=extra_body
-            )
+            response = self.client.chat.completions.create(**completion_params)
             return response.choices[0].message.content or ""
         except Exception as e:
             print(f"OpenRouter Completion Error")

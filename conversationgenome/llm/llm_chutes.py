@@ -24,14 +24,15 @@ class LlmChutes(LlmLib):
     ################################## Abstract methods override ##################################
     ###############################################################################################
     def basic_prompt(self, prompt: str, response_format: str = "text") -> str|None:
-        api_format = {"type": "json_object"} if response_format == "json" else None
-        
+        completion_params = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if response_format == "json":
+            completion_params["response_format"] = {"type": "json_object"}
+
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format=api_format,
-            )
+            response = self.client.chat.completions.create(**completion_params)
             return response.choices[0].message.content or ""
         except Exception as e:
             print(f"Chutes Completion Error")

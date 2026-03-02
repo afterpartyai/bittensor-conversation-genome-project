@@ -19,13 +19,12 @@ class LlmOpenAI(LlmLib):
     ################################## Abstract methods override ##################################
     ###############################################################################################
     def basic_prompt(self, prompt: str, response_format: str = "text") -> str|None:
-        api_format = {"type": "json_object"} if response_format == "json" else None
-        
         completion_params = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "response_format": api_format,
         }
+        if response_format == "json":
+            completion_params["response_format"] = {"type": "json_object"}
 
         try:
             response = self.client.chat.completions.create(**completion_params)
