@@ -112,7 +112,7 @@ class WandbLib:
             name=f"{self.run_name_prefix}-{current_timestamp_ms}",  # f"conversationgenome/cguid_{c_guid}",
             entity=self.ENTITY,
             config=self.run_config,
-            reinit=True,
+            reinit="allow",
         )
 
         # Nothing logged yet
