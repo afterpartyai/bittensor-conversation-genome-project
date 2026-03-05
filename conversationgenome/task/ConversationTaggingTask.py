@@ -21,6 +21,7 @@ class ConversationTaskInput(BaseModel):
     guid: str
     input_type: Literal["conversation"]
     data: ConversationTaskInputData
+    input_categories: Optional[List[str]] = None
 
 
 class ConversationTaggingTask(Task):
@@ -35,6 +36,7 @@ class ConversationTaggingTask(Task):
                 guid=self.input.guid,
                 lines=self.input.data.window,
                 miner_task_prompt=self.prompt_chain[0].prompt_template,
+                input_categories=self.input.input_categories
             )
 
             result = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=False)

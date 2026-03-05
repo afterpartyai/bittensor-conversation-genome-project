@@ -42,6 +42,7 @@ class ConversationInput(BaseModel):
     input_type: Literal["conversation"]
     guid: ForceStr
     data: ConversationInputData
+    input_categories: Optional[List[str]]
     metadata: Optional[ConversationMetadata] = None
     quality_score: Optional[int] = None
 
@@ -120,6 +121,7 @@ class ConversationTaggingTaskBundle(TaskBundle):
                         window=indexed_window[1],
                         participants=[]
                     ),
+                    input_categories=self.input.input_categories
                 ),
                 prompt_chain=self.prompt_chain,
                 example_output=self.example_output,
@@ -190,6 +192,7 @@ class ConversationTaggingTaskBundle(TaskBundle):
             lines=self.input.data.lines,
             participants=self.input.data.participants,
             miner_task_prompt=self.input.data.prompt,
+            input_categories=self.input.input_categories
         )
         result: RawMetadata = llml.conversation_to_metadata(conversation=conversation, generateEmbeddings=True)
 

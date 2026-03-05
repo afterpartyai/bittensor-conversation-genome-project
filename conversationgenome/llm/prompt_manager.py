@@ -30,6 +30,11 @@ class PromptManager:
             raise ValueError("conversation_to_analyze cannot be empty.")
         return self._get("conversation_to_metadata.j2", conversation_to_analyze=conversation_to_analyze)
 
+    def conversation_to_metadata_coding_prompt(self, conversation_to_analyze: str) -> str:
+        if not conversation_to_analyze.strip():
+            raise ValueError("conversation_to_analyze cannot be empty.")
+        return self._get("conversation_to_metadata_coding.j2", conversation_to_analyze=conversation_to_analyze)
+
     def conversation_quality_prompt(self, transcript_text: str) -> str:
         if not transcript_text:
             raise ValueError("transcript_text cannot be empty.")

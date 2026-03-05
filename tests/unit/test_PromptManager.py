@@ -33,6 +33,19 @@ def test_conversation_to_metadata_prompt_empty():
         prompt_manager.conversation_to_metadata_prompt(conversation_to_analyze="")
 
 
+def test_conversation_to_metadata_coding_prompt():
+    conversation_xml = "<conversation><p0>Hello</p0><p1>Hi there!</p1></conversation>"
+    prompt = prompt_manager.conversation_to_metadata_coding_prompt(conversation_to_analyze=conversation_xml)
+    assert isinstance(prompt, str)
+    assert len(prompt) > 0
+    assert conversation_xml in prompt
+
+
+def test_conversation_to_metadata_coding_prompt_empty():
+    with pytest.raises(ValueError, match="conversation_to_analyze cannot be empty"):
+        prompt_manager.conversation_to_metadata_coding_prompt(conversation_to_analyze="")
+
+
 def test_raw_transcript_to_named_entities_prompt():
     transcript = "Hello, my name is John. I live in New York."
     prompt = prompt_manager.raw_transcript_to_named_entities_prompt(raw_transcript=transcript)
