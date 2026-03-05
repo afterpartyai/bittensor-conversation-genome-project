@@ -42,7 +42,7 @@ class ConversationInput(BaseModel):
     input_type: Literal["conversation"]
     guid: ForceStr
     data: ConversationInputData
-    input_categories: Optional[List[str]]
+    input_categories: Optional[List[str]] = None
     metadata: Optional[ConversationMetadata] = None
     quality_score: Optional[int] = None
 
