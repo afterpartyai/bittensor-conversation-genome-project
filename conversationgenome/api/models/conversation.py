@@ -19,3 +19,4 @@ class Conversation(BaseModel):
     indexed_windows: Optional[List[Tuple[int, List[Tuple[int, str]]]]] = None
     windows: Optional[List[List[str]]] = None
     metadata: Optional[ConversationMetadata] = None
+    input_categories: Optional[List[str]] = None

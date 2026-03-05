@@ -57,7 +57,12 @@ class LlmLib(ABC):
     ###############################################################################################
     def conversation_to_metadata(self, conversation: Conversation, generateEmbeddings=False) -> RawMetadata|None:
         convo_xml, participants = Utils.generate_convo_xml(conversation)
-        prompt = prompt_manager.conversation_to_metadata_prompt(convo_xml)
+
+        if conversation.input_categories and 'coding' in conversation.input_categories:
+            prompt = prompt_manager.conversation_to_metadata_coding_prompt(convo_xml)
+        else:
+            prompt = prompt_manager.conversation_to_metadata_prompt(convo_xml)
+            
         response_content = self.basic_prompt(prompt)
 
         if not isinstance(response_content, str):
