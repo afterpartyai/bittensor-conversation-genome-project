@@ -66,10 +66,10 @@ async def test_mine_returns_expected_tags_and_vectors():
         assert result["vectors"] == {"webpage": [0.1, 0.2], "content": [0.3, 0.4], "enrichment": [0.5, 0.6], "metadata": [0.7, 0.8]}
         
         # Verify website_to_metadata was called for main content
-        mock_llml.website_to_metadata.assert_called_once_with("This is webpage content.", generateEmbeddings=False)
+        mock_llml.website_to_metadata.assert_called_once_with("This is webpage content.", generateEmbeddings=False, input_categories=None)
         
         # Verify enrichment_to_metadata was called for enrichment content
-        mock_llml.enrichment_to_metadata.assert_called_once_with("Enrichment content here.", generateEmbeddings=False)
+        mock_llml.enrichment_to_metadata.assert_called_once_with("Enrichment content here.", generateEmbeddings=False, input_categories=None)
         
         # Verify combine_metadata_tags was called with both tag sets
         mock_llml.combine_metadata_tags.assert_called_once_with([["webpage", "content"], ["enrichment", "metadata"]], generateEmbeddings=False)
@@ -171,7 +171,7 @@ async def test_mine_processes_only_webpage_content():
         assert result["vectors"] == {"artificial": [0.1], "intelligence": [0.2], "webpage": [0.3]}
         
         # Verify only website_to_metadata was called
-        mock_llml.website_to_metadata.assert_called_once_with("This is webpage content about AI.", generateEmbeddings=False)
+        mock_llml.website_to_metadata.assert_called_once_with("This is webpage content about AI.", generateEmbeddings=False, input_categories=None)
         mock_llml.enrichment_to_metadata.assert_not_called()
         mock_llml.combine_metadata_tags.assert_called_once_with([["artificial", "intelligence", "webpage"]], generateEmbeddings=False)
 
@@ -239,12 +239,12 @@ async def test_mine_processes_webpage_and_enrichment():
         assert result["vectors"] == {"machine": [0.1], "learning": [0.2], "ai": [0.3], "research": [0.4], "tech": [0.5], "news": [0.6]}
         
         # Verify website_to_metadata was called once for main content
-        mock_llml.website_to_metadata.assert_called_once_with("Main webpage about machine learning.", generateEmbeddings=False)
+        mock_llml.website_to_metadata.assert_called_once_with("Main webpage about machine learning.", generateEmbeddings=False, input_categories=None)
         
         # Verify enrichment_to_metadata was called twice
         assert mock_llml.enrichment_to_metadata.call_count == 2
-        mock_llml.enrichment_to_metadata.assert_any_call("AI Research Breakthrough\nNew developments in ML research.", generateEmbeddings=False)
-        mock_llml.enrichment_to_metadata.assert_any_call("Tech News Update\nLatest AI advancements announced.", generateEmbeddings=False)
+        mock_llml.enrichment_to_metadata.assert_any_call("AI Research Breakthrough\nNew developments in ML research.", generateEmbeddings=False, input_categories=None)
+        mock_llml.enrichment_to_metadata.assert_any_call("Tech News Update\nLatest AI advancements announced.", generateEmbeddings=False, input_categories=None)
         
         # Verify combine_metadata_tags was called with all tag sets
         expected_tag_sets = [["machine", "learning"], ["ai", "research"], ["tech", "news"]]
@@ -311,7 +311,7 @@ async def test_mine_handles_llm_method_failures():
         
         # Verify methods were called
         mock_llml.website_to_metadata.assert_called_once()
-        mock_llml.enrichment_to_metadata.assert_called_once()
+        mock_llml.enrichment_to_metadata.assert_called_once_with("Enrichment content.", generateEmbeddings=False, input_categories=None)
         mock_llml.combine_metadata_tags.assert_called_once_with([["enrichment", "tags"]], generateEmbeddings=False)
 
 
@@ -500,12 +500,12 @@ async def test_mine_constructs_conversation_correctly():
         assert result["vectors"] == {"webpage": [0.1], "content": [0.2]}
         
         # Verify website_to_metadata was called with the first line
-        mock_llml.website_to_metadata.assert_called_once_with("First line of webpage.", generateEmbeddings=False)
+        mock_llml.website_to_metadata.assert_called_once_with("First line of webpage.", generateEmbeddings=False, input_categories=None)
         
         # Verify enrichment_to_metadata was called for the other two lines
         assert mock_llml.enrichment_to_metadata.call_count == 2
-        mock_llml.enrichment_to_metadata.assert_any_call("Second line with content.", generateEmbeddings=False)
-        mock_llml.enrichment_to_metadata.assert_any_call("Third line here.", generateEmbeddings=False)
+        mock_llml.enrichment_to_metadata.assert_any_call("Second line with content.", generateEmbeddings=False, input_categories=None)
+        mock_llml.enrichment_to_metadata.assert_any_call("Third line here.", generateEmbeddings=False, input_categories=None)
         
         # Verify combine_metadata_tags was called with all tag sets
         expected_tag_sets = [["webpage"], ["content"], ["content"]]

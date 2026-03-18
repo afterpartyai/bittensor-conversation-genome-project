@@ -6,7 +6,6 @@ from typing import Tuple
 import bittensor as bt
 from pydantic import BaseModel
 
-from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.task.Task import Task
 
@@ -19,6 +18,7 @@ class WebpageMarkdownTaskInput(BaseModel):
     guid: str
     input_type: Literal["webpage_markdown"]
     data: WebpageMarkdownTaskInputData
+    input_categories: Optional[List[str]] = None
 
 
 class WebpageMetadataGenerationTask(Task):
@@ -35,10 +35,10 @@ class WebpageMetadataGenerationTask(Task):
             for idx, (line_idx, content) in enumerate(self.input.data.window):
                 if idx == 0:
                     # First line is always the main webpage content
-                    result = llml.website_to_metadata(content, generateEmbeddings=False)
+                    result = llml.website_to_metadata(content, generateEmbeddings=False, input_categories=self.input.input_categories)
                 else:
                     # Subsequent lines are enrichment content
-                    result = llml.enrichment_to_metadata(content, generateEmbeddings=False)
+                    result = llml.enrichment_to_metadata(content, generateEmbeddings=False, input_categories=self.input.input_categories)
                 
                 if result and result.tags:
                     all_tags.append(result.tags)

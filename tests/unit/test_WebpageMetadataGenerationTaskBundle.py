@@ -144,7 +144,7 @@ async def test_generate_metadata_calls_llm_and_sets_metadata():
         assert bundle.input.metadata.vectors == {"tag1": {"vectors": [0.1]}}
         
         # Verify website_to_metadata was called
-        mock_llm.website_to_metadata.assert_called_once_with("Main webpage content")
+        mock_llm.website_to_metadata.assert_called_once_with("Main webpage content", input_categories=None)
         
         # Verify combine_metadata_tags was called
         mock_llm.combine_metadata_tags.assert_called_once_with([["tag1", "tag2"]], generateEmbeddings=True)
@@ -211,10 +211,10 @@ async def test_generate_metadata_with_enrichment():
         await bundle._generate_metadata()
         
         # Verify website_to_metadata was called for main content
-        mock_llm.website_to_metadata.assert_called_with("Main webpage about AI")
+        mock_llm.website_to_metadata.assert_called_with("Main webpage about AI", input_categories=None)
         
         # Verify enrichment_to_metadata was called for enrichment content
-        mock_llm.enrichment_to_metadata.assert_called_with("AI News\nLatest AI developments")
+        mock_llm.enrichment_to_metadata.assert_called_with("AI News\nLatest AI developments", input_categories=None)
         
         # Verify combine_metadata_tags was called with both tag sets
         mock_llm.combine_metadata_tags.assert_called_with([["artificial intelligence"], ["machine learning"]], generateEmbeddings=True)
@@ -251,7 +251,7 @@ async def test_generate_metadata_without_enrichment():
         await bundle._generate_metadata()
         
         # Verify website_to_metadata was called
-        mock_llm.website_to_metadata.assert_called_with("Main webpage about AI")
+        mock_llm.website_to_metadata.assert_called_with("Main webpage about AI", input_categories=None)
         
         # Verify enrichment_to_metadata was not called
         mock_llm.enrichment_to_metadata.assert_not_called()

@@ -55,10 +55,20 @@ class PromptManager:
             raise ValueError("website_content cannot be empty.")
         return self._get("website_to_metadata.j2", website_content=website_content)
 
+    def website_to_metadata_coding_prompt(self, website_content: str) -> str:
+        if not website_content.strip():
+            raise ValueError("website_content cannot be empty.")
+        return self._get("website_to_metadata_coding.j2", website_content=website_content)
+
     def enrichment_to_metadata_prompt(self, enrichment_content: str) -> str:
         if not enrichment_content.strip():
             raise ValueError("enrichment_content cannot be empty.")
         return self._get("enrichment_to_metadata.j2", enrichment_content=enrichment_content)
+
+    def enrichment_to_metadata_coding_prompt(self, enrichment_content: str) -> str:
+        if not enrichment_content.strip():
+            raise ValueError("enrichment_content cannot be empty.")
+        return self._get("enrichment_to_metadata_coding.j2", enrichment_content=enrichment_content)
 
     def enrichment_to_named_entities_prompt(self, enrichment_content: str) -> str:
         if not enrichment_content.strip():
