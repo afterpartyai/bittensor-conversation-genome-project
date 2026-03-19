@@ -51,6 +51,7 @@ class WebpageMarkdownInput(BaseModel):
     input_type: Literal["webpage_markdown"]
     guid: ForceStr
     data: WebpageMarkdownInputData
+    input_categories: Optional[List[str]] = None
     metadata: Optional[ConversationMetadata] = None
 
     def trim_input(self) -> None:
@@ -94,6 +95,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                         window=self.input.data.lines,
                         participants=[]
                     ),
+                    input_categories=self.input.input_categories
                 ),
                 prompt_chain=self.prompt_chain,
                 example_output=self.example_output,
@@ -155,7 +157,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         
         # Max 1000 characters from the main website markdown
         website_markdown = parsed_json['website_markdown'][:1000]
-        website_metadata = llml.website_to_metadata(website_markdown)
+        website_metadata = llml.website_to_metadata(website_markdown, input_categories=self.input.input_categories)
         tags = [website_metadata.tags]
         
         enrichment_lines = []
@@ -174,7 +176,7 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                     
                     if enrichment_text.strip():
                         enrichment_lines.append((len(enrichment_lines), enrichment_text))
-                        enrichment_metadata = llml.enrichment_to_metadata(enrichment_text)
+                        enrichment_metadata = llml.enrichment_to_metadata(enrichment_text, input_categories=self.input.input_categories)
                         tags.append(enrichment_metadata.tags)
         else:
             bt.logging.info(f"Generating non-enriched metadata for webpage")

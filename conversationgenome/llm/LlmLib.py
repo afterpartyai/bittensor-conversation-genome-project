@@ -57,7 +57,12 @@ class LlmLib(ABC):
     ###############################################################################################
     def conversation_to_metadata(self, conversation: Conversation, generateEmbeddings=False) -> RawMetadata|None:
         convo_xml, participants = Utils.generate_convo_xml(conversation)
-        prompt = prompt_manager.conversation_to_metadata_prompt(convo_xml)
+
+        if conversation.input_categories and 'coding' in conversation.input_categories:
+            prompt = prompt_manager.conversation_to_metadata_coding_prompt(convo_xml)
+        else:
+            prompt = prompt_manager.conversation_to_metadata_prompt(convo_xml)
+            
         response_content = self.basic_prompt(prompt)
 
         if not isinstance(response_content, str):
@@ -180,8 +185,11 @@ class LlmLib(ABC):
             clean_tag_list = [clean_tag_list[i] for i in random_indices]
         return clean_tag_list
 
-    def website_to_metadata(self, website_content: str, generateEmbeddings=False) -> RawMetadata|None:
-        prompt = prompt_manager.website_to_metadata_prompt(website_content)
+    def website_to_metadata(self, website_content: str, generateEmbeddings=False, input_categories=None) -> RawMetadata|None:
+        if input_categories and 'coding' in input_categories:
+            prompt = prompt_manager.website_to_metadata_coding_prompt(website_content)
+        else:
+            prompt = prompt_manager.website_to_metadata_prompt(website_content)
         response_content = self.basic_prompt(prompt)
         if not isinstance(response_content, str):
             print("Error: Unexpected response format. Content type:", type(response_content))
@@ -196,8 +204,11 @@ class LlmLib(ABC):
             vectors = self.get_vector_embeddings_set(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
 
-    def enrichment_to_metadata(self, enrichment_content: str, generateEmbeddings=False) -> RawMetadata|None:
-        prompt = prompt_manager.enrichment_to_metadata_prompt(enrichment_content)
+    def enrichment_to_metadata(self, enrichment_content: str, generateEmbeddings=False, input_categories=None) -> RawMetadata|None:
+        if input_categories and 'coding' in input_categories:
+            prompt = prompt_manager.enrichment_to_metadata_coding_prompt(enrichment_content)
+        else:
+            prompt = prompt_manager.enrichment_to_metadata_prompt(enrichment_content)
         response_content = self.basic_prompt(prompt)
         if not isinstance(response_content, str):
             print("Error: Unexpected response format. Content type:", type(response_content))

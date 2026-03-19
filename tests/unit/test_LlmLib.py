@@ -50,6 +50,7 @@ def test_conversation_to_metadata(mock_llm):
         mock_empty.return_value = False
         
         conversation = MagicMock(spec=Conversation)
+        conversation.input_categories = None
         result = mock_llm.conversation_to_metadata(conversation)
         
         assert isinstance(result, RawMetadata)
@@ -73,6 +74,7 @@ def test_conversation_to_metadata_with_embeddings(mock_llm):
         mock_llm.embedding_responses = {'tag1': [1.0], 'tag2': [2.0]}
         
         conversation = MagicMock(spec=Conversation)
+        conversation.input_categories = None
         result = mock_llm.conversation_to_metadata(conversation, generateEmbeddings=True)
         
         assert isinstance(result, RawMetadata)
@@ -93,6 +95,7 @@ def test_conversation_to_metadata_no_tags(mock_llm):
         mock_empty.return_value = True
         
         conversation = MagicMock(spec=Conversation)
+        conversation.input_categories = None
         result = mock_llm.conversation_to_metadata(conversation)
         
         assert result is None
@@ -200,3 +203,24 @@ def test_validate_named_entities_tag_set_large_list(mock_llm):
         result = mock_llm.validate_named_entities_tag_set(large_list)
         
         assert len(result) == 20  # Should sample to 20
+
+
+def test_conversation_to_metadata_coding(mock_llm):
+    with patch.object(Utils, 'generate_convo_xml') as mock_xml, \
+         patch('conversationgenome.llm.prompt_manager.prompt_manager.conversation_to_metadata_coding_prompt') as mock_prompt_mgr, \
+         patch.object(Utils, 'clean_tags') as mock_clean_tags, \
+         patch.object(Utils, 'empty') as mock_empty:
+        
+        mock_xml.return_value = ("<xml>", ["p1", "p2"])
+        mock_prompt_mgr.return_value = "coding_prompt"
+        mock_llm.basic_prompt_responses = {"coding_prompt": "python,machine learning,pytorch"}
+        mock_clean_tags.return_value = ["python", "machine learning", "pytorch"]
+        mock_empty.return_value = False
+        
+        conversation = MagicMock(spec=Conversation)
+        conversation.input_categories = ["coding"]
+        result = mock_llm.conversation_to_metadata(conversation)
+        
+        assert isinstance(result, RawMetadata)
+        assert result.tags == ["python", "machine learning", "pytorch"]
+        mock_prompt_mgr.assert_called_once()
