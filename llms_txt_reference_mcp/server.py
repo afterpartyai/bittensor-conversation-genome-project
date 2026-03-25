@@ -32,12 +32,26 @@ def get_db() -> sqlite3.Connection:
 
 
 def ensure_db() -> None:
-    """Run ingest if the database doesn't exist yet."""
+    """Sync the store repo, then ingest if the database is missing or the store was updated."""
+    from ingest import ingest, sync_store
+
+    try:
+        updated = sync_store(STORE_DIR)
+    except RuntimeError as e:
+        log.error("Could not sync llms_txt_store:\n%s", e)
+        if not DB_PATH.exists():
+            raise
+        log.warning("Proceeding with existing database.")
+        updated = False
+
     if not DB_PATH.exists():
         log.info("Database not found — running ingest from %s", STORE_DIR)
-        from ingest import ingest
         n = ingest(STORE_DIR, DB_PATH)
         log.info("Ingest complete: %d sites loaded into %s", n, DB_PATH)
+    elif updated:
+        log.info("Store was updated — re-ingesting ...")
+        n = ingest(STORE_DIR, DB_PATH)
+        log.info("Re-ingest complete: %d sites loaded", n)
     else:
         conn = get_db()
         n = conn.execute("SELECT COUNT(*) FROM sites").fetchone()[0]

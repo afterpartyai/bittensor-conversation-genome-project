@@ -8,7 +8,12 @@ A minimal MCP server that ingests the [llms_txt_store](https://github.com/afterp
 pip install -r requirements.txt
 ```
 
-The `llms_txt_store/` directory must be present (clone it alongside this folder if needed).
+The server will automatically clone `llms_txt_store/` from GitHub on first run. Requires `git` to be installed.
+
+**If git is not installed:**
+- macOS: `brew install git`
+- Ubuntu: `sudo apt install git`
+- Windows: https://git-scm.com/download/win
 
 ## Running
 
@@ -16,9 +21,9 @@ The `llms_txt_store/` directory must be present (clone it alongside this folder 
 python server.py
 ```
 
-On first run the server will automatically ingest all `llms.txt` files from `llms_txt_store/` into `llms_txt.db`. Subsequent runs use the cached database.
+On first run the server will clone the [llms_txt_store](https://github.com/afterpartyai/llms_txt_store) repo and ingest all `llms.txt` files into `llms_txt.db`. On subsequent runs it fetches any new commits and re-ingests only if the store has changed. If the store is already up to date, the existing database is used as-is.
 
-To re-ingest manually:
+To sync and re-ingest manually:
 
 ```bash
 python ingest.py
