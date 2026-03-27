@@ -24,6 +24,7 @@
   - [Runpod](#Runpod)
   - [Managing Processes](#managing-processes)
   - [Making sure your port is open](#making-sure-your-port-is-open)
+- [llms.txt Reference MCP](#llmstxt-reference-mcp)
 - [License](#license)
 
 ---
@@ -945,6 +946,23 @@ mindmap
       Twitter
       Documents
 ```
+
+## llms.txt Reference MCP
+
+The [`llms_txt_reference_mcp/`](llms_txt_reference_mcp/) directory contains a standalone MCP server that makes the [llms_txt_store](https://github.com/afterpartyai/llms_txt_store) dataset queryable by LLM agents.
+
+The store contains AI-readable `llms.txt` summaries for thousands of websites, structured by domain. The MCP server ingests these into a local SQLite database and exposes four tools:
+
+| Tool | Description |
+|------|-------------|
+| `search_sites` | Full-text search across domain, title, description, and content |
+| `get_site` | Fetch full llms.txt content for an exact domain |
+| `lookup_domain` | Like `get_site` but also tries stripping `www.` |
+| `list_sites` | List all indexed sites, optionally filtered by TLD |
+
+The store is cloned and kept up to date automatically via `git` — no manual setup required beyond `pip install -r llms_txt_reference_mcp/requirements.txt`.
+
+See [`llms_txt_reference_mcp/README.md`](llms_txt_reference_mcp/README.md) for full setup and client configuration instructions (Claude Code, Claude Desktop, Cline, Cursor).
 
 ## License
 This repository is licensed under the MIT License.
