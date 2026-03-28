@@ -134,7 +134,8 @@ class ConversationTaggingTaskBundle(TaskBundle):
         miner_result['original_tags'] = miner_result['tags']
         # Clean and validate tags for duplicates or whitespace matches
         llml = get_llm_backend()
-        miner_result['tags'] = llml.validate_tag_set(miner_result['original_tags'])
+        validated_tags = llml.validate_tag_set(miner_result['original_tags'])
+        miner_result['tags'] = validated_tags if validated_tags is not None else miner_result['original_tags']
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
         return miner_result
 

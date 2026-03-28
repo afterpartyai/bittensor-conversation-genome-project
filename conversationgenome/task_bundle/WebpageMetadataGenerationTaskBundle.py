@@ -115,7 +115,8 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         miner_result['original_tags'] = miner_result['tags']
         # Clean and validate tags for duplicates or whitespace matches
         llml = get_llm_backend()
-        miner_result['tags'] = llml.validate_tag_set(tags=miner_result['original_tags'])
+        validated_tags = llml.validate_tag_set(tags=miner_result['original_tags'])
+        miner_result['tags'] = validated_tags if validated_tags is not None else miner_result['original_tags']
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
         return miner_result
 
@@ -158,6 +159,9 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         # Max 1000 characters from the main website markdown
         website_markdown = parsed_json['website_markdown'][:1000]
         website_metadata = llml.website_to_metadata(website_markdown, input_categories=self.input.input_categories)
+        if not website_metadata:
+            bt.logging.error("ERROR:2873226355. No website metadata returned. Aborting.")
+            return
         tags = [website_metadata.tags]
         
         enrichment_lines = []
@@ -177,7 +181,8 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
                     if enrichment_text.strip():
                         enrichment_lines.append((len(enrichment_lines), enrichment_text))
                         enrichment_metadata = llml.enrichment_to_metadata(enrichment_text, input_categories=self.input.input_categories)
-                        tags.append(enrichment_metadata.tags)
+                        if enrichment_metadata:
+                            tags.append(enrichment_metadata.tags)
         else:
             bt.logging.info(f"Generating non-enriched metadata for webpage")
         

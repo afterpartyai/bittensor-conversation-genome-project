@@ -93,6 +93,18 @@ async def test_format_results_validates_and_embeds_tags(sample_input):
     assert result["vectors"] == {"tag1": [0.1], "tag2": [0.2]}
 
 
+@pytest.mark.asyncio
+async def test_format_results_falls_back_to_original_tags_when_validate_returns_none(sample_input):
+    """When validate_tag_set returns None (OpenAI failure), format_results should use original_tags."""
+    bundle = DummyData.conversation_tagging_task_bundle()
+    miner_result = {"tags": ["tag1", "tag2"]}
+    with patch("conversationgenome.llm.LlmLib.LlmLib.validate_tag_set", Mock(return_value=None)):
+        with patch.object(bundle, "_get_vector_embeddings_set", AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})):
+            result = await bundle.format_results(miner_result)
+    assert result["tags"] == ["tag1", "tag2"]
+    assert result["original_tags"] == ["tag1", "tag2"]
+
+
 def test_generate_result_logs_counts_tags_and_vectors(sample_input):
     bundle = DummyData.conversation_tagging_task_bundle()
     miner_result = {"tags": ["tag1", "tag2"], "vectors": {"tag1": [0.1]}, "original_tags": ["tag1", "tag2", "tag3"]}

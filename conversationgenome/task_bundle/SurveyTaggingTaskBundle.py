@@ -100,7 +100,8 @@ class SurveyTaggingTaskBundle(TaskBundle):
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
         llml = get_llm_backend()
-        miner_result['tags'] = llml.validate_tag_set(tags=miner_result['original_tags'])
+        validated_tags = llml.validate_tag_set(tags=miner_result['original_tags'])
+        miner_result['tags'] = validated_tags if validated_tags is not None else miner_result['original_tags']
         miner_result['vectors'] = llml.get_vector_embeddings_set(tags=miner_result['tags'])
         return miner_result
 

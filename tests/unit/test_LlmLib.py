@@ -205,6 +205,35 @@ def test_validate_named_entities_tag_set_large_list(mock_llm):
         assert len(result) == 20  # Should sample to 20
 
 
+def test_validate_tag_set_none_response(mock_llm):
+    """validate_tag_set must not crash when basic_prompt returns None (OpenAI failure)."""
+    with patch.object(Utils, 'get_clean_tag_set') as mock_clean_set, \
+         patch('conversationgenome.llm.prompt_manager.prompt_manager.validate_tags_prompt') as mock_prompt_mgr:
+
+        mock_clean_set.return_value = ["tag1", "tag2"]
+        mock_prompt_mgr.return_value = "prompt"
+        mock_llm.basic_prompt_responses = {}  # No matching response → returns default "mock response"
+
+    # Now test with an actual None return
+    llm = MockLlmLib()
+    llm.basic_prompt = lambda prompt, response_format="text": None
+    with patch.object(Utils, 'get_clean_tag_set', return_value=["tag1", "tag2"]), \
+         patch('conversationgenome.llm.prompt_manager.prompt_manager.validate_tags_prompt', return_value="prompt"):
+        result = llm.validate_tag_set(["tag1", "tag2"])
+    assert result is None
+
+
+def test_conversation_to_metadata_none_response(mock_llm):
+    """conversation_to_metadata must return None when basic_prompt returns None."""
+    llm = MockLlmLib()
+    llm.basic_prompt = lambda prompt, response_format="text": None
+    with patch.object(Utils, 'generate_convo_xml', return_value=("<xml>", ["p1"])):
+        conversation = MagicMock(spec=Conversation)
+        conversation.input_categories = None
+        result = llm.conversation_to_metadata(conversation)
+    assert result is None
+
+
 def test_conversation_to_metadata_coding(mock_llm):
     with patch.object(Utils, 'generate_convo_xml') as mock_xml, \
          patch('conversationgenome.llm.prompt_manager.prompt_manager.conversation_to_metadata_coding_prompt') as mock_prompt_mgr, \
