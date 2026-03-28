@@ -165,7 +165,9 @@ class LlmLib(ABC):
         clean_tag_list = [tag[:50] for tag in clean_tag_list]
         prompt = prompt_manager.validate_tags_prompt(clean_tag_list)
         response_content = self.basic_prompt(prompt)
-        if not response_content:
+        if response_content is None:
+            return tags
+        if len(response_content) == 0:
             print(f"EMPTY RESPONSE -- no valid tags: {response_content}")
             return None
         

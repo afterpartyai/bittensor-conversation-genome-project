@@ -94,15 +94,31 @@ async def test_format_results_validates_and_embeds_tags(sample_input):
 
 
 @pytest.mark.asyncio
-async def test_format_results_falls_back_to_original_tags_when_validate_returns_none(sample_input):
-    """When validate_tag_set returns None (OpenAI failure), format_results should use original_tags."""
+async def test_format_results_skips_response_when_validate_returns_none(sample_input):
+    """When validate_tag_set returns None (empty LLM response), format_results should skip the response."""
     bundle = DummyData.conversation_tagging_task_bundle()
     miner_result = {"tags": ["tag1", "tag2"]}
     with patch("conversationgenome.llm.LlmLib.LlmLib.validate_tag_set", Mock(return_value=None)):
-        with patch.object(bundle, "_get_vector_embeddings_set", AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})):
+        with patch.object(bundle, "_get_vector_embeddings_set", AsyncMock()) as mock_embed:
+            result = await bundle.format_results(miner_result)
+    assert result["tags"] == []
+    assert result["vectors"] == {}
+    assert result["original_tags"] == ["tag1", "tag2"]
+    mock_embed.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_format_results_uses_original_tags_on_llm_error(sample_input):
+    """When validate_tag_set returns original tags (LLM error fallback), format_results should use them."""
+    bundle = DummyData.conversation_tagging_task_bundle()
+    original_tags = ["tag1", "tag2"]
+    miner_result = {"tags": original_tags}
+    with patch("conversationgenome.llm.LlmLib.LlmLib.validate_tag_set", Mock(return_value=original_tags)):
+        with patch.object(bundle, "_get_vector_embeddings_set", AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})) as mock_embed:
             result = await bundle.format_results(miner_result)
     assert result["tags"] == ["tag1", "tag2"]
-    assert result["original_tags"] == ["tag1", "tag2"]
+    assert result["vectors"] == {"tag1": [0.1], "tag2": [0.2]}
+    mock_embed.assert_called_once()
 
 
 def test_generate_result_logs_counts_tags_and_vectors(sample_input):

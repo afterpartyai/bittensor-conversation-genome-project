@@ -151,18 +151,20 @@ async def test_generate_metadata_calls_llm_and_sets_metadata():
 
 
 @pytest.mark.asyncio
-async def test_format_results_falls_back_to_original_tags_when_validate_returns_none():
-    """When validate_tag_set returns None (OpenAI failure), format_results should use original_tags."""
+async def test_format_results_skips_response_when_validate_returns_none():
+    """When validate_tag_set returns None (OpenAI failure), format_results should skip the response."""
     bundle = DummyData.setup_webpage_metadata_generation_task_bundle()
     miner_result = {"tags": ["tag1", "tag2"]}
     with patch('conversationgenome.task_bundle.WebpageMetadataGenerationTaskBundle.get_llm_backend') as mock_llm_factory:
         mock_llm = Mock()
         mock_llm.validate_tag_set.return_value = None
         mock_llm_factory.return_value = mock_llm
-        with patch.object(bundle, '_get_vector_embeddings_set', AsyncMock(return_value={"tag1": [0.1], "tag2": [0.2]})):
+        with patch.object(bundle, '_get_vector_embeddings_set', AsyncMock()) as mock_embed:
             result = await bundle.format_results(miner_result)
-    assert result["tags"] == ["tag1", "tag2"]
+    assert result["tags"] == []
+    assert result["vectors"] == {}
     assert result["original_tags"] == ["tag1", "tag2"]
+    mock_embed.assert_not_called()
 
 
 @pytest.mark.asyncio

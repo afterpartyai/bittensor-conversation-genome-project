@@ -115,8 +115,11 @@ class WebpageMetadataGenerationTaskBundle(TaskBundle):
         miner_result['original_tags'] = miner_result['tags']
         # Clean and validate tags for duplicates or whitespace matches
         llml = get_llm_backend()
-        validated_tags = llml.validate_tag_set(tags=miner_result['original_tags'])
-        miner_result['tags'] = validated_tags if validated_tags is not None else miner_result['original_tags']
+        miner_result['tags'] = llml.validate_tag_set(tags=miner_result['original_tags'])
+        if miner_result['tags'] is None:
+            miner_result['tags'] = []
+            miner_result['vectors'] = {}
+            return miner_result
         miner_result['vectors'] = await self._get_vector_embeddings_set(llml=llml, tags=miner_result['tags'])
         return miner_result
 
