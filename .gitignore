@@ -172,4 +172,4 @@ web/*.sqlite
 
 # Reference MCP
 llms_txt_reference_mcp/llms_txt.db
-llms_txt_reference_mcp/llms_txt_store/**
+llms_txt_reference_mcp/llms_txt_*/**

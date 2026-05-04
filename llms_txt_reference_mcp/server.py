@@ -9,6 +9,7 @@ Tools:
 """
 
 import logging
+import re
 import sqlite3
 from pathlib import Path
 
@@ -62,6 +63,17 @@ def ensure_db() -> None:
 mcp = FastMCP("llms-txt-reference")
 
 
+def _to_fts_query(query: str) -> str:
+    """Turn a free-text query into a safe FTS5 MATCH expression.
+
+    FTS5 treats '.', ':', '()', '"', '*' as operators, so raw queries like
+    "scipy.special log_ndtr" fail with a syntax error. We tokenize on
+    non-alphanumerics and OR the tokens as quoted literals.
+    """
+    tokens = [t for t in re.split(r"\W+", query) if t]
+    return " OR ".join(f'"{t}"' for t in tokens)
+
+
 @mcp.tool()
 def search_sites(query: str, limit: int = 20) -> list[dict]:
     """
@@ -69,6 +81,10 @@ def search_sites(query: str, limit: int = 20) -> list[dict]:
     Returns a list of matches with domain, title, and description.
     """
     log.info("search_sites query=%r limit=%d", query, limit)
+    fts_query = _to_fts_query(query)
+    if not fts_query:
+        log.info("search_sites: query %r had no usable tokens", query)
+        return []
     conn = get_db()
     rows = conn.execute(
         """
@@ -79,7 +95,7 @@ def search_sites(query: str, limit: int = 20) -> list[dict]:
         ORDER BY rank
         LIMIT ?
         """,
-        (query, limit),
+        (fts_query, limit),
     ).fetchall()
     conn.close()
     log.info("search_sites returned %d results for %r", len(rows), query)
@@ -93,10 +109,13 @@ def get_site(domain: str) -> dict:
     Returns domain, title, description, summary, and the full raw content.
     """
     log.info("get_site domain=%r", domain)
+    domain = domain.lower().strip()
+    domain = re.sub(r"^[a-z][a-z0-9+.-]*://", "", domain)
+    domain = domain.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
     conn = get_db()
     row = conn.execute(
         "SELECT domain, title, description, summary, content FROM sites WHERE domain = ?",
-        (domain.lower().strip(),),
+        (domain,),
     ).fetchone()
     conn.close()
     if row is None:
@@ -114,6 +133,8 @@ def lookup_domain(domain: str) -> dict:
     """
     log.info("lookup_domain domain=%r", domain)
     domain = domain.lower().strip()
+    domain = re.sub(r"^[a-z][a-z0-9+.-]*://", "", domain)
+    domain = domain.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
     conn = get_db()
 
     row = conn.execute(
