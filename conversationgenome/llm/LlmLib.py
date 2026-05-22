@@ -40,6 +40,8 @@ class LlmLib(ABC):
         """
         Takes a list of strings (tags) and returns a list of vector embeddings.
         """
+        if not tags:
+            return {}
         originalTags = tags
         tags = Utils.get_clean_tag_set(originalTags)
         tagVectorDict = {}
@@ -159,6 +161,8 @@ class LlmLib(ABC):
         
     def validate_tag_set(self, tags: List[str]) -> List[str] | None:
         clean_tag_list = Utils.get_clean_tag_set(tags)
+        if not clean_tag_list:
+            return []
         if len(clean_tag_list) >= 20:
             random_indices = random.sample(range(len(clean_tag_list)), 20)
             clean_tag_list = [clean_tag_list[i] for i in random_indices]
