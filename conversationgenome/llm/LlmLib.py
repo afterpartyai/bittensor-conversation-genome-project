@@ -7,8 +7,25 @@ from typing import List
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
+from conversationgenome.api.models.skill_coverage import AssertionJudgeResult, AssertionVerdict, SectionMapEntry, SectionMapResult, SectionTestCase, SectionTestsResult
 from conversationgenome.llm.prompt_manager import prompt_manager
 from conversationgenome.utils.Utils import Utils
+
+
+def _format_section_map(section_map: List[SectionMapEntry]) -> str:
+    return "\n".join(f"- [{section.section_id}] {section.title}: {section.description}" for section in section_map)
+
+
+def _format_section_tests(section_tests: dict) -> str:
+    lines = []
+    for section_id, tests in section_tests.items():
+        lines.append(f"[{section_id}]")
+        for test in tests:
+            name = test.get('name', '') if isinstance(test, dict) else getattr(test, 'name', '')
+            description = test.get('description', '') if isinstance(test, dict) else getattr(test, 'description', '')
+            assertion = test.get('assertion', '') if isinstance(test, dict) else getattr(test, 'assertion', '')
+            lines.append(f"  - {name}: {description} | Assertion: {assertion}")
+    return "\n".join(lines)
 
 class LlmLib(ABC):
     client = None
@@ -222,6 +239,88 @@ class LlmLib(ABC):
         if generateEmbeddings:
             vectors = self.get_vector_embeddings_set(tags)
         return RawMetadata(tags=tags, vectors=vectors, success=True)
+
+    def skill_request_to_section_map(self, seed: str) -> SectionMapResult|None:
+        prompt = prompt_manager.skill_request_to_section_map_prompt(seed)
+        response_content = self.basic_prompt(prompt, response_format="json")
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+
+        try:
+            parsed = json.loads(response_content)
+            sections = [SectionMapEntry(**section) for section in parsed.get("sections", [])]
+        except Exception as e:
+            print(f"Error parsing section map JSON: {e}")
+            return None
+
+        if Utils.empty(sections):
+            print("No sections returned")
+            return None
+
+        return SectionMapResult(sections=sections, success=True)
+
+    def skill_request_to_skill(self, seed: str, section_map: List[SectionMapEntry]) -> str|None:
+        prompt = prompt_manager.skill_request_to_skill_prompt(seed, _format_section_map(section_map))
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str) or not response_content.strip():
+            print("Error: Unexpected response format or empty skill content.")
+            return None
+        return response_content.strip()
+
+    def skill_to_tdd_plan(self, skill_markdown: str, section_map: List[SectionMapEntry]) -> str|None:
+        prompt = prompt_manager.skill_to_tdd_plan_prompt(skill_markdown, _format_section_map(section_map))
+        response_content = self.basic_prompt(prompt)
+        if not isinstance(response_content, str) or not response_content.strip():
+            print("Error: Unexpected response format or empty TDD plan.")
+            return None
+        return response_content.strip()
+
+    def skill_to_section_tests(self, skill_markdown: str, tdd_plan: str, section_map: List[SectionMapEntry]) -> SectionTestsResult|None:
+        prompt = prompt_manager.skill_to_section_tests_prompt(skill_markdown, tdd_plan, _format_section_map(section_map))
+        response_content = self.basic_prompt(prompt, response_format="json")
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+
+        try:
+            parsed = json.loads(response_content)
+            section_tests = {
+                section_id: [SectionTestCase(**test) for test in tests]
+                for section_id, tests in parsed.get("section_tests", {}).items()
+            }
+        except Exception as e:
+            print(f"Error parsing section tests JSON: {e}")
+            return None
+
+        if Utils.empty(section_tests):
+            print("No section tests returned")
+            return None
+
+        return SectionTestsResult(section_tests=section_tests, success=True)
+
+    def judge_section_tests(self, skill_markdown: str, section_map: List[SectionMapEntry], section_tests: dict) -> AssertionJudgeResult|None:
+        prompt = prompt_manager.judge_section_tests_prompt(skill_markdown, _format_section_map(section_map), _format_section_tests(section_tests))
+        response_content = self.basic_prompt(prompt, response_format="json")
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+
+        try:
+            parsed = json.loads(response_content)
+            verdicts = {
+                section_id: [AssertionVerdict(**verdict) for verdict in section_verdicts]
+                for section_id, section_verdicts in parsed.get("verdicts", {}).items()
+            }
+        except Exception as e:
+            print(f"Error parsing assertion judge JSON: {e}")
+            return None
+
+        if Utils.empty(verdicts):
+            print("No verdicts returned")
+            return None
+
+        return AssertionJudgeResult(verdicts=verdicts, success=True)
 
     def enrichment_to_metadata(self, enrichment_content: str, generateEmbeddings=False, input_categories=None) -> RawMetadata|None:
         if input_categories and 'coding' in input_categories:

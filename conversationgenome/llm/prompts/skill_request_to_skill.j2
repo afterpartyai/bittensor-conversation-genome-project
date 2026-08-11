@@ -1,0 +1,26 @@
+<Role>
+You are an expert software engineer authoring an LLM skill document (the kind used by a coding agent, e.g. a Claude Code Skill) for another engineering team.
+</Role>
+
+<task>
+Write a complete, well-organized skill document in Markdown that fulfills the skill request below and addresses every section in the provided section map.
+</task>
+
+<instructions>
+1.  **Address every section:** The skill must contain content relevant to each section in `section_map` below. Do not skip any section.
+2.  **Be concrete and specific:** Prefer concrete steps, rules, and examples over vague generalities. A reader should be able to follow the skill exactly.
+3.  **Structure with Markdown headings:** Use `#`/`##` headings to organize the skill logically.
+4.  **Stay scoped:** Do not invent unrelated functionality outside the skill request and section map.
+</instructions>
+
+<output_format>
+**Your response MUST be the skill document itself, written in Markdown**. Do not include any commentary, explanations, or text outside of the skill document.
+</output_format>
+
+<skill_request>
+{{ seed }}
+</skill_request>
+
+<section_map>
+{{ section_map_text }}
+</section_map>

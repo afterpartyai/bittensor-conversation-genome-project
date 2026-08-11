@@ -5,6 +5,7 @@ from typing import Tuple
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
+from conversationgenome.api.models.skill_coverage import SectionMapEntry, SkillCoverageMetadata
 from conversationgenome.task.ConversationTaggingTask import ConversationTaggingTask
 from conversationgenome.task.SurveyTaggingTask import SurveyTaggingTask
 from conversationgenome.task.task_factory import try_parse_task
@@ -453,6 +454,74 @@ class DummyData:
         task_bundle = try_parse_task_bundle(DummyData.skill_generation_task_bundle_json())
         task_bundle.input.data.indexed_windows = DummyData.windows()
         task_bundle.input.metadata = DummyData.metadata()
+        return task_bundle
+
+    @staticmethod
+    def section_map() -> List[SectionMapEntry]:
+        return [
+            SectionMapEntry(section_id="s1", title="Basic ASCII transformation", description="Lowercase the input and replace runs of whitespace/punctuation with a single hyphen."),
+            SectionMapEntry(section_id="s2", title="Unicode and accented characters", description="Transliterate accented/non-ASCII letters to their closest ASCII equivalent before slugifying."),
+        ]
+
+    @staticmethod
+    def section_vectors() -> Dict[str, List[float]]:
+        return {"s1": [0.1, 0.2, 0.3], "s2": [0.4, 0.5, 0.6]}
+
+    @staticmethod
+    def skill_coverage_metadata() -> SkillCoverageMetadata:
+        return SkillCoverageMetadata(sections=DummyData.section_map(), section_vectors=DummyData.section_vectors())
+
+    @staticmethod
+    def skill_coverage_evaluation_task_bundle_json():
+        skill_coverage_payload = json.dumps({
+            "seed": "Skill for slugifying arbitrary text into a URL-safe slug.",
+        })
+        return {
+            "mode": "validator",
+            "api_version": 1.4,
+            "type": "skill_coverage_evaluation",
+            "scoring_mechanism": "skill_coverage_scoring",
+            "input": {
+                "input_type": "skill_coverage",
+                "guid": DummyData.guid(),
+                "input_categories": None,
+                "data": {
+                    "lines": [(0, skill_coverage_payload)],
+                    "total": 1,
+                    "participants": ["UNKNOWN_SPEAKER"],
+                },
+            },
+            "prompt_chain": [
+                {
+                    "step": 0,
+                    "id": "skill_coverage_001",
+                    "crc": 87651234,
+                    "title": "Generate a skill and TDD test coverage for it",
+                    "name": "generate_skill_with_section_tests",
+                    "description": "Generates a skill document, an overall TDD plan, and per-section TDD tests for the provided skill request and section map.",
+                    "type": "inference",
+                    "input_path": "skill_coverage",
+                    "prompt_template": "You are given a skill request and a validator-defined section map. Write the skill, a TDD plan, and per-section TDD tests.",
+                    "output_variable": "final_output",
+                    "output_type": "dict",
+                }
+            ],
+            "errors": [],
+            "warnings": [],
+            "guid": DummyData.guid(),
+            "data_type": 1,
+        }
+
+    @staticmethod
+    def skill_coverage_evaluation_task_bundle() -> TaskBundle:
+        return try_parse_task_bundle(DummyData.skill_coverage_evaluation_task_bundle_json())
+
+    @staticmethod
+    def setup_skill_coverage_evaluation_task_bundle() -> TaskBundle:
+        task_bundle = try_parse_task_bundle(DummyData.skill_coverage_evaluation_task_bundle_json())
+        task_bundle.input.data.seed = json.loads(DummyData.skill_coverage_evaluation_task_bundle_json()['input']['data']['lines'][0][1])['seed']
+        task_bundle.input.data.section_map = DummyData.section_map()
+        task_bundle.input.metadata = DummyData.skill_coverage_metadata()
         return task_bundle
 
     @staticmethod

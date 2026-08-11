@@ -8,6 +8,7 @@
   - [Key Features](#key-features)
   - [Benefits](#Benefits)
   - [System Design](#System-Design)
+  - [Task Types](#task-types)
   - [Rewards and Incentives](#reward-mechanism)
 - [Getting Started](#Getting-Started)
   - [Installation & Compute Requirements](#installation--compute-requirements)
@@ -940,6 +941,23 @@ ReadyAI uses the Bittensor infrastructure to annotate raw data creating structur
 - Validator roles: Pull data, generates overview metadata for data ground truth, create windows, and score submissions
 - Miner roles: Process data windows, provide metadata and annotations
 - Data flow: Ground truth establishment, window creation, miner submissions, scoring, and validation
+
+## Task Types
+
+Every unit of work in ReadyAI is a `TaskBundle` (validator-side: establishes ground truth, then dispatches masked `Task`s to miners) paired with a `ScoringMechanism` (evaluates the miner's response against that ground truth once results come back). The subnet currently defines six task types, all sharing this same plugin architecture -- see `conversationgenome/task_bundle/`, `conversationgenome/task/`, and `conversationgenome/scoring_mechanism/` for the implementations, and `task_bundle_factory.py`/`task_factory.py` for how the `type` field on each payload is routed to the right classes.
+
+| Task Type | Miner Input | Miner Produces | Scoring Mechanism |
+|---|---|---|---|
+| `conversation_tagging` | A window of conversation lines | A flat list of topical tags + embeddings | `GroundTruthTagSimilarityScoringMechanism` |
+| `webpage_metadata_generation` | The Markdown content of a webpage | A flat list of topical tags + embeddings | `GroundTruthTagSimilarityScoringMechanism` |
+| `survey_tagging` | A survey question + a participant's free-form comment | A flat list of reason tags + embeddings | `GroundTruthTagSimilarityScoringMechanism` |
+| `named_entities_extraction` | A raw document/transcript, optionally with web-search enrichment | A normalized list of named entities (people, organizations, locations, laws/statutes, budgets, projects) + embeddings | `NoPenaltyGroundTruthTagSimilarityScoringMechanism` |
+| `skill_generation` | An existing LLM skill document (Markdown) | A flat list of tags describing the skill's topics, technologies, and capabilities | `GroundTruthTagSimilarityScoringMechanism` |
+| `skill_coverage_evaluation` | A skill *request* (e.g. "a skill for slugifying text") plus a validator-generated section map | A generated skill document, a TDD plan, and per-section tests, each with a concrete, code-like assertion | `SkillCoverageScoringMechanism` |
+
+**Tagging-style tasks** (`conversation_tagging`, `webpage_metadata_generation`, `survey_tagging`, `skill_generation`) all follow the same shape: the validator establishes a ground-truth tag set for the full source content, and each miner tags either the full content or a window of it. A tag's score is its cosine similarity to the embedding neighborhood of the ground-truth tags, and the miner's overall score blends the top-3 mean, mean, median, and max of their tag scores, with penalties for too few tags, no overlap with ground truth, or an all-low-quality tag set. This is the original ReadyAI mechanism -- see [Reward Mechanism](#reward-mechanism) below for the full breakdown. `named_entities_extraction` uses the same cosine-similarity scoring but via `NoPenaltyGroundTruthTagSimilarityScoringMechanism`, which skips those penalty tiers since entity extraction from a short document legitimately yields fewer, differently-shaped results than a full topical tag set.
+
+**`skill_coverage_evaluation`** is the newest and most different task type: instead of tagging existing content, the miner *generates* a skill from a request and proves it understood the validator's section map by writing tests against it. Scoring blends Section Coverage (does the miner's test suite address every validator-defined section?) and Skill Coverage (does the test suite, as a whole, represent the generated skill?), both via embedding similarity -- but critically, every submitted test assertion first goes through an LLM-as-judge correctness pass, since embedding similarity alone can't tell a correct assertion from a confidently wrong or vaguely generic one. Fabricated or unverifiable assertions score zero rather than merely low, and a set of volume guardrails (a per-section test cap, top-K-mean section scoring instead of a single best match, and a flooding penalty) stop a miner from gaming the mechanism by submitting many low-effort variations instead of a few genuinely good ones.
 
 ## Reward Mechanism
 

@@ -65,6 +65,31 @@ class PromptManager:
             raise ValueError("skill_markdown cannot be empty.")
         return self._get("skill_to_metadata.j2", skill_markdown=skill_markdown)
 
+    def skill_request_to_section_map_prompt(self, seed: str) -> str:
+        if not seed.strip():
+            raise ValueError("seed cannot be empty.")
+        return self._get("skill_request_to_section_map.j2", seed=seed)
+
+    def skill_request_to_skill_prompt(self, seed: str, section_map_text: str) -> str:
+        if not seed.strip():
+            raise ValueError("seed cannot be empty.")
+        return self._get("skill_request_to_skill.j2", seed=seed, section_map_text=section_map_text)
+
+    def skill_to_tdd_plan_prompt(self, skill_markdown: str, section_map_text: str) -> str:
+        if not skill_markdown.strip():
+            raise ValueError("skill_markdown cannot be empty.")
+        return self._get("skill_to_tdd_plan.j2", skill_markdown=skill_markdown, section_map_text=section_map_text)
+
+    def skill_to_section_tests_prompt(self, skill_markdown: str, tdd_plan: str, section_map_text: str) -> str:
+        if not skill_markdown.strip():
+            raise ValueError("skill_markdown cannot be empty.")
+        return self._get("skill_to_section_tests.j2", skill_markdown=skill_markdown, tdd_plan=tdd_plan, section_map_text=section_map_text)
+
+    def judge_section_tests_prompt(self, skill_markdown: str, section_map_text: str, section_tests_text: str) -> str:
+        if not skill_markdown.strip():
+            raise ValueError("skill_markdown cannot be empty.")
+        return self._get("judge_section_tests.j2", skill_markdown=skill_markdown, section_map_text=section_map_text, section_tests_text=section_tests_text)
+
     def enrichment_to_metadata_prompt(self, enrichment_content: str) -> str:
         if not enrichment_content.strip():
             raise ValueError("enrichment_content cannot be empty.")

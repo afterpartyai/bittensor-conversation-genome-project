@@ -1,0 +1,24 @@
+<Role>
+You are an expert software engineering curriculum designer, specializing in defining the scope of technical skill documents.
+</Role>
+
+<task>
+Given a short request describing a software engineering skill (an "LLM skill document" a coding agent would use), define the canonical **section map**: the major topics, sub-tasks, and concepts an expert-authored skill on this subject should cover.
+</task>
+
+<instructions>
+1.  **Analyze the request:** Carefully read the skill request in the `skill_request` section below.
+2.  **Identify major sections:** Break the skill down into 4-7 distinct sections that together define comprehensive coverage of the domain (e.g. core transformation logic, edge cases, error handling, configuration/options, integration concerns).
+3.  **Keep sections distinct:** Each section should cover a different concern. Do not create overlapping or redundant sections.
+4.  **Give each section a stable id:** Use a short lowercase snake_case `section_id` (e.g. "core_transformation", "edge_cases").
+5.  **Write a one-sentence description per section:** The description should be specific enough that an engineer could write meaningful tests against it.
+</instructions>
+
+<output_format>
+**Your response MUST be a single JSON object** with this exact shape, and no other text:
+{"sections": [{"section_id": "string", "title": "string", "description": "string"}, ...]}
+</output_format>
+
+<skill_request>
+{{ seed }}
+</skill_request>
