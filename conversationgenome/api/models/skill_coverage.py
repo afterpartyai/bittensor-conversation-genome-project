@@ -25,6 +25,13 @@ class SectionTestsResult(BaseModel):
     success: bool
 
 
+class SkillBundleResult(BaseModel):
+    skill: str
+    tdd_plan: str
+    section_tests: Dict[str, List[SectionTestCase]]
+    success: bool
+
+
 class SkillCoverageMetadata(BaseModel):
     sections: List[SectionMapEntry]
     section_vectors: Dict[str, List[float]]

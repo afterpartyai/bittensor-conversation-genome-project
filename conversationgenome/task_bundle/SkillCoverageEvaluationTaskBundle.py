@@ -1,4 +1,5 @@
 import json
+import random
 import uuid
 from typing import List
 from typing import Literal
@@ -41,6 +42,14 @@ PER_SECTION_TEST_CAP = PENALTIES["test_flooding"]["threshold"]
 # on top of the per-section cap -- bounds judge-call cost for skills with an
 # unusually large number of sections.
 MAX_JUDGED_TESTS = 20
+
+# At most this many sections are actually scored per bundle, chosen at random
+# once in _generate_section_map() -- the same subset for every miner mining
+# this bundle. Miners still receive the full section map and don't know which
+# sections were sampled, so the incentive to cover everything is unchanged;
+# this only cuts how much ground-truth embedding and per-response judging/
+# embedding work the validator pays for.
+MAX_EVALUATED_SECTIONS = 3
 
 
 class SkillCoverageInputData(BaseModel):
@@ -111,10 +120,20 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
     async def format_results(self, miner_result) -> dict:
         llml = get_llm_backend()
 
-        skill_text = miner_result.get('skill', '') or ''
-        miner_result['skill_vector'] = llml.get_vector_embeddings(skill_text) if skill_text.strip() else None
+        # Only the sections actually sampled for evaluation (see
+        # _generate_section_map) can affect the score -- both scoring signals
+        # are driven entirely by section_vectors -- so tests submitted for any
+        # other section are dropped here before doing any embedding/judging
+        # work. `miner_result["section_tests"]` itself is left untouched, so
+        # generate_result_logs() still reports the miner's true full submission.
+        evaluated_section_ids = set(self.input.metadata.section_vectors.keys())
+        evaluated_section_map = [section for section in self.input.data.section_map if section.section_id in evaluated_section_ids]
 
-        section_tests = miner_result.get('section_tests', {}) or {}
+        skill_text = miner_result.get('skill', '') or ''
+
+        raw_section_tests = miner_result.get('section_tests', {}) or {}
+        section_tests = {section_id: tests for section_id, tests in raw_section_tests.items() if section_id in evaluated_section_ids}
+
         # Per-section cap applied once, up front: everything downstream (judging,
         # embedding) only ever sees the first PER_SECTION_TEST_CAP tests of each
         # section. Tests beyond it are cheap to represent (no LLM/embedding call)
@@ -124,7 +143,45 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
             section_id: tests[:PER_SECTION_TEST_CAP]
             for section_id, tests in section_tests.items()
         }
-        verdict_map = self._judge_section_tests(llml, skill_text, eligible_tests)
+        verdict_map = self._judge_section_tests(llml, skill_text, eligible_tests, evaluated_section_map)
+
+        # Collect every embedding we need (skill text + each eligible test's
+        # description+assertion) and fetch them all in one batched call instead
+        # of one round trip per item.
+        embedding_slots = []  # ("skill", None, None) or ("test", section_id, idx)
+        embedding_texts = []
+        if skill_text.strip():
+            embedding_slots.append(("skill", None, None))
+            embedding_texts.append(skill_text)
+
+        for section_id, tests in section_tests.items():
+            for idx, test in enumerate(tests):
+                if idx >= PER_SECTION_TEST_CAP:
+                    continue
+                description = test.get('description', '') if isinstance(test, dict) else ''
+                assertion = test.get('assertion', '') if isinstance(test, dict) else ''
+                # The assertion -- not the prose description -- is what should
+                # separate miners: a vague description ("handles unicode input
+                # correctly") looks the same for every miner once embedded, but
+                # a concrete assertion ("slugify('Café') == 'cafe'") only embeds
+                # close to a section's ground-truth vector if it actually
+                # addresses that section. Embedding both keeps the intent
+                # (description) and the concrete check (assertion) together.
+                embedding_text = f"{description}\nAssertion: {assertion}".strip() if assertion.strip() else description
+                if embedding_text.strip():
+                    embedding_slots.append(("test", section_id, idx))
+                    embedding_texts.append(embedding_text)
+
+        vectors = llml.get_vector_embeddings_batch(embedding_texts) if embedding_texts else []
+
+        skill_vector = None
+        test_vector_lookup = {}
+        for (kind, section_id, idx), vector in zip(embedding_slots, vectors):
+            if kind == "skill":
+                skill_vector = vector
+            else:
+                test_vector_lookup[(section_id, idx)] = vector
+        miner_result['skill_vector'] = skill_vector
 
         test_vectors = {}
         for section_id, tests in section_tests.items():
@@ -139,20 +196,11 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
                         "vector": None, "judged_correct": False,
                     })
                     continue
-                # The assertion -- not the prose description -- is what should
-                # separate miners: a vague description ("handles unicode input
-                # correctly") looks the same for every miner once embedded, but
-                # a concrete assertion ("slugify('Café') == 'cafe'") only embeds
-                # close to a section's ground-truth vector if it actually
-                # addresses that section. Embedding both keeps the intent
-                # (description) and the concrete check (assertion) together.
-                embedding_text = f"{description}\nAssertion: {assertion}".strip() if assertion.strip() else description
-                vector = llml.get_vector_embeddings(embedding_text) if embedding_text.strip() else None
                 section_test_vectors.append({
                     "name": name,
                     "description": description,
                     "assertion": assertion,
-                    "vector": vector,
+                    "vector": test_vector_lookup.get((section_id, idx)),
                     "judged_correct": verdict_map.get((section_id, name), False),
                 })
             test_vectors[section_id] = section_test_vectors
@@ -160,12 +208,13 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
 
         return miner_result
 
-    def _judge_section_tests(self, llml, skill_text: str, section_tests: dict) -> dict:
+    def _judge_section_tests(self, llml, skill_text: str, section_tests: dict, section_map: List[SectionMapEntry]) -> dict:
         """
         Runs the LLM-as-judge correctness pass and returns {(section_id, name): bool}.
 
         `section_tests` is expected to already be capped to PER_SECTION_TEST_CAP
-        per section by the caller. Every test in it is judged, batched into a
+        per section by the caller, and scoped to only the sections actually
+        being evaluated this round. Every test in it is judged, batched into a
         single LLM call, up to MAX_JUDGED_TESTS total as a further backstop for
         skills with many sections (tests past that backstop default to False via
         the .get() fallback in format_results -- unverified gets no credit, same
@@ -189,7 +238,7 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
         if not capped:
             return {}
 
-        judge_result = llml.judge_section_tests(skill_text, self.input.data.section_map, capped)
+        judge_result = llml.judge_section_tests(skill_text, section_map, capped)
         if not judge_result:
             bt.logging.error("ERROR:9384723. Assertion judge call failed. Skipping correctness verification for this response.")
             return {
@@ -224,11 +273,17 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
             bt.logging.error(f"ERROR:9384722. Section map failed: {result}. Aborting.")
             return
 
-        section_vectors = {}
-        for section in result.sections:
-            embedding_text = f"{section.title}: {section.description}"
-            vector = llml.get_vector_embeddings(embedding_text)
-            section_vectors[section.section_id] = vector or []
+        # Score at most MAX_EVALUATED_SECTIONS sections, chosen at random once
+        # here -- the same subset for every miner mining this bundle, since
+        # to_mining_tasks() copies the same section_map/metadata to every task.
+        evaluated_sections = random.sample(result.sections, min(MAX_EVALUATED_SECTIONS, len(result.sections)))
+
+        section_texts = [f"{section.title}: {section.description}" for section in evaluated_sections]
+        vectors = llml.get_vector_embeddings_batch(section_texts) if section_texts else []
+        section_vectors = {
+            section.section_id: (vector or [])
+            for section, vector in zip(evaluated_sections, vectors)
+        }
 
         self.input.data.seed = seed
         self.input.data.section_map = result.sections

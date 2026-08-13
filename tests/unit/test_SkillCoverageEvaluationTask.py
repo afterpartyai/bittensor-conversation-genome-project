@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from conversationgenome.api.models.skill_coverage import SectionMapEntry, SectionTestCase, SectionTestsResult
+from conversationgenome.api.models.skill_coverage import SectionMapEntry, SectionTestCase, SectionTestsResult, SkillBundleResult
 from conversationgenome.prompt_chain.PromptChainStep import PromptChainStep
 from conversationgenome.task.SkillCoverageEvaluationTask import (
     SkillCoverageEvaluationTask,
@@ -51,7 +51,8 @@ def _make_task(seed="Skill for slugifying text.", section_map=None):
 
 
 @pytest.mark.asyncio
-async def test_mine_returns_skill_plan_and_section_tests():
+async def test_mine_returns_skill_plan_and_section_tests(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", False)
     task = _make_task()
 
     mock_llml = MagicMock()
@@ -81,7 +82,8 @@ async def test_mine_returns_skill_plan_and_section_tests():
 
 
 @pytest.mark.asyncio
-async def test_mine_handles_no_skill_returned():
+async def test_mine_handles_no_skill_returned(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", False)
     task = _make_task()
     mock_llml = MagicMock()
     mock_llml.skill_request_to_skill = Mock(return_value=None)
@@ -95,7 +97,8 @@ async def test_mine_handles_no_skill_returned():
 
 
 @pytest.mark.asyncio
-async def test_mine_handles_no_tdd_plan_returned():
+async def test_mine_handles_no_tdd_plan_returned(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", False)
     task = _make_task()
     mock_llml = MagicMock()
     mock_llml.skill_request_to_skill = Mock(return_value="# Slugify Text")
@@ -109,7 +112,8 @@ async def test_mine_handles_no_tdd_plan_returned():
 
 
 @pytest.mark.asyncio
-async def test_mine_handles_no_section_tests_returned():
+async def test_mine_handles_no_section_tests_returned(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", False)
     task = _make_task()
     mock_llml = MagicMock()
     mock_llml.skill_request_to_skill = Mock(return_value="# Slugify Text")
@@ -123,7 +127,8 @@ async def test_mine_handles_no_section_tests_returned():
 
 
 @pytest.mark.asyncio
-async def test_mine_raises_on_llm_exception():
+async def test_mine_raises_on_llm_exception(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", False)
     task = _make_task()
     mock_llml = MagicMock()
     mock_llml.skill_request_to_skill = Mock(side_effect=Exception("LLM Error"))
@@ -131,3 +136,51 @@ async def test_mine_raises_on_llm_exception():
     with patch("conversationgenome.task.SkillCoverageEvaluationTask.get_llm_backend", return_value=mock_llml):
         with pytest.raises(Exception, match="LLM Error"):
             await task.mine()
+
+
+@pytest.mark.asyncio
+async def test_mine_fast_mode_returns_skill_plan_and_section_tests(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", True)
+    task = _make_task()
+
+    mock_llml = MagicMock()
+    mock_llml.skill_request_to_skill_bundle = Mock(return_value=SkillBundleResult(
+        skill="# Slugify Text\n\nSteps...",
+        tdd_plan="Verify each stage independently.",
+        section_tests={
+            "s1": [SectionTestCase(name="test_lowercases", description="slugify lowercases input", assertion="slugify('Hello World') == 'hello-world'")],
+            "s2": [SectionTestCase(name="test_empty_input", description="slugify handles empty input", assertion="slugify('') == 'n-a'")],
+        },
+        success=True,
+    ))
+
+    with patch("conversationgenome.task.SkillCoverageEvaluationTask.get_llm_backend", return_value=mock_llml):
+        result = await task.mine()
+
+    assert result["skill"] == "# Slugify Text\n\nSteps..."
+    assert result["tdd_plan"] == "Verify each stage independently."
+    assert result["section_tests"]["s1"] == [{"name": "test_lowercases", "description": "slugify lowercases input", "assertion": "slugify('Hello World') == 'hello-world'"}]
+    assert result["section_tests"]["s2"] == [{"name": "test_empty_input", "description": "slugify handles empty input", "assertion": "slugify('') == 'n-a'"}]
+
+    mock_llml.skill_request_to_skill_bundle.assert_called_once_with(task.input.data.seed, task.input.data.section_map)
+    mock_llml.skill_request_to_skill.assert_not_called()
+    mock_llml.skill_to_tdd_plan.assert_not_called()
+    mock_llml.skill_to_section_tests.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_mine_fast_mode_handles_no_bundle_returned(monkeypatch):
+    monkeypatch.setattr(SkillCoverageEvaluationTask, "FAST_MODE", True)
+    task = _make_task()
+
+    mock_llml = MagicMock()
+    mock_llml.skill_request_to_skill_bundle = Mock(return_value=None)
+
+    with patch("conversationgenome.task.SkillCoverageEvaluationTask.get_llm_backend", return_value=mock_llml):
+        result = await task.mine()
+
+    assert result == {"skill": "", "tdd_plan": "", "section_tests": {}}
+
+
+def test_fast_mode_defaults_to_true():
+    assert SkillCoverageEvaluationTask.FAST_MODE is True

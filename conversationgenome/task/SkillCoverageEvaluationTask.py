@@ -1,3 +1,4 @@
+from typing import ClassVar
 from typing import List
 from typing import Literal
 from typing import Optional
@@ -26,12 +27,27 @@ class SkillCoverageEvaluationTask(Task):
     type: Literal["skill_coverage_evaluation"] = "skill_coverage_evaluation"
     input: Optional[SkillCoverageTaskInput] = None
 
+    # Switch between the two mining paths below. True (default) runs a single
+    # combined call (LlmLib.skill_request_to_skill_bundle) instead of the full
+    # 3-step chain -- roughly 3x fewer round trips, tuned further via the
+    # model/reasoning_effort/service_tier overrides in LlmOpenAI, and brought
+    # back to full judge-pass quality by the traceability requirement added to
+    # the generation prompts (tests may only reference identifiers the skill
+    # itself defines). False runs the original 3-step chain (skill -> TDD plan
+    # -> section tests), which lets the model reason over its own already-
+    # fixed skill/plan before writing tests -- still the slower path, kept
+    # around as a fallback rather than the default.
+    FAST_MODE: ClassVar[bool] = True
+
     async def mine(self) -> dict:
         llml = get_llm_backend()
 
         try:
             seed = self.input.data.seed
             section_map = self.input.data.section_map
+
+            if self.FAST_MODE:
+                return self._mine_fast(llml, seed, section_map)
 
             # Step 1: author the skill itself from the request + validator section map
             skill = llml.skill_request_to_skill(seed, section_map)
@@ -58,3 +74,17 @@ class SkillCoverageEvaluationTask(Task):
             raise e
 
         return output
+
+    def _mine_fast(self, llml, seed, section_map) -> dict:
+        bundle = llml.skill_request_to_skill_bundle(seed, section_map)
+        if not bundle:
+            return {"skill": "", "tdd_plan": "", "section_tests": {}}
+
+        return {
+            "skill": bundle.skill,
+            "tdd_plan": bundle.tdd_plan,
+            "section_tests": {
+                section_id: [test.model_dump() for test in tests]
+                for section_id, tests in bundle.section_tests.items()
+            },
+        }

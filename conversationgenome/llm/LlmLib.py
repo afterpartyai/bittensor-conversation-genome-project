@@ -7,7 +7,7 @@ from typing import List
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
 from conversationgenome.api.models.raw_metadata import RawMetadata
-from conversationgenome.api.models.skill_coverage import AssertionJudgeResult, AssertionVerdict, SectionMapEntry, SectionMapResult, SectionTestCase, SectionTestsResult
+from conversationgenome.api.models.skill_coverage import AssertionJudgeResult, AssertionVerdict, SectionMapEntry, SectionMapResult, SectionTestCase, SectionTestsResult, SkillBundleResult
 from conversationgenome.llm.prompt_manager import prompt_manager
 from conversationgenome.utils.Utils import Utils
 
@@ -31,6 +31,16 @@ class LlmLib(ABC):
     client = None
     model = None
     embedding_model = None
+    # Backend-specific reasoning depth for reasoning models (e.g. OpenAI's
+    # "none"/"low"/"medium"/"high"/"xhigh"/"max" via reasoning_effort). None
+    # means "don't override -- use the backend's default." Set per-call via
+    # reasoning_effort_override(), same pattern as model_override().
+    reasoning_effort = None
+    # Backend-specific processing tier (e.g. OpenAI's "priority"/"flex"/
+    # "default" via service_tier). Unlike reasoning_effort this is a pure
+    # infra speed/cost tradeoff -- no effect on output quality -- so it's
+    # safe to apply more broadly. None means "don't override."
+    service_tier = None
 
     ###############################################################################################
     ###################################### Abstract methods #######################################
@@ -68,6 +78,16 @@ class LlmLib(ABC):
             else:
                 tagVectorDict[tag] = {"vectors": vectors}
         return tagVectorDict
+
+    def get_vector_embeddings_batch(self, texts: List[str]) -> List[List[float] | None]:
+        """
+        Takes a list of strings and returns their embeddings in one batched call,
+        in the same order as `texts`. Default implementation just loops over
+        get_vector_embeddings() one at a time -- backends that support a native
+        batch embeddings call (e.g. OpenAI) should override this for real
+        speedup; see LlmOpenAI.get_vector_embeddings_batch.
+        """
+        return [self.get_vector_embeddings(text) for text in texts]
 
     ###############################################################################################
     ########################################## Prompts ############################################
@@ -268,6 +288,37 @@ class LlmLib(ABC):
             return None
         return response_content.strip()
 
+    def skill_request_to_skill_bundle(self, seed: str, section_map: List[SectionMapEntry]) -> SkillBundleResult|None:
+        """
+        Fast-path alternative to the skill_request_to_skill -> skill_to_tdd_plan ->
+        skill_to_section_tests chain: produces skill + tdd_plan + section_tests in
+        a single LLM call instead of three sequential ones. Roughly 3x fewer round
+        trips, at the cost of quality
+        """
+        prompt = prompt_manager.skill_request_to_skill_bundle_prompt(seed, _format_section_map(section_map))
+        response_content = self.basic_prompt(prompt, response_format="json")
+        if not isinstance(response_content, str):
+            print("Error: Unexpected response format. Content type:", type(response_content))
+            return None
+
+        try:
+            parsed = json.loads(response_content)
+            skill = parsed.get("skill", "")
+            tdd_plan = parsed.get("tdd_plan", "")
+            section_tests = {
+                section_id: [SectionTestCase(**test) for test in tests]
+                for section_id, tests in parsed.get("section_tests", {}).items()
+            }
+        except Exception as e:
+            print(f"Error parsing skill bundle JSON: {e}")
+            return None
+
+        if not skill.strip() or not tdd_plan.strip() or Utils.empty(section_tests):
+            print("Incomplete skill bundle returned")
+            return None
+
+        return SkillBundleResult(skill=skill, tdd_plan=tdd_plan, section_tests=section_tests, success=True)
+
     def skill_to_tdd_plan(self, skill_markdown: str, section_map: List[SectionMapEntry]) -> str|None:
         prompt = prompt_manager.skill_to_tdd_plan_prompt(skill_markdown, _format_section_map(section_map))
         response_content = self.basic_prompt(prompt)
@@ -408,3 +459,31 @@ def embedding_model_override(embedding_model_name: str):
             return res
         return wrapper
     return decorator_model_override
+
+def reasoning_effort_override(effort: str):
+    def decorator_reasoning_effort_override(func):
+        @functools.wraps(func)
+        def wrapper(self: LlmLib, *args, **kwargs):
+            default_effort = self.reasoning_effort
+            self.reasoning_effort = effort
+            try:
+                res = func(self, *args, **kwargs)
+            finally:
+                self.reasoning_effort = default_effort
+            return res
+        return wrapper
+    return decorator_reasoning_effort_override
+
+def service_tier_override(tier: str):
+    def decorator_service_tier_override(func):
+        @functools.wraps(func)
+        def wrapper(self: LlmLib, *args, **kwargs):
+            default_tier = self.service_tier
+            self.service_tier = tier
+            try:
+                res = func(self, *args, **kwargs)
+            finally:
+                self.service_tier = default_tier
+            return res
+        return wrapper
+    return decorator_service_tier_override

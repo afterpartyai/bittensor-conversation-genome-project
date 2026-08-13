@@ -75,6 +75,11 @@ class PromptManager:
             raise ValueError("seed cannot be empty.")
         return self._get("skill_request_to_skill.j2", seed=seed, section_map_text=section_map_text)
 
+    def skill_request_to_skill_bundle_prompt(self, seed: str, section_map_text: str) -> str:
+        if not seed.strip():
+            raise ValueError("seed cannot be empty.")
+        return self._get("skill_request_to_skill_bundle_fast.j2", seed=seed, section_map_text=section_map_text)
+
     def skill_to_tdd_plan_prompt(self, skill_markdown: str, section_map_text: str) -> str:
         if not skill_markdown.strip():
             raise ValueError("skill_markdown cannot be empty.")
