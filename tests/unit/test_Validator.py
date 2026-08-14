@@ -497,6 +497,51 @@ async def test_forward_handles_missing_cgp_output(bare_validator, fake_libs, mon
     assert result is True
 
 
+@pytest.mark.asyncio
+async def test_forward_continues_when_format_results_raises(bare_validator, fake_libs, monkeypatch):
+    # miner_result is untrusted, miner-controlled data -- a malformed or
+    # malicious response must not be able to raise out of format_results()
+    # and abort scoring for the whole batch. See the try/except guard around
+    # task_bundle.format_results() in neurons/validator.py.
+    validator = bare_validator
+    validator.config.neuron.sample_size = 3
+    validator.metagraph.n.item.return_value = 3
+
+    bundle_guid = "test-guid"
+    bundle = MockTaskBundle(num_tasks=5, guid=bundle_guid)
+    bundle.to_mining_tasks = MagicMock(
+        return_value=[MagicMock(bundle_guid=bundle_guid, guid=f"task_guid_{i}", input=MagicMock(data=MagicMock(window_idx=0)), type="type") for i in range(5)]
+    )
+    bundle.input.metadata.model_dump = MagicMock(return_value={})
+    bundle.format_results = AsyncMock(side_effect=ValueError("malformed miner_result"))
+    bundle.generate_result_logs = MagicMock(return_value="result_logs")
+    bundle.evaluate = AsyncMock(return_value=([{"hotkey": "hk", "adjustedScore": 1.0, "final_miner_score": 1.0}], [1.0]))
+
+    fake_libs["vl"].reserve_task_bundle = AsyncMock(return_value=bundle)
+    fake_libs["vl"].put_task = AsyncMock()
+
+    class DummyResponse:
+        def __init__(self, hotkey):
+            self.dendrite = MagicMock()
+            self.dendrite.status_code = 200
+            self.axon = MagicMock()
+            self.axon.hotkey = hotkey
+            self.cgp_output = [{"skill": object(), "section_tests": "garbage"}]
+
+    validator.dendrite.forward = AsyncMock(side_effect=lambda axons, *_, **__: [DummyResponse(axon.hotkey) for axon in axons])
+    validator.metagraph.hotkeys = ["hk0", "hk1", "hk2"]
+    validator.update_scores = MagicMock()
+
+    result = await validator.forward(test_mode=True)
+
+    # Every response's format_results() raises, yet the round as a whole
+    # still completes and still reaches scoring rather than aborting partway
+    # through (the pre-fix behavior would raise out of forward() entirely and
+    # never call update_scores at all).
+    assert result is True
+    assert validator.update_scores.call_count > 0
+
+
 def test_get_burn_uid(bare_validator):
     """Ensure `get_burn_uid` queries the subnet owner hotkey and resolves its UID."""
     v = bare_validator

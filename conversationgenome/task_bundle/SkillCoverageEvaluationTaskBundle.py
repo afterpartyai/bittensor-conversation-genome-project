@@ -51,6 +51,19 @@ MAX_JUDGED_TESTS = 20
 # embedding work the validator pays for.
 MAX_EVALUATED_SECTIONS = 3
 
+# miner_result arrives here as a raw, untrusted dict straight off the wire --
+# it is never parsed/validated through SkillBundleResult/SectionTestCase (those
+# pydantic models only constrain what the miner's *own* mining code produces
+# from its own LLM call; nothing stops a miner from hand-crafting a differently
+# shaped or oversized cgp_output). These caps are the actual enforcement point:
+# they bound how much of a malformed/oversized response ever reaches an
+# embedding or judge LLM call, both for cost (tokens billed to the validator)
+# and because a too-large judge prompt is more likely to error out, which is
+# exactly the condition _judge_section_tests() must fail closed on.
+MAX_SKILL_CHARS = 6000
+MAX_TEST_NAME_CHARS = 200
+MAX_TEST_FIELD_CHARS = 1000
+
 
 class SkillCoverageInputData(BaseModel):
     # Raw envelope as returned by the conversation API: lines[0][1] is a JSON
@@ -111,10 +124,14 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
         return tasks
 
     def generate_result_logs(self, miner_result) -> str:
+        # Runs on the raw, untrusted miner_result before/regardless of
+        # format_results() sanitizing anything, so every access here has to
+        # tolerate wrong types rather than assume the expected shape.
         section_tests = miner_result.get('section_tests', {}) if isinstance(miner_result, dict) else {}
-        section_tests = section_tests or {}
-        total_tests = sum(len(tests) for tests in section_tests.values())
-        skill_len = len(miner_result.get('skill', '') or '') if isinstance(miner_result, dict) else 0
+        section_tests = section_tests if isinstance(section_tests, dict) else {}
+        total_tests = sum(len(tests) for tests in section_tests.values() if isinstance(tests, list))
+        skill = miner_result.get('skill', '') if isinstance(miner_result, dict) else ''
+        skill_len = len(skill) if isinstance(skill, str) else 0
         return f"sections addressed: {len(section_tests)} " f"total tests: {total_tests} " f"skill length: {skill_len}"
 
     async def format_results(self, miner_result) -> dict:
@@ -129,10 +146,25 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
         evaluated_section_ids = set(self.input.metadata.section_vectors.keys())
         evaluated_section_map = [section for section in self.input.data.section_map if section.section_id in evaluated_section_ids]
 
+        # miner_result is untrusted: a miner can send any shape of cgp_output,
+        # not just what SkillBundleResult/SectionTestCase would produce. Coerce
+        # wrong types away instead of letting .strip()/.items() below raise --
+        # a raise here propagates out of format_results and (absent the guard
+        # in neurons/validator.py) would abort scoring for the whole batch, not
+        # just this one miner.
         skill_text = miner_result.get('skill', '') or ''
+        if not isinstance(skill_text, str):
+            skill_text = ''
+        skill_text = skill_text[:MAX_SKILL_CHARS]
 
         raw_section_tests = miner_result.get('section_tests', {}) or {}
-        section_tests = {section_id: tests for section_id, tests in raw_section_tests.items() if section_id in evaluated_section_ids}
+        if not isinstance(raw_section_tests, dict):
+            raw_section_tests = {}
+        section_tests = {
+            section_id: [test for test in (self._sanitize_test(test) for test in tests) if test is not None]
+            for section_id, tests in raw_section_tests.items()
+            if section_id in evaluated_section_ids and isinstance(tests, list)
+        }
 
         # Per-section cap applied once, up front: everything downstream (judging,
         # embedding) only ever sees the first PER_SECTION_TEST_CAP tests of each
@@ -208,6 +240,28 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
 
         return miner_result
 
+    @staticmethod
+    def _sanitize_test(test) -> dict | None:
+        """
+        Coerces one raw, untrusted submitted test into a clean {name,
+        description, assertion} dict of length-capped strings, or None if it
+        isn't even shaped like a test. Applied once, up front, so every later
+        consumer (the judge prompt, the embedding text, the returned
+        test_vectors) works over already-safe data instead of re-guessing
+        types at each use site.
+        """
+        if not isinstance(test, dict):
+            return None
+
+        def clamp(value, limit):
+            return value[:limit] if isinstance(value, str) else ''
+
+        return {
+            "name": clamp(test.get('name'), MAX_TEST_NAME_CHARS),
+            "description": clamp(test.get('description'), MAX_TEST_FIELD_CHARS),
+            "assertion": clamp(test.get('assertion'), MAX_TEST_FIELD_CHARS),
+        }
+
     def _judge_section_tests(self, llml, skill_text: str, section_tests: dict, section_map: List[SectionMapEntry]) -> dict:
         """
         Runs the LLM-as-judge correctness pass and returns {(section_id, name): bool}.
@@ -218,9 +272,22 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
         single LLM call, up to MAX_JUDGED_TESTS total as a further backstop for
         skills with many sections (tests past that backstop default to False via
         the .get() fallback in format_results -- unverified gets no credit, same
-        as verified-wrong). If the judge call itself fails (LLM/parsing error),
-        we fail OPEN -- trust all tests as before this feature existed -- rather
-        than zeroing every miner's score during an infra outage.
+        as verified-wrong).
+
+        If the judge call itself fails or comes back with no verdicts (LLM
+        error, unparseable/empty JSON), we fail CLOSED -- every test in this
+        batch gets no credit, exactly like a test that was judged and found
+        incorrect. This used to fail open (trust everything) on the theory
+        that an infra outage shouldn't zero every miner's score, but a miner
+        fully controls the skill/assertion text that feeds this prompt, so
+        "the judge call didn't come back with valid verdicts" is also exactly
+        what a miner gets by successfully prompt-injecting the judge model (or
+        simply padding the input enough to blow the context window). Trusting
+        that outcome would hand out free correctness on demand, defeating the
+        entire point of this gate. A real infra outage still only costs
+        skill_coverage_evaluation responses a round of 0 credit -- the same
+        cost every other task type already pays when its scoring inputs are
+        unavailable -- rather than silently accepting unverified claims.
         """
         if not section_tests or not skill_text.strip():
             return {}
@@ -240,12 +307,8 @@ class SkillCoverageEvaluationTaskBundle(TaskBundle):
 
         judge_result = llml.judge_section_tests(skill_text, section_map, capped)
         if not judge_result:
-            bt.logging.error("ERROR:9384723. Assertion judge call failed. Skipping correctness verification for this response.")
-            return {
-                (section_id, test.get('name') if isinstance(test, dict) else None): True
-                for section_id, tests in section_tests.items()
-                for test in tests
-            }
+            bt.logging.error("ERROR:9384723. Assertion judge call failed or returned no verdicts. Failing closed -- no test in this response is credited as correct.")
+            return {}
 
         return {
             (section_id, verdict.name): verdict.correct
