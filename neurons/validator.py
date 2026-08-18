@@ -337,7 +337,15 @@ class Validator(BaseValidatorNeuron):
                         miner_response = response
 
                     miner_result = miner_response[0]
-                    miner_result = await task_bundle.format_results(miner_result)
+                    try:
+                        miner_result = await task_bundle.format_results(miner_result)
+                    except Exception as e:
+                        # miner_result is untrusted, miner-controlled data -- a
+                        # wrong-shaped response (bad types, wrong structure)
+                        # must not be able to take down scoring for the whole
+                        # batch. Skip just this response
+                        bt.logging.error(f"ERROR -- format_results failed for hotkey {getattr(response.axon, 'hotkey', 'N/A')}: {e}")
+                        continue
 
                     bt.logging.debug(
                         f"GOOD RESPONSE: hotkey: {getattr(response.axon, 'hotkey', 'N/A')} "

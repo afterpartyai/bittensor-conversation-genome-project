@@ -131,18 +131,43 @@ async def test_forward_roundtrip_with_real_miner_and_minerlib(monkeypatch, valid
             task: Task = window.get("task")
             assert isinstance(task, Task)
 
-    # Required response keys
-    required_keys = {
+    # The API can hand back any task type, so the response shape depends on
+    # which one this round actually got. Tag-based task types (conversation
+    # tagging, webpage metadata, survey, skill generation, named entities) all
+    # share the same {tags, vectors, original_tags} miner_result shape;
+    # skill_coverage_evaluation is structurally different (skill/TDD plan/
+    # per-section tests, not tags), so it needs its own assertions instead of
+    # being forced through the tag-shaped checks below.
+    tag_required_keys = {
         'tags',
         'vectors',
         'original_tags',
+    }
+    skill_coverage_required_keys = {
+        'skill',
+        'tdd_plan',
+        'section_tests',
     }
 
     for response in responses_array:
         cgp = response[0].cgp_output
         for item in cgp:
+            if 'skill' in item or 'section_tests' in item:
+                assert skill_coverage_required_keys.issubset(item.keys())
+
+                assert isinstance(item["skill"], str)
+                assert isinstance(item["tdd_plan"], str)
+
+                section_tests = item["section_tests"]
+                assert isinstance(section_tests, dict)
+                for tests in section_tests.values():
+                    assert isinstance(tests, list)
+                    for test in tests:
+                        assert {"name", "description", "assertion"}.issubset(test.keys())
+                continue
+
             # Check required keys exist
-            assert required_keys.issubset(item.keys())
+            assert tag_required_keys.issubset(item.keys())
 
             # Check tags is a list of strings
             tags = item["tags"]

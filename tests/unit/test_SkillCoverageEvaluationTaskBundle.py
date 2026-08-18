@@ -1,0 +1,407 @@
+from unittest.mock import AsyncMock, Mock
+from unittest.mock import patch
+import json
+import pytest
+
+from conversationgenome.api.models.skill_coverage import AssertionJudgeResult, AssertionVerdict, SectionMapEntry, SectionMapResult
+from conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle import MAX_EVALUATED_SECTIONS, PER_SECTION_TEST_CAP, SkillCoverageEvaluationTaskBundle
+from tests.mocks.DummyData import DummyData
+
+
+def _batch_embeddings(mapping, default=None):
+    """Build a get_vector_embeddings_batch side_effect from {text: vector}."""
+    def _side_effect(texts):
+        return [mapping.get(text, default if default is not None else [0.1]) for text in texts]
+    return _side_effect
+
+
+def test_is_ready_false_when_no_metadata():
+    bundle = DummyData.skill_coverage_evaluation_task_bundle()
+    bundle.input.metadata = None
+    assert not bundle.is_ready()
+
+
+def test_is_ready_false_when_no_section_map():
+    bundle = DummyData.skill_coverage_evaluation_task_bundle()
+    bundle.input.data.section_map = None
+    assert not bundle.is_ready()
+
+
+def test_is_ready_true_when_metadata_and_section_map():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    assert bundle.is_ready()
+
+
+def test_to_mining_tasks_creates_tasks():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    tasks = bundle.to_mining_tasks(2)
+    assert len(tasks) == 2
+    for task in tasks:
+        assert task.type == "skill_coverage_evaluation"
+        assert task.bundle_guid == bundle.guid
+        assert task.input.input_type == "skill_coverage"
+        assert task.input.data.seed == bundle.input.data.seed
+        assert task.input.data.section_map == bundle.input.data.section_map
+
+
+def test_generate_result_logs_counts_sections_and_tests():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": "# Skill",
+        "section_tests": {"s1": [{"name": "t1", "description": "d1"}], "s2": [{"name": "t2", "description": "d2"}, {"name": "t3", "description": "d3"}]},
+    }
+    log = bundle.generate_result_logs(miner_result)
+    assert "sections addressed: 2" in log
+    assert "total tests: 3" in log
+    assert "skill length: 7" in log
+
+
+@pytest.mark.asyncio
+async def test_format_results_embeds_skill_and_test_descriptions():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": "# Skill markdown",
+        "tdd_plan": "Plan",
+        "section_tests": {"s1": [{"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'"}]},
+    }
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({
+            "# Skill markdown": [0.1],
+            "d1\nAssertion: slugify('A') == 'a'": [0.2],
+        }))
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(
+            verdicts={"s1": [AssertionVerdict(name="t1", correct=True, reason="matches")]},
+            success=True,
+        ))
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    assert result["skill_vector"] == [0.1]
+    assert result["test_vectors"]["s1"] == [
+        {"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'", "vector": [0.2], "judged_correct": True}
+    ]
+    # skill + test embeddings are fetched in a single batched call
+    mock_llm.get_vector_embeddings_batch.assert_called_once_with(["# Skill markdown", "d1\nAssertion: slugify('A') == 'a'"])
+    mock_llm.judge_section_tests.assert_called_once_with(
+        "# Skill markdown", bundle.input.data.section_map, {"s1": [{"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'"}]}
+    )
+
+
+@pytest.mark.asyncio
+async def test_format_results_marks_unjudged_tests_incorrect():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": "# Skill markdown",
+        "tdd_plan": "Plan",
+        "section_tests": {"s1": [
+            {"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'"},
+            {"name": "t2", "description": "d2", "assertion": "the function works correctly"},
+        ]},
+    }
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        # Judge only returns a verdict for t1 -- t2 is omitted (simulating a
+        # dropped/incomplete judge response) and must default to not-correct.
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(
+            verdicts={"s1": [AssertionVerdict(name="t1", correct=True, reason="matches")]},
+            success=True,
+        ))
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    tests_by_name = {t["name"]: t for t in result["test_vectors"]["s1"]}
+    assert tests_by_name["t1"]["judged_correct"] is True
+    assert tests_by_name["t2"]["judged_correct"] is False
+
+
+@pytest.mark.asyncio
+async def test_format_results_caps_tests_per_section():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    # One more test than the cap allows, in a single section.
+    tests = [{"name": f"t{i}", "description": f"d{i}", "assertion": f"a{i}"} for i in range(PER_SECTION_TEST_CAP + 1)]
+    miner_result = {"skill": "# Skill markdown", "tdd_plan": "Plan", "section_tests": {"s1": tests}}
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        # Judge should only ever be asked about the capped set (PER_SECTION_TEST_CAP tests).
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(
+            verdicts={"s1": [AssertionVerdict(name=f"t{i}", correct=True, reason="ok") for i in range(PER_SECTION_TEST_CAP)]},
+            success=True,
+        ))
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    judge_call_tests = mock_llm.judge_section_tests.call_args.args[2]["s1"]
+    assert len(judge_call_tests) == PER_SECTION_TEST_CAP
+
+    section_tests = result["test_vectors"]["s1"]
+    assert len(section_tests) == PER_SECTION_TEST_CAP + 1  # all submitted tests still represented
+    # First PER_SECTION_TEST_CAP were embedded + judged.
+    for test in section_tests[:PER_SECTION_TEST_CAP]:
+        assert test["vector"] == [0.1]
+        assert test["judged_correct"] is True
+    # The overflow test past the cap got neither an embedding nor a verdict.
+    overflow_test = section_tests[PER_SECTION_TEST_CAP]
+    assert overflow_test["vector"] is None
+    assert overflow_test["judged_correct"] is False
+
+
+@pytest.mark.asyncio
+async def test_format_results_ignores_tests_outside_evaluated_sections():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    # Simulate s2 not having been sampled for evaluation this round -- only s1
+    # has a ground-truth vector, even though the miner still saw both sections.
+    bundle.input.metadata.section_vectors = {"s1": [0.1, 0.2, 0.3]}
+
+    miner_result = {
+        "skill": "# Skill markdown",
+        "tdd_plan": "Plan",
+        "section_tests": {
+            "s1": [{"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'"}],
+            "s2": [{"name": "t2", "description": "d2", "assertion": "slugify('B') == 'b'"}],
+        },
+    }
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(
+            verdicts={"s1": [AssertionVerdict(name="t1", correct=True, reason="matches")]},
+            success=True,
+        ))
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    # s2's test was never embedded or judged -- it can't affect the score, so
+    # it's dropped from test_vectors entirely.
+    assert set(result["test_vectors"].keys()) == {"s1"}
+    mock_llm.judge_section_tests.assert_called_once()
+    judged_sections = mock_llm.judge_section_tests.call_args.args[2]
+    assert set(judged_sections.keys()) == {"s1"}
+    # The raw submission is left untouched, so logging still reflects the
+    # miner's true full submission (both sections).
+    assert set(result["section_tests"].keys()) == {"s1", "s2"}
+
+
+@pytest.mark.asyncio
+async def test_format_results_fails_closed_when_judge_call_errors():
+    # A miner fully controls the skill/assertion text fed to the judge prompt,
+    # so "the judge call came back empty" is indistinguishable from a
+    # successful prompt injection -- crediting it as correct would hand out
+    # free scores on demand. Must fail closed (no credit), not open.
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": "# Skill markdown",
+        "tdd_plan": "Plan",
+        "section_tests": {"s1": [{"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'"}]},
+    }
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        mock_llm.judge_section_tests = Mock(return_value=None)
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    assert result["test_vectors"]["s1"][0]["judged_correct"] is False
+
+
+@pytest.mark.asyncio
+async def test_format_results_fails_closed_when_judge_returns_empty_verdicts():
+    # Same failure mode as above, but via a syntactically valid, empty
+    # response instead of a hard error -- exactly what a miner gets by
+    # successfully instructing the judge model to "return {}".
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": "# Skill markdown",
+        "tdd_plan": "Plan",
+        "section_tests": {"s1": [{"name": "t1", "description": "d1", "assertion": "slugify('A') == 'a'"}]},
+    }
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(verdicts={}, success=True))
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    assert result["test_vectors"]["s1"][0]["judged_correct"] is False
+
+
+@pytest.mark.asyncio
+async def test_format_results_tolerates_wrong_shaped_section_tests():
+    # section_tests is untrusted, wire-format data -- a miner can send any
+    # JSON shape at all, not just what SectionTestCase would produce. A
+    # non-dict section_tests, or a non-list value for a section, must be
+    # dropped rather than raising (an unhandled exception here would abort
+    # scoring for the entire batch, not just this miner -- see
+    # neurons/validator.py's guard around this call).
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {"skill": "# Skill markdown", "tdd_plan": "Plan", "section_tests": "not-a-dict"}
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        mock_llm.judge_section_tests = Mock(return_value=None)
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    assert result["test_vectors"] == {}
+
+
+@pytest.mark.asyncio
+async def test_format_results_tolerates_wrong_shaped_skill_and_tests():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": ["not", "a", "string"],
+        "tdd_plan": "Plan",
+        "section_tests": {"s1": [42, "also not a test", {"name": "t1", "description": "d1", "assertion": "a1"}]},
+    }
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(
+            verdicts={"s1": [AssertionVerdict(name="t1", correct=True, reason="ok")]},
+            success=True,
+        ))
+        mock_llm_factory.return_value = mock_llm
+
+        result = await bundle.format_results(miner_result)
+
+    # The two malformed entries are dropped; the one real test survives.
+    assert len(result["test_vectors"]["s1"]) == 1
+    assert result["test_vectors"]["s1"][0]["name"] == "t1"
+    assert result["skill_vector"] is None  # skill_text coerced to '', nothing to embed
+
+
+@pytest.mark.asyncio
+async def test_format_results_truncates_oversized_fields():
+    from conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle import (
+        MAX_SKILL_CHARS,
+        MAX_TEST_FIELD_CHARS,
+        MAX_TEST_NAME_CHARS,
+    )
+
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    miner_result = {
+        "skill": "x" * (MAX_SKILL_CHARS + 500),
+        "tdd_plan": "Plan",
+        "section_tests": {"s1": [{
+            "name": "n" * (MAX_TEST_NAME_CHARS + 50),
+            "description": "d" * (MAX_TEST_FIELD_CHARS + 50),
+            "assertion": "a" * (MAX_TEST_FIELD_CHARS + 50),
+        }]},
+    }
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=_batch_embeddings({}))
+        mock_llm.judge_section_tests = Mock(return_value=AssertionJudgeResult(verdicts={}, success=True))
+        mock_llm_factory.return_value = mock_llm
+
+        await bundle.format_results(miner_result)
+
+    judge_skill_arg = mock_llm.judge_section_tests.call_args.args[0]
+    judge_tests_arg = mock_llm.judge_section_tests.call_args.args[2]["s1"][0]
+    assert len(judge_skill_arg) == MAX_SKILL_CHARS
+    assert len(judge_tests_arg["name"]) == MAX_TEST_NAME_CHARS
+    assert len(judge_tests_arg["description"]) == MAX_TEST_FIELD_CHARS
+    assert len(judge_tests_arg["assertion"]) == MAX_TEST_FIELD_CHARS
+
+
+@pytest.mark.asyncio
+async def test_evaluate_calls_skill_coverage_scoring():
+    bundle = DummyData.setup_skill_coverage_evaluation_task_bundle()
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.SkillCoverageScoringMechanism') as mock_mech:
+        mock_eval = AsyncMock(return_value="score")
+        mock_mech.return_value.evaluate = mock_eval
+        result = await bundle.evaluate(["response"])
+    assert result == "score"
+
+
+@pytest.mark.asyncio
+async def test_generate_section_map_calls_llm_and_sets_metadata():
+    bundle = DummyData.skill_coverage_evaluation_task_bundle()
+    bundle.input.data.lines = [(0, json.dumps({"seed": "Skill for slugifying text."}))]
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.skill_request_to_section_map.return_value = SectionMapResult(
+            sections=[SectionMapEntry(section_id="s1", title="T1", description="D1")],
+            success=True,
+        )
+        mock_llm.get_vector_embeddings_batch.return_value = [[0.1, 0.2]]
+        mock_llm_factory.return_value = mock_llm
+
+        await bundle._generate_section_map()
+
+        assert bundle.input.data.seed == "Skill for slugifying text."
+        assert bundle.input.data.section_map == [SectionMapEntry(section_id="s1", title="T1", description="D1")]
+        assert bundle.input.metadata.section_vectors == {"s1": [0.1, 0.2]}
+
+        mock_llm.skill_request_to_section_map.assert_called_once_with("Skill for slugifying text.")
+        mock_llm.get_vector_embeddings_batch.assert_called_once_with(["T1: D1"])
+
+
+@pytest.mark.asyncio
+async def test_generate_section_map_samples_at_most_max_evaluated_sections():
+    bundle = DummyData.skill_coverage_evaluation_task_bundle()
+    bundle.input.data.lines = [(0, json.dumps({"seed": "Skill for slugifying text."}))]
+
+    full_sections = [SectionMapEntry(section_id=f"s{i}", title=f"T{i}", description=f"D{i}") for i in range(5)]
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.skill_request_to_section_map.return_value = SectionMapResult(sections=full_sections, success=True)
+        mock_llm.get_vector_embeddings_batch = Mock(side_effect=lambda texts: [[0.0] for _ in texts])
+        mock_llm_factory.return_value = mock_llm
+
+        await bundle._generate_section_map()
+
+    # The full map is still sent to miners...
+    assert bundle.input.data.section_map == full_sections
+    # ...but only MAX_EVALUATED_SECTIONS of them get ground-truth vectors (and
+    # therefore get scored) -- the same subset every miner mining this bundle
+    # will be evaluated against, since it's fixed once here.
+    assert len(bundle.input.metadata.section_vectors) == MAX_EVALUATED_SECTIONS
+    assert set(bundle.input.metadata.section_vectors.keys()).issubset({s.section_id for s in full_sections})
+
+
+@pytest.mark.asyncio
+async def test_generate_section_map_handles_no_result():
+    bundle = DummyData.skill_coverage_evaluation_task_bundle()
+    bundle.input.data.lines = [(0, json.dumps({"seed": "Skill for slugifying text."}))]
+    bundle.input.metadata = None
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.skill_request_to_section_map.return_value = None
+        mock_llm_factory.return_value = mock_llm
+
+        await bundle._generate_section_map()
+
+        assert bundle.input.metadata is None
+
+
+@pytest.mark.asyncio
+async def test_generate_section_map_handles_failure():
+    bundle = DummyData.skill_coverage_evaluation_task_bundle()
+    bundle.input.data.lines = [(0, json.dumps({"seed": "Skill for slugifying text."}))]
+    bundle.input.metadata = None
+
+    with patch('conversationgenome.task_bundle.SkillCoverageEvaluationTaskBundle.get_llm_backend') as mock_llm_factory:
+        mock_llm = Mock()
+        mock_llm.skill_request_to_section_map.return_value = SectionMapResult(sections=[], success=False)
+        mock_llm_factory.return_value = mock_llm
+
+        await bundle._generate_section_map()
+
+        assert bundle.input.metadata is None

@@ -1,0 +1,36 @@
+<Role>
+You are an expert software engineer authoring an LLM skill document (the kind used by a coding agent, e.g. a Claude Code Skill), thinking in terms of test-driven development (TDD).
+</Role>
+
+<task>
+In a single pass, do all three of the following for the skill request and section map below:
+1. Write a complete skill document in Markdown that addresses every section.
+2. Write a short overall TDD plan explaining how you would verify the skill is correctly followed.
+3. Write specific TDD test methods for every section, each with a concrete assertion.
+</task>
+
+<instructions>
+1.  **Skill:** Address every section in `section_map`, but keep it tight — a short paragraph or a few bullet points per section is enough, not an exhaustive guide. Structured with Markdown headings. Do not invent unrelated functionality outside the skill request and section map. Aim for roughly 200-400 words total. If your tests will reference specific error codes, field names, or return values, name them in the skill itself (even briefly) — a test asserting an exact identifier the skill never mentions cannot be verified as correct and will be scored as if it were wrong.
+2.  **TDD plan:** One short sentence summarizing your overall testing approach. This is not scored -- keep it brief.
+3.  **Section tests: write exactly 2 tests per section** (a core case and one edge/failure case) **— no more.** Only your best-scoring 2 tests per section ever count towards your score, so a 3rd, 4th, or 5th test cannot help you and only costs you time. Prefer specific, named scenarios over generic happy-path tests (e.g. `testExpiredInventoryTriggersWasteWorkflow` over `testInventory`); where a section implies boundary conditions or invalid input, make one of your 2 tests a failure-mode test instead of two happy-path tests.
+4.  **Give each test a name and a one-sentence description:** the description should state the exact behavior being verified, not restate the test name.
+5.  **Write a concrete assertion for every test — this is the most important field.** The assertion must state the exact input and the exact expected output or expected state change, as you would write it in code. It is not a restatement of the description.
+    - Good: `slugify("Café Münchën") == "cafe-munchen"`
+    - Good: `divide(10, 0) raises ZeroDivisionError`
+    - Bad (too vague to verify anything): `"the function works correctly"`
+    - **Only reference error codes, field names, or return values that the skill you just wrote actually names.** An assertion using a specific identifier the skill never mentions cannot be verified against it and will be scored as if it were wrong, no matter how concrete it looks.
+6.  **Do not pad with near-duplicate tests:** each test in a section must verify a distinct behavior with a distinct assertion.
+</instructions>
+
+<output_format>
+**Your response MUST be a single JSON object** with this exact shape, and no other text:
+{"skill": "string (markdown)", "tdd_plan": "string", "section_tests": {"<section_id>": [{"name": "string", "description": "string", "assertion": "string"}, ...], ...}}
+</output_format>
+
+<skill_request>
+{{ seed }}
+</skill_request>
+
+<section_map>
+{{ section_map_text }}
+</section_map>
