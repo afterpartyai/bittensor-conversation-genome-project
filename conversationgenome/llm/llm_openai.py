@@ -4,14 +4,16 @@ from openai import OpenAI
 from conversationgenome.ConfigLib import c
 from conversationgenome.llm.LlmLib import LlmLib, model_override, reasoning_effort_override, service_tier_override
 
+DEFAULT_MODEL = "gpt-5.2"
+
 
 class LlmOpenAI(LlmLib):
-    def __init__(self):
+    def __init__(self, ignore_model_override: bool = False):
         api_key = c.get('env', "OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set. Please set it in the .env file or as an environment variable.")
         self.client = OpenAI(api_key=api_key)
-        self.model = c.get('env', "OPENAI_MODEL", "gpt-5.2")
+        self.model = DEFAULT_MODEL if ignore_model_override else c.get('env', "OPENAI_MODEL", DEFAULT_MODEL)
         self.embedding_model = "text-embedding-3-small"
 
 

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
+from conversationgenome.base.validator import BaseValidatorNeuron
 from tests.mocks.MockTaskBundle import MockTaskBundle
 
 
@@ -35,7 +36,7 @@ async def test_forward_respects_max_convo_lines(mock_config_get, bare_validator,
     validator.config.neuron.sample_size = 3
     validator.metagraph.n.item.return_value = 3
 
-    async def reserve_task_bundle_side_effect():
+    async def reserve_task_bundle_side_effect(netuid=None):
         bundle = MockTaskBundle(num_tasks=override_config[("validator", "max_convo_lines")])
         max_lines = override_config[("validator", "max_convo_lines")]
         bundle.input.data.lines = bundle.input.data.lines[:max_lines]
@@ -565,3 +566,31 @@ def test_get_burn_uid(bare_validator):
     assert uid == expected_uid
     v.subtensor.query_subtensor.assert_called_once_with("SubnetOwnerHotkey", params=[v.config.netuid])
     v.subtensor.get_uid_for_hotkey_on_subnet.assert_called_once_with(hotkey_ss58=expected_hotkey, netuid=v.config.netuid)
+
+
+def test_init_configures_llm_override_lockdown(monkeypatch):
+    """Validator.__init__ must wire netuid through to configure_llm_override_lockdown
+    so mainnet validators get the LLM-override lockdown (and testnet/miners don't).
+
+    Bypasses the heavy parent init (wallet/subtensor/metagraph) and stubs c.get/c.set
+    the same way test_init_refreshes_commitments_once_at_startup does above -- this
+    must NOT depend on a real COMMITMENT_PRIVATE_KEY from a local .env file, or it
+    passes locally but fails on any CI checkout that has no .env.
+    """
+    import neurons.validator as validator_module
+
+    monkeypatch.setattr(BaseValidatorNeuron, "__init__", lambda self, config=None: None)
+    monkeypatch.setattr(validator_module.c, "get", lambda *_a, **_k: "00" * 32)
+    monkeypatch.setattr(validator_module.c, "set", lambda *_a, **_k: None)
+
+    mock_configure_lockdown = MagicMock()
+    monkeypatch.setattr(validator_module, "configure_llm_override_lockdown", mock_configure_lockdown)
+
+    instance = validator_module.Validator.__new__(validator_module.Validator)
+    instance.config = type("C", (), {"netuid": 33, "neuron": type("N", (), {"sample_size": 6})()})()
+    instance.load_state = lambda: None
+    instance.refresh_miner_endpoints = MagicMock()
+
+    validator_module.Validator.__init__(instance)
+
+    mock_configure_lockdown.assert_called_once_with(33)

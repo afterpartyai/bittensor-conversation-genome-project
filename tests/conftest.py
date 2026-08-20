@@ -15,6 +15,18 @@ load_dotenv(find_dotenv(usecwd=True), override=False)
 # Set to True for faster tests with smaller task bundles
 fast_tests = True
 
+
+@pytest.fixture(autouse=True)
+def reset_llm_overrides_locked():
+    """Some tests (e.g. those constructing a real Validator) exercise the real
+    ConfigLib.state global dict via configure_llm_override_lockdown(), which can leak
+    llm_overrides_locked=True to later tests that read the real (unmocked) c.get. Reset
+    it after every test so state never leaks across the suite."""
+    yield
+    from conversationgenome.ConfigLib import c as real_c
+    real_c.state.setdefault("system", {})["llm_overrides_locked"] = False
+
+
 @pytest.fixture(autouse=True)
 def patch_random_and_config(monkeypatch):
     """Global defaults: deterministic random + sensible c.get map."""
@@ -36,6 +48,7 @@ def patch_random_and_config(monkeypatch):
         ("system", "mode"): "test",
         ("system", "scoring_version"): 0.1,
         ("system", "netuid"): -1,
+        ("system", "llm_overrides_locked"): False,
         # llm section
         ("llm", "type"): "openai",
         ("llm", "embeddings_model"): "text-embedding-3-large",
@@ -83,7 +96,7 @@ def fake_libs(monkeypatch):
         def __init__(self):
             self.calls = {"reserve_task_bundle": 0, "put_task": 0}
 
-        async def reserve_task_bundle(self, *, batch_num=None, return_indexed_windows=True):
+        async def reserve_task_bundle(self, netuid=None, *, batch_num=None, return_indexed_windows=True):
             self.calls["reserve_task_bundle"] += 1
             return DummyData.conversation_tagging_task_bundle()
 
@@ -153,6 +166,11 @@ def bare_validator(monkeypatch):
     v.dendrite = type("D", (), {"forward": AsyncMock(return_value=[])})()
     v.update_scores = lambda *a, **k: None
     v.load_state = lambda: None
+
+    import asyncio as _asyncio
+    v._dispatch_lock = _asyncio.Lock()
+    v._last_dispatch_time = 0.0
+    v._min_dispatch_interval = 0.0
 
     return v
 

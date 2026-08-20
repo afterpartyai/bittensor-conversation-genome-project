@@ -41,7 +41,10 @@ def test_llm_openrouter_basic_prompt(mock_config):
 
 def test_llm_factory_registration():
     with patch('conversationgenome.llm.llm_factory.c') as mock_c:
-        mock_c.get.return_value = "openrouter"
+        mock_c.get.side_effect = lambda section, key, default=None: {
+            ("system", "llm_overrides_locked"): False,
+            ("env", "LLM_TYPE_OVERRIDE"): "openrouter",
+        }.get((section, key), default)
         with patch('conversationgenome.llm.llm_openrouter.OpenAI'), \
              patch('conversationgenome.llm.llm_openrouter.c'):
             llm = get_llm_backend()

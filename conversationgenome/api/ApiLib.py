@@ -25,7 +25,7 @@ except:
 class ApiLib:
     verbose = False
 
-    async def reserve_task_bundle(self, hotkey, api_key=None) -> TaskBundle:
+    async def reserve_task_bundle(self, hotkey, netuid, api_key=None) -> TaskBundle:
         headers = {
             "Accept": "application/json",
             "Accept-Language": "en_US",
@@ -39,7 +39,7 @@ class ApiLib:
         read_host_port = c.get('env', 'CGP_API_READ_PORT', '443')
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))
         options_str = c.get('env', 'CGP_API_OPTIONS', '')
-        url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve?cgp_version={CGP_VERSION}"
+        url = f"{read_host_url}:{read_host_port}/api/v1/conversation/reserve?cgp_version={CGP_VERSION}&netuid={netuid}"
 
         if len(options_str) > 0:
             options = options_str.split(",")
@@ -67,7 +67,7 @@ class ApiLib:
 
         return task_bundle
 
-    async def put_task_data(self, id, json_data) -> bool:
+    async def put_task_data(self, id, json_data, api_key=None) -> bool:
         write_host_url = c.get('env', 'CGP_API_WRITE_HOST', 'https://db.conversations.xyz')
         write_host_port = c.get('env', 'CGP_API_WRITE_PORT', '443')
         url = f"{write_host_url}:{write_host_port}/api/v1/conversation/record/{id}"
@@ -78,6 +78,7 @@ class ApiLib:
         headers = {
             "Accept": "application/json",
             "Accept-Language": "en_US",
+            "Authorization": "Bearer %s" % (str(api_key)),
         }
 
         http_timeout = Utils._float(c.get('env', 'HTTP_TIMEOUT', 60))

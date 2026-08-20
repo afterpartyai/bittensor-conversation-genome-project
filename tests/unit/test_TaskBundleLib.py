@@ -37,7 +37,7 @@ async def test_when_getting_task_bundle_then_max_lines_is_respected(mock_config_
         mock_requests_post.return_value = mock_response
 
         tbl = TaskBundleLib()
-        task_bundle: TaskBundle = await tbl.get_task_bundle(hotkey=hotkey, api_key=api_key)
+        task_bundle: TaskBundle = await tbl.get_task_bundle(hotkey=hotkey, netuid=1111, api_key=api_key)
 
         assert len(task_bundle.input.data.lines) == MAX_CONVO_LINES
         assert task_bundle.input.data.lines == DummyData.lines()[0:MAX_CONVO_LINES]

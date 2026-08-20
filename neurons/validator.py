@@ -30,6 +30,7 @@ from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.ConfigLib import c
+from conversationgenome.llm.llm_factory import configure_llm_override_lockdown
 from conversationgenome.task.Task import Task
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.Utils import Utils
@@ -63,6 +64,7 @@ class Validator(BaseValidatorNeuron):
 
         super(Validator, self).__init__(config=config)
         c.set("system", "netuid", self.config.netuid)
+        configure_llm_override_lockdown(self.config.netuid)
 
         bt.logging.info("load_state()")
         self.load_state()
@@ -186,7 +188,7 @@ class Validator(BaseValidatorNeuron):
                 validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
 
                 llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
-                if llm_type_override:
+                if llm_type_override and not c.get("system", "llm_overrides_locked", False):
                     llm_type = llm_type_override
                     model = c.get("env", "OPENAI_MODEL")
             except:
@@ -194,7 +196,7 @@ class Validator(BaseValidatorNeuron):
 
             for _ in range(number_of_task_bundles):
                 batch_num = random.randint(100000, 9999999)
-                task_bundle: TaskBundle = await vl.reserve_task_bundle()
+                task_bundle: TaskBundle = await vl.reserve_task_bundle(self.config.netuid)
 
                 if not task_bundle:
                     continue
@@ -266,10 +268,12 @@ class Validator(BaseValidatorNeuron):
                 # Create a synapse to distribute to miners
                 synapse = conversationgenome.protocol.CgSynapse(cgp_input=[{"task": masked_task}])
 
+                await self.throttle_dispatch()
                 responses = await self.dendrite.forward(
                     axons=self._get_axons_for_uids(miner_uids),
                     synapse=synapse,
                     deserialize=False,
+                    timeout=task.timeout,
                 )
 
                 if self.verbose:
@@ -308,10 +312,12 @@ class Validator(BaseValidatorNeuron):
                 if uids_to_retry:
                     bt.logging.debug(f"Retrying requests for the following UIDs (same synapse): {uids_to_retry}")
 
+                    await self.throttle_dispatch()
                     retry_responses = await self.dendrite.forward(
                         axons=self._get_axons_for_uids(uids_to_retry),
                         synapse=synapse,
                         deserialize=False,
+                        timeout=task.timeout,
                     )
 
                     for i, uid in enumerate(uids_to_retry):

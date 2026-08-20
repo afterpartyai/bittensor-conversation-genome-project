@@ -6,9 +6,9 @@ from conversationgenome.task_bundle.TaskBundle import TaskBundle
 
 
 class TaskBundleLib:
-    async def get_task_bundle(self, hotkey, api_key=None) -> TaskBundle:
+    async def get_task_bundle(self, hotkey, netuid, api_key=None) -> TaskBundle:
         api = ApiLib()
-        task_bundle: TaskBundle = await api.reserve_task_bundle(hotkey, api_key=api_key)
+        task_bundle: TaskBundle = await api.reserve_task_bundle(hotkey, netuid, api_key=api_key)
         
         await task_bundle.setup()
 

@@ -16,7 +16,7 @@ def validator():
 async def test_when_reserving_then_task_bundle_returned(monkeypatch, validator):
     monkeypatch.setattr(validator, "get_task_bundle", AsyncMock(return_value=DummyData.conversation_tagging_task_bundle()))
 
-    result = await validator.reserve_task_bundle()
+    result = await validator.reserve_task_bundle(1111)
 
     assert result is not None
     assert isinstance(result, TaskBundle)
@@ -26,6 +26,6 @@ async def test_when_reserving_then_task_bundle_returned(monkeypatch, validator):
 async def test_when_no_conversation_then_none_reserved(monkeypatch, validator):
     monkeypatch.setattr(validator, "get_task_bundle", AsyncMock(return_value=None))
 
-    result = await validator.reserve_task_bundle()
+    result = await validator.reserve_task_bundle(1111)
 
     assert result is None

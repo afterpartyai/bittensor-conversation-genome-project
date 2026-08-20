@@ -59,7 +59,7 @@ def validator_with_mock_metagraph():
         # Validator config
         config = BaseValidatorNeuron.config()
         config.wallet = SimpleNamespace(name="mock_wallet", hotkey="mock_hotkey")
-        config.netuid = 33
+        config.netuid = 138
         config.neuron = SimpleNamespace(
             name="test-validator",
             epoch_length=10,

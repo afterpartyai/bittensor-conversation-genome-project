@@ -24,6 +24,7 @@ async def test_put_task_basic(mock_c, mock_ApiLib):
         ("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE"): None,
         ("llm", "type"): "openai",
         ("llm", "embeddings_model"): "text-embedding-3-large",
+        ("system", "llm_overrides_locked"): False,
     }[(section, key)]
 
     # Setup ApiLib mock
@@ -73,6 +74,7 @@ async def test_put_task_with_overrides(mock_c, mock_ApiLib):
         ("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE"): "custom-embedder",
         ("llm", "type"): "openai",
         ("llm", "embeddings_model"): "text-embedding-3-large",
+        ("system", "llm_overrides_locked"): False,
     }[(section, key)]
 
     mock_api_instance = MagicMock()
@@ -97,3 +99,44 @@ async def test_put_task_with_overrides(mock_c, mock_ApiLib):
     assert output["llm_type"] == "anthropic"
     assert output["cgp_version"] == "2.0.0"
     assert output["data"] == [1, 2, 3]
+
+
+@pytest.mark.asyncio
+@patch("conversationgenome.task.TaskLib.ApiLib")
+@patch("conversationgenome.task.TaskLib.c")
+@patch("conversationgenome.task.TaskLib.CGP_VERSION", "3.0.0")
+async def test_put_task_overrides_ignored_when_locked(mock_c, mock_ApiLib):
+    # Overrides are present in .env, but llm_overrides_locked is True (mainnet validator) -- they must be ignored.
+    mock_c.get.side_effect = lambda section, key, default=None: {
+        ("env", "LLM_TYPE_OVERRIDE"): "anthropic",
+        ("env", "ANTHROPIC_MODEL"): "claude-3",
+        ("env", "SYSTEM_MODE"): "prod",
+        ("env", "MARKER_ID"): "marker000",
+        ("env", "LLM_TYPE"): "anthropic",
+        ("system", "scoring_version"): "v3",
+        ("system", "netuid"): 33,
+        ("env", "OPENAI_EMBEDDINGS_MODEL_OVERRIDE"): "custom-embedder",
+        ("llm", "type"): "openai",
+        ("llm", "embeddings_model"): "text-embedding-3-large",
+        ("system", "llm_overrides_locked"): True,
+    }[(section, key)]
+
+    mock_api_instance = MagicMock()
+    mock_api_instance.put_task_data = AsyncMock(return_value={"status": "success"})
+    mock_ApiLib.return_value = mock_api_instance
+
+    task_lib = TaskLib()
+    await task_lib.put_task(
+        hotkey="hk3",
+        task_bundle_id="tbid3",
+        task_id="tid3",
+        neuron_type="typeC",
+        batch_number=1,
+        data={},
+    )
+
+    args, kwargs = mock_api_instance.put_task_data.call_args
+    output = args[1]
+    assert output["llm_type"] == "openai"
+    assert output["model"] == "gpt-5.2"
+    assert output["embeddings_model"] == "text-embedding-3-large"
