@@ -30,6 +30,7 @@ from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata
 from conversationgenome.base.validator import BaseValidatorNeuron
 from conversationgenome.ConfigLib import c
+from conversationgenome.llm.llm_factory import configure_llm_override_lockdown
 from conversationgenome.task.Task import Task
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
 from conversationgenome.utils.Utils import Utils
@@ -63,6 +64,7 @@ class Validator(BaseValidatorNeuron):
 
         super(Validator, self).__init__(config=config)
         c.set("system", "netuid", self.config.netuid)
+        configure_llm_override_lockdown(self.config.netuid)
 
         bt.logging.info("load_state()")
         self.load_state()
@@ -186,7 +188,7 @@ class Validator(BaseValidatorNeuron):
                 validatorHotkey = str(self.axon.wallet.hotkey.ss58_address)
 
                 llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
-                if llm_type_override:
+                if llm_type_override and not c.get("system", "llm_overrides_locked", False):
                     llm_type = llm_type_override
                     model = c.get("env", "OPENAI_MODEL")
             except:

@@ -9,7 +9,6 @@ from typing import Optional
 import numpy as np
 
 from conversationgenome.ConfigLib import c
-from conversationgenome.llm.llm_factory import get_llm_backend
 from conversationgenome.mock.MockBt import MockBt
 from conversationgenome.task.TaskLib import TaskLib
 from conversationgenome.task_bundle.TaskBundle import TaskBundle
@@ -33,7 +32,6 @@ class ValidatorLib:
     mode = "test"  # test|local_llm|openai|anthropic
     hotkey = "v1234"
     verbose = False
-    llml = get_llm_backend()
     readyai_api_key = None
 
     def __init__(self):

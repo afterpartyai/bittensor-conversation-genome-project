@@ -38,7 +38,10 @@ def test_llm_chutes_basic_prompt(mock_config):
 
 def test_llm_factory_chutes_registration():
     with patch('conversationgenome.llm.llm_factory.c') as mock_c:
-        mock_c.get.return_value = "chutes"
+        mock_c.get.side_effect = lambda section, key, default=None: {
+            ("system", "llm_overrides_locked"): False,
+            ("env", "LLM_TYPE_OVERRIDE"): "chutes",
+        }.get((section, key), default)
         with patch('conversationgenome.llm.llm_chutes.OpenAI'), \
              patch('conversationgenome.llm.llm_chutes.c'):
             llm = get_llm_backend()

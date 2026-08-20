@@ -1,10 +1,14 @@
+import tempfile
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
 
+from conversationgenome.base.validator import BaseValidatorNeuron
 from tests.mocks.MockTaskBundle import MockTaskBundle
+from tests.mocks.TestValidator import TestValidator
 
 
 @pytest.mark.asyncio
@@ -565,3 +569,37 @@ def test_get_burn_uid(bare_validator):
     assert uid == expected_uid
     v.subtensor.query_subtensor.assert_called_once_with("SubnetOwnerHotkey", params=[v.config.netuid])
     v.subtensor.get_uid_for_hotkey_on_subnet.assert_called_once_with(hotkey_ss58=expected_hotkey, netuid=v.config.netuid)
+
+
+@patch("neurons.validator.configure_llm_override_lockdown")
+def test_init_configures_llm_override_lockdown(mock_configure_lockdown):
+    """Validator.__init__ must wire netuid through to configure_llm_override_lockdown
+    so mainnet validators get the LLM-override lockdown (and testnet/miners don't)."""
+    with patch("conversationgenome.base.neuron.MockMetagraph"), \
+         patch("bittensor.Subtensor"), \
+         patch("bittensor.Wallet") as mock_wallet_class:
+        mock_wallet_instance = MagicMock()
+        mock_wallet_instance.hotkey.ss58_address = "mock_hotkey"
+        mock_wallet_class.return_value = mock_wallet_instance
+
+        config = BaseValidatorNeuron.config()
+        config.wallet = SimpleNamespace(name="mock_wallet", hotkey="mock_hotkey")
+        config.netuid = 33
+        config.neuron = SimpleNamespace(
+            name="test-validator",
+            epoch_length=10,
+            disable_set_weights=True,
+            dont_save_events=True,
+            full_path="/tmp/validator_init_test",
+            device="cpu",
+            axon_off=True,
+            sample_size=2,
+            moving_average_alpha=0.1,
+            num_concurrent_forwards=1,
+        )
+        temp_log_dir = tempfile.mkdtemp()
+        config.logging = SimpleNamespace(logging_dir=temp_log_dir, logging_file="bittensor.log", debug=True, trace=False, logging_level="info", record_log=False)
+
+        TestValidator(config, block_override=100)
+
+        mock_configure_lockdown.assert_called_once_with(33)
