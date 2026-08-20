@@ -29,7 +29,7 @@ async def test_when_reserving_conversation_then_conversation_is_returned(mock_co
     mock_requests_post.return_value = mock_response
 
     api = ApiLib()
-    task_bundle = await api.reserve_task_bundle(hotkey=hotkey, api_key=api_key)
+    task_bundle = await api.reserve_task_bundle(hotkey=hotkey, netuid=1111, api_key=api_key)
 
     assert isinstance(task_bundle, TaskBundle)
     assert task_bundle.type == "conversation_tagging"
@@ -51,8 +51,9 @@ async def test_when_reserving_conversation_then_endpoint_is_called_properly(mock
     mock_requests_post.return_value = mock_response
 
     api = ApiLib()
-    task_bundle = await api.reserve_task_bundle(hotkey=hotkey, api_key=api_key)
+    task_bundle = await api.reserve_task_bundle(hotkey=hotkey, netuid=33, api_key=api_key)
 
     args, kwargs = mock_requests_post.call_args
     assert "https://fake.api:443/api/v1/conversation/reserve" in args[0]
+    assert "netuid=33" in args[0]
     assert kwargs["headers"]["Authorization"] == f"Bearer {api_key}"

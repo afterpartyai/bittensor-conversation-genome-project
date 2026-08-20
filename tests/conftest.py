@@ -83,7 +83,7 @@ def fake_libs(monkeypatch):
         def __init__(self):
             self.calls = {"reserve_task_bundle": 0, "put_task": 0}
 
-        async def reserve_task_bundle(self, *, batch_num=None, return_indexed_windows=True):
+        async def reserve_task_bundle(self, netuid=None, *, batch_num=None, return_indexed_windows=True):
             self.calls["reserve_task_bundle"] += 1
             return DummyData.conversation_tagging_task_bundle()
 

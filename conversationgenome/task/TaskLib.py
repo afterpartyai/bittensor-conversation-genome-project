@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Optional
 
 from conversationgenome import __version__ as CGP_VERSION
 from conversationgenome.api.ApiLib import ApiLib
@@ -6,7 +7,7 @@ from conversationgenome.ConfigLib import c
 
 
 class TaskLib:
-    async def put_task(self, *, hotkey: str, task_bundle_id: str, task_id: str, neuron_type: str, batch_number: int, data: Any) -> None:
+    async def put_task(self, *, hotkey: str, task_bundle_id: str, task_id: str, neuron_type: str, batch_number: int, data: Any, api_key: Optional[str] = None) -> None:
         llm_type = c.get('llm', 'type')
         llm_type_override = c.get("env", "LLM_TYPE_OVERRIDE")
 
@@ -37,6 +38,6 @@ class TaskLib:
 
         output['data'] = data
         api = ApiLib()
-        result = await api.put_task_data(task_bundle_id, output)
+        result = await api.put_task_data(task_bundle_id, output, api_key=api_key)
 
         return result

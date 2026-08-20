@@ -194,7 +194,7 @@ class Validator(BaseValidatorNeuron):
 
             for _ in range(number_of_task_bundles):
                 batch_num = random.randint(100000, 9999999)
-                task_bundle: TaskBundle = await vl.reserve_task_bundle()
+                task_bundle: TaskBundle = await vl.reserve_task_bundle(self.config.netuid)
 
                 if not task_bundle:
                     continue

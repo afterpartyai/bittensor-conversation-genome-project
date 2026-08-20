@@ -60,9 +60,9 @@ class ValidatorLib:
             return
         self.readyai_api_key = data['api_key']
 
-    async def reserve_task_bundle(self) -> Optional[TaskBundle]:
+    async def reserve_task_bundle(self, netuid: int) -> Optional[TaskBundle]:
         # Validator requests a full conversation from the API
-        task_bundle: TaskBundle = await self.get_task_bundle()
+        task_bundle: TaskBundle = await self.get_task_bundle(netuid)
 
         if task_bundle:
             bt.logging.info(f"Reserved task bundle.")
@@ -72,18 +72,21 @@ class ValidatorLib:
 
         return None
 
-    async def get_task_bundle(self) -> Optional[TaskBundle]:
+    async def get_task_bundle(self, netuid: int) -> Optional[TaskBundle]:
         hotkey = self.hotkey
 
         if not self.readyai_api_key:
             self.read_api_key()
 
         tbl = TaskBundleLib()
-        raw_task_data: TaskBundle = await tbl.get_task_bundle(hotkey, api_key=self.readyai_api_key)
+        raw_task_data: TaskBundle = await tbl.get_task_bundle(hotkey, netuid, api_key=self.readyai_api_key)
 
         return raw_task_data
 
     async def put_task(self, *, hotkey: str, task_bundle_id: str, task_id: str, neuron_type: str, batch_number: int, data: Any) -> None:
+        if not self.readyai_api_key:
+            self.read_api_key()
+
         tl = TaskLib()
         await tl.put_task(
             hotkey=hotkey,
@@ -92,6 +95,7 @@ class ValidatorLib:
             neuron_type=neuron_type,
             batch_number=batch_number,
             data=data,
+            api_key=self.readyai_api_key,
         )
 
     def update_scores(self, rewards, uids, ema_scores, scores, moving_average_alpha, device, neurons, nonlinear_power):

@@ -35,7 +35,7 @@ async def test_forward_respects_max_convo_lines(mock_config_get, bare_validator,
     validator.config.neuron.sample_size = 3
     validator.metagraph.n.item.return_value = 3
 
-    async def reserve_task_bundle_side_effect():
+    async def reserve_task_bundle_side_effect(netuid=None):
         bundle = MockTaskBundle(num_tasks=override_config[("validator", "max_convo_lines")])
         max_lines = override_config[("validator", "max_convo_lines")]
         bundle.input.data.lines = bundle.input.data.lines[:max_lines]
