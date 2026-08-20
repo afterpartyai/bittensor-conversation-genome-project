@@ -266,10 +266,12 @@ class Validator(BaseValidatorNeuron):
                 # Create a synapse to distribute to miners
                 synapse = conversationgenome.protocol.CgSynapse(cgp_input=[{"task": masked_task}])
 
+                await self.throttle_dispatch()
                 responses = await self.dendrite.forward(
                     axons=self._get_axons_for_uids(miner_uids),
                     synapse=synapse,
                     deserialize=False,
+                    timeout=task.timeout,
                 )
 
                 if self.verbose:
@@ -308,10 +310,12 @@ class Validator(BaseValidatorNeuron):
                 if uids_to_retry:
                     bt.logging.debug(f"Retrying requests for the following UIDs (same synapse): {uids_to_retry}")
 
+                    await self.throttle_dispatch()
                     retry_responses = await self.dendrite.forward(
                         axons=self._get_axons_for_uids(uids_to_retry),
                         synapse=synapse,
                         deserialize=False,
+                        timeout=task.timeout,
                     )
 
                     for i, uid in enumerate(uids_to_retry):

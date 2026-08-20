@@ -26,6 +26,7 @@ class SkillCoverageTaskInput(BaseModel):
 class SkillCoverageEvaluationTask(Task):
     type: Literal["skill_coverage_evaluation"] = "skill_coverage_evaluation"
     input: Optional[SkillCoverageTaskInput] = None
+    timeout: float = 24    # We double the timeout for this task since it is more token heavy than the other tasks
 
     # Switch between the two mining paths below. True (default) runs a single
     # combined call (LlmLib.skill_request_to_skill_bundle) instead of the full

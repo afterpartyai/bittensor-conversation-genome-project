@@ -24,6 +24,7 @@ import logging
 import os
 import re
 import threading
+import time
 from traceback import print_exception
 from typing import Dict, List, Tuple
 
@@ -133,6 +134,21 @@ class BaseValidatorNeuron(BaseNeuron):
         self.thread: threading.Thread = None
         self.lock = asyncio.Lock()
 
+        # Failsafe dispatch throttle: guarantees miners are never hit faster
+        # than min_seconds_between_dispatches, regardless of num_concurrent_forwards
+        # or how fast forward() happens to complete (e.g. due to a bad config
+        # or fast-failing requests removing the natural network-latency pacing).
+        self._dispatch_lock = asyncio.Lock()
+        self._last_dispatch_time = 0.0
+        self._min_dispatch_interval = c.get("validator", "min_seconds_between_dispatches", 12.0)
+
+        if self.config.neuron.num_concurrent_forwards > 1:
+            bt.logging.warning(
+                f"neuron.num_concurrent_forwards is set to {self.config.neuron.num_concurrent_forwards} "
+                "(default is 1). Running multiple forward() loops concurrently can cause miners to be "
+                "queried much more frequently than intended. Verify this is intentional."
+            )
+
     def serve_axon(self):
         """Serve axon to enable external connections."""
 
@@ -158,6 +174,17 @@ class BaseValidatorNeuron(BaseNeuron):
         coroutines = [self.forward() for _ in range(self.config.neuron.num_concurrent_forwards)]
         results = await asyncio.gather(*coroutines)
         return results
+
+    async def throttle_dispatch(self):
+        """Failsafe rate limit: block until at least min_seconds_between_dispatches
+        has passed since the last dispatch. Shared across all concurrent forward()
+        coroutines via _dispatch_lock, so it holds even if num_concurrent_forwards
+        is misconfigured or a task loop completes unusually fast."""
+        async with self._dispatch_lock:
+            wait = self._min_dispatch_interval - (time.monotonic() - self._last_dispatch_time)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._last_dispatch_time = time.monotonic()
 
     def run(self):
         """

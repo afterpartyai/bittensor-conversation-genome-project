@@ -20,6 +20,7 @@ class MockTask:
         self.input.data.indexed_windows = [(0, [(0, "mock line")])]
         self.prompt_chain = []
         self.example_output = {}
+        self.timeout = 12
 
     async def mine(self):
         return {"tags": ["mock_tag"], "vectors": {"mock_tag": [0.1]}}

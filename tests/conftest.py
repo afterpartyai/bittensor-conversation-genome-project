@@ -154,6 +154,11 @@ def bare_validator(monkeypatch):
     v.update_scores = lambda *a, **k: None
     v.load_state = lambda: None
 
+    import asyncio as _asyncio
+    v._dispatch_lock = _asyncio.Lock()
+    v._last_dispatch_time = 0.0
+    v._min_dispatch_interval = 0.0
+
     return v
 
 

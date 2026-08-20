@@ -23,6 +23,7 @@ class Task(BaseModel, ABC):
     input: Any = None
     prompt_chain: Optional[List[PromptChainStep]] = None
     example_output: Optional[ExampleOutputUnion] = None
+    timeout: float = 12     # Default timeout for tasks is 12s (Same as Bittensor default)
 
     @abstractmethod
     async def mine(self) -> dict[str, list]:
