@@ -148,6 +148,8 @@ class Validator(BaseValidatorNeuron):
         return axons
 
     async def forward(self, test_mode=False):
+        pending_uploads = []
+        vl = None
         try:
             # NOTE: deliberately no forced commitment refresh here. Refresh
             # happens in two existing paths that are sufficient and don't
@@ -178,6 +180,7 @@ class Validator(BaseValidatorNeuron):
 
             # Selected tasks and bundles
             buffered_task_bundles: dict[str, TaskBundle] = {}
+            bundle_batch_numbers: dict[str, int] = {}
             selected_tasks: List[Task] = []
 
             validatorHotkey = "FINDHOTKEY-"
@@ -215,14 +218,17 @@ class Validator(BaseValidatorNeuron):
                 for task in tasks:
                     selected_tasks.append(task)
 
-                # Needs to have a way for task bundles to send what validators pre-processed on them
-                await vl.put_task(
-                    hotkey=validatorHotkey,
-                    task_bundle_id=task_bundle.guid,
-                    task_id=None,
-                    neuron_type="validator",
-                    batch_number=batch_num,
-                    data=task_bundle.input.metadata.model_dump(),
+                bundle_batch_numbers[task_bundle.guid] = batch_num
+
+                pending_uploads.append(
+                    dict(
+                        hotkey=validatorHotkey,
+                        task_bundle_id=task_bundle.guid,
+                        task_id=None,
+                        neuron_type="validator",
+                        batch_number=batch_num,
+                        data=task_bundle.input.metadata.model_dump(),
+                    )
                 )
 
                 try:
@@ -359,17 +365,18 @@ class Validator(BaseValidatorNeuron):
                         f"{task_bundle.generate_result_logs(miner_result)}"
                     )
 
-                    # Needs a way to save miner results per task
-                    await vl.put_task(
-                        hotkey=response.axon.hotkey,
-                        task_bundle_id=task_bundle_id,
-                        task_id=task.guid,
-                        neuron_type="miner",
-                        batch_number=batch_num,
-                        data={
-                            "result": miner_result,
-                            "task": task.model_dump(),
-                        },
+                    pending_uploads.append(
+                        dict(
+                            hotkey=response.axon.hotkey,
+                            task_bundle_id=task_bundle_id,
+                            task_id=task.guid,
+                            neuron_type="miner",
+                            batch_number=bundle_batch_numbers[task_bundle_id],
+                            data={
+                                "result": miner_result,
+                                "task": task.model_dump(),
+                            },
+                        )
                     )
 
                 (final_scores, rank_scores) = await task_bundle.evaluate(miner_responses=responses)
@@ -410,6 +417,15 @@ class Validator(BaseValidatorNeuron):
             return True
         except Exception as e:
             bt.logging.error(f"ERROR 2294374 -- Top Level Validator Error: {e}", exc_info=test_mode)
+        finally:
+            for upload in pending_uploads:
+                try:
+                    await vl.put_task(**upload)
+                except Exception as e:
+                    bt.logging.error(
+                        f"ERROR 2294376 - deferred put_task failed for bundle "
+                        f"{upload.get('task_bundle_id')} ({upload.get('neuron_type')}): {e}"
+                    )
 
         return False
 

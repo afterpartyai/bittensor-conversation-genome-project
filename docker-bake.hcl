@@ -4,7 +4,7 @@ target "miner" {
 
   platforms = ["linux/amd64", "linux/arm64"]
   tags = [
-    "readyai/bittensor-readyai-sn33:2.34.70",
+    "readyai/bittensor-readyai-sn33:2.39.76",
   ]
 
   output = ["type=registry"]
