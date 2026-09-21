@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from conversationgenome.base.validator import BaseValidatorNeuron
+from tests.mocks.MockTaskBundle import MockTask
 from tests.mocks.MockTaskBundle import MockTaskBundle
 
 
@@ -541,6 +542,119 @@ async def test_forward_continues_when_format_results_raises(bare_validator, fake
     # never call update_scores at all).
     assert result is True
     assert validator.update_scores.call_count > 0
+
+
+# ─── deferred put_task uploads (ground-truth leak fix) ────────────────
+def _wire_deferred_upload_test(validator, fake_libs, bundles, events=None):
+    """Scaffold forward() over the given bundles, capturing every put_task
+    kwargs dict. When `events` is a list, also record an ordered log of
+    ("dispatch"|"evaluate"|"put_task", ...) entries."""
+    put_calls = []
+
+    fake_libs["vl"].reserve_task_bundle = AsyncMock(side_effect=list(bundles) + [None] * 10)
+
+    async def record_put_task(*a, **k):
+        if events is not None:
+            events.append(("put_task", k.get("neuron_type")))
+        put_calls.append(k)
+
+    fake_libs["vl"].put_task = AsyncMock(side_effect=record_put_task)
+
+    for bundle in bundles:
+        orig_evaluate = bundle.evaluate
+
+        async def evaluate_wrapper(miner_responses, _orig=orig_evaluate):
+            if events is not None:
+                events.append(("evaluate", None))
+            return await _orig(miner_responses=miner_responses)
+
+        bundle.evaluate = evaluate_wrapper
+
+    async def fake_dispatch(axons, *_, **__):
+        if events is not None:
+            events.append(("dispatch", None))
+        return [_dummy_response(axon.hotkey, 200, with_output=True) for axon in axons]
+
+    validator.dendrite.forward = AsyncMock(side_effect=fake_dispatch)
+    validator.update_scores = MagicMock()
+    return put_calls
+
+
+@pytest.mark.asyncio
+async def test_put_task_deferred_until_after_all_dispatch_and_scoring(bare_validator, fake_libs):
+    events = []
+    bundle = MockTaskBundle(guid="bundle-1", num_tasks=2)
+    put_calls = _wire_deferred_upload_test(bare_validator, fake_libs, [bundle], events=events)
+
+    result = await bare_validator.forward(test_mode=True)
+    assert result is True
+
+    kinds = [e[0] for e in events]
+    assert "dispatch" in kinds and "evaluate" in kinds and "put_task" in kinds
+
+    first_put = kinds.index("put_task")
+    last_dispatch = len(kinds) - 1 - kinds[::-1].index("dispatch")
+    last_evaluate = len(kinds) - 1 - kinds[::-1].index("evaluate")
+    assert first_put > last_dispatch, "put_task ran while miners could still be queried"
+    assert first_put > last_evaluate, "put_task ran before scoring finished"
+
+    # Both the ground truth and the miner results were uploaded in the flush.
+    assert {k["neuron_type"] for k in put_calls} == {"validator", "miner"}
+
+
+@pytest.mark.asyncio
+async def test_ground_truth_still_uploaded_when_not_enough_tasks(bare_validator, fake_libs):
+    # The early "not enough tasks" return must still flush buffered ground
+    # truth (finally path), or reserved bundles silently vanish server-side.
+    bundle = MockTaskBundle(guid="bundle-1", num_tasks=2)
+    bundle.to_mining_tasks = MagicMock(return_value=[MockTask(guid="t0", bundle_guid="bundle-1")])
+    put_calls = _wire_deferred_upload_test(bare_validator, fake_libs, [bundle])
+
+    result = await bare_validator.forward(test_mode=True)
+    assert result is False
+
+    validator_puts = [k for k in put_calls if k["neuron_type"] == "validator"]
+    assert len(validator_puts) == 1
+    assert validator_puts[0]["task_bundle_id"] == "bundle-1"
+
+
+@pytest.mark.asyncio
+async def test_ground_truth_still_uploaded_when_dispatch_raises(bare_validator, fake_libs):
+    bundle = MockTaskBundle(guid="bundle-1", num_tasks=2)
+    put_calls = _wire_deferred_upload_test(bare_validator, fake_libs, [bundle])
+    bare_validator.dendrite.forward = AsyncMock(side_effect=RuntimeError("network down"))
+
+    result = await bare_validator.forward(test_mode=True)
+    assert result is False
+
+    validator_puts = [k for k in put_calls if k["neuron_type"] == "validator"]
+    assert len(validator_puts) == 1, "finally block must flush ground truth after a crash"
+    assert not [k for k in put_calls if k["neuron_type"] == "miner"]
+
+
+@pytest.mark.asyncio
+async def test_miner_uploads_use_their_bundles_batch_number(bare_validator, fake_libs, monkeypatch):
+    # Regression: miner rows used to be stamped with whatever batch_num the
+    # LAST bundle-reservation iteration left behind, not their own bundle's.
+    import neurons.validator as validator_module
+
+    batch_sequence = iter([111111, 222222])
+    monkeypatch.setattr(validator_module.random, "randint", lambda a, b: next(batch_sequence))
+
+    bundle_1 = MockTaskBundle(guid="bundle-1", num_tasks=2)
+    bundle_2 = MockTaskBundle(guid="bundle-2", num_tasks=2)
+    put_calls = _wire_deferred_upload_test(bare_validator, fake_libs, [bundle_1, bundle_2])
+
+    result = await bare_validator.forward(test_mode=True)
+    assert result is True
+
+    gt_batch = {k["task_bundle_id"]: k["batch_number"] for k in put_calls if k["neuron_type"] == "validator"}
+    assert gt_batch == {"bundle-1": 111111, "bundle-2": 222222}
+
+    miner_puts = [k for k in put_calls if k["neuron_type"] == "miner"]
+    assert miner_puts
+    for upload in miner_puts:
+        assert upload["batch_number"] == gt_batch[upload["task_bundle_id"]]
 
 
 def test_get_burn_uid(bare_validator):
