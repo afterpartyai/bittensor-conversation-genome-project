@@ -248,6 +248,10 @@ class Validator(BaseValidatorNeuron):
                 bt.logging.error(f"Not enough tasks received from endpoint: {len(selected_tasks)}. Aborting.")
                 return False
 
+            # Interleave tasks across bundles so tasks from the same bundle
+            # aren't dispatched back-to-back.
+            random.shuffle(selected_tasks)
+
             for task_idx, task in enumerate(selected_tasks):
                 bt.logging.info(f"Looping for piece {task_idx + 1} out of {len(selected_tasks)}")
                 task_bundle_id = task.bundle_guid

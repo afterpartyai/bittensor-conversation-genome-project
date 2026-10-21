@@ -107,8 +107,8 @@ class BaseValidatorNeuron(BaseNeuron):
         # Initialize the non-linear transformation power
         self.nonlinear_power = 3.0
 
-        # Burn rate -> burns 90% of the emissions.
-        self.burn_rate = 0
+        # Burn rate -> burns 25% of the emissions to the subnet owner UID.
+        self.burn_rate = 0.25
 
         # Committed endpoint cache: {hotkey_ss58: (ip, port)}
         self.committed_endpoints: Dict[str, Tuple[str, int]] = {}
