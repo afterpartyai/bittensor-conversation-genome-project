@@ -1,3 +1,4 @@
+import math
 import random
 import uuid
 from copy import deepcopy
@@ -11,6 +12,7 @@ import bittensor as bt
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import PrivateAttr
 
 from conversationgenome.api.models.conversation import Conversation
 from conversationgenome.api.models.conversation_metadata import ConversationMetadata, ConversationQualityMetadata
@@ -74,6 +76,8 @@ class ConversationTaggingTaskBundle(TaskBundle):
     type: Literal["conversation_tagging"] = "conversation_tagging"
     input: Optional[ConversationInput] = None
     _QUALITY_THRESHOLD = Utils._int(c.get('env', 'CONVO_QUALITY_THRESHOLD', 5))
+    # Min index distance between windows that share no lines
+    _window_min_gap: int = PrivateAttr(default=1)
 
     def is_ready(self) -> bool:
         if self.input.metadata is None or self.input.data.indexed_windows is None:
@@ -91,6 +95,9 @@ class ConversationTaggingTaskBundle(TaskBundle):
             return
 
         self._enforce_minimum_convo_windows()
+        if not self.input.data.indexed_windows:
+            return
+
         await self._get_conversation_quality()
         # Only generate metadata and make bundle ready for conversations that pass quality threshold
         if self._check_conversation_quality():
@@ -122,12 +129,10 @@ class ConversationTaggingTaskBundle(TaskBundle):
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
         tasks = []
 
-        if len(self.input.data.indexed_windows) > number_of_tasks_per_bundle:
-            indexed_windows_subset = random.sample(self.input.data.indexed_windows, number_of_tasks_per_bundle)
-        else:
-            indexed_windows_subset = self.input.data.indexed_windows
+        indexed_windows_subset = self._select_windows(number_of_tasks_per_bundle)
+        enrichment_per_window = self._partition_enrichment_lines(len(indexed_windows_subset))
 
-        for _, indexed_window in enumerate(indexed_windows_subset):
+        for indexed_window, window_enrichment_lines in zip(indexed_windows_subset, enrichment_per_window):
             random_id = str(uuid.uuid4())
             task: ConversationTaggingTask = ConversationTaggingTask(
                 mode=self.mode,
@@ -143,7 +148,7 @@ class ConversationTaggingTaskBundle(TaskBundle):
                         window_idx=indexed_window[0],
                         window=indexed_window[1],
                         participants=[],
-                        enrichment_lines=self.input.data.enrichment_lines,
+                        enrichment_lines=window_enrichment_lines,
                     ),
                     input_categories=self.input.input_categories
                 ),
@@ -153,6 +158,53 @@ class ConversationTaggingTaskBundle(TaskBundle):
             tasks.append(task)
 
         return tasks
+
+    def _max_windows_to_send(self, number_of_tasks_per_bundle: int) -> int:
+        """Max windows of this conversation that may be sent to miners."""
+        num_windows = len(self.input.data.indexed_windows or [])
+        if num_windows == 0:
+            return 0
+
+        limit = number_of_tasks_per_bundle
+
+        if not self.is_user_request:
+            max_per_convo = c.get("convo_window", "max_windows_per_conversation", 2)
+            max_fraction = c.get("convo_window", "max_window_fraction", 0.25)
+            limit = min(limit, max_per_convo, max(1, math.floor(num_windows * max_fraction)))
+
+        gap = max(1, self._window_min_gap)
+        max_non_overlapping = (num_windows - 1) // gap + 1
+        return max(0, min(limit, max_non_overlapping))
+
+    def _select_windows(self, number_of_tasks_per_bundle: int) -> List[Tuple[int, List[Tuple[int, str]]]]:
+        """Randomly pick windows that share no lines with each other."""
+        windows = self.input.data.indexed_windows or []
+        k = self._max_windows_to_send(number_of_tasks_per_bundle)
+        if k == 0:
+            return []
+
+        gap = max(1, self._window_min_gap)
+        compressed_range = len(windows) - (k - 1) * (gap - 1)
+        positions = sorted(random.sample(range(compressed_range), k))
+        selected = [windows[pos + rank * (gap - 1)] for rank, pos in enumerate(positions)]
+        random.shuffle(selected)
+        return selected
+
+    def _partition_enrichment_lines(self, num_windows: int) -> List[Optional[List[Tuple[int, str]]]]:
+        """Split enrichment snippets across windows so no two windows share one."""
+        if num_windows <= 0:
+            return []
+
+        enrichment_lines = list(self.input.data.enrichment_lines or [])
+        if not enrichment_lines:
+            return [None] * num_windows
+
+        random.shuffle(enrichment_lines)
+        buckets: List[List[str]] = [[] for _ in range(num_windows)]
+        for i, (_, content) in enumerate(enrichment_lines):
+            buckets[i % num_windows].append(content)
+
+        return [[(idx, content) for idx, content in enumerate(bucket)] or None for bucket in buckets]
 
     async def format_results(self, miner_result) -> str:
         miner_result['original_tags'] = miner_result['tags']
@@ -186,9 +238,15 @@ class ConversationTaggingTaskBundle(TaskBundle):
         maxLines = c.get("convo_window", "max_lines", 10)
         overlapLines = c.get("convo_window", "overlap_lines", 2)
 
+        window_size = maxLines
         windows = Utils.split_overlap_array(self.input.data.lines, size=maxLines, overlap=overlapLines)
         if len(windows) < 2:
+            window_size = minLines
             windows = Utils.split_overlap_array(self.input.data.lines, size=minLines, overlap=overlapLines)
+
+        # Windows i and i+g share no lines when g * step >= size.
+        step = window_size - overlapLines
+        self._window_min_gap = math.ceil(window_size / step) if step > 0 else 1
 
         # TODO: Write convo windows into local database with full convo metadata
         indexed_windows = []
@@ -199,8 +257,8 @@ class ConversationTaggingTaskBundle(TaskBundle):
         self.input.data.indexed_windows = indexed_windows
 
     def _enforce_minimum_convo_windows(self) -> None:
-        minimum_convo_windows = 1
-        if self.input.data.min_convo_windows is not None and self.input.data.min_convo_windows >= 0:
+        minimum_convo_windows = c.get("convo_window", "min_convo_windows_floor", 3)
+        if self.input.data.min_convo_windows is not None and self.input.data.min_convo_windows > minimum_convo_windows:
             bt.logging.info(f"Change in minimum required convo windows from API from {minimum_convo_windows} to {self.input.data.min_convo_windows}.")
             minimum_convo_windows = self.input.data.min_convo_windows
 

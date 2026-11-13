@@ -164,8 +164,9 @@ class Validator(BaseValidatorNeuron):
             wl = WandbLib()
 
             miners_per_task = c.get("validator", "miners_per_task", 6)
-            number_of_task_bundles = c.get("validator", "number_of_task_bundles", 10)
+            number_of_task_bundles = c.get("validator", "number_of_task_bundles", 30)
             number_of_task_per_bundle = c.get("validator", "number_of_task_per_bundle", 5)
+            target_number_of_tasks = c.get("validator", "target_number_of_tasks", 50)
             minimum_number_of_tasks = c.get("validator", "minimum_number_of_tasks", 10)
 
             # If command line overrides the standard 6 miners, then use that
@@ -198,6 +199,9 @@ class Validator(BaseValidatorNeuron):
                 pass
 
             for _ in range(number_of_task_bundles):
+                if target_number_of_tasks and len(selected_tasks) >= target_number_of_tasks:
+                    break
+
                 batch_num = random.randint(100000, 9999999)
                 task_bundle: TaskBundle = await vl.reserve_task_bundle(self.config.netuid)
 

@@ -11,9 +11,16 @@ class c:
     state = {
         "validator": {
             "miners_per_task": 6,
-            "number_of_task_bundles": 10,
+            "number_of_task_bundles": 30,
             "number_of_task_per_bundle": 5,
+            "target_number_of_tasks": 50,
             "minimum_number_of_tasks": 10,
+        },
+        "convo_window": {
+            # Limit how much of a conversation is exposed to miners
+            "max_windows_per_conversation": 2,
+            "max_window_fraction": 0.25,
+            "min_convo_windows_floor": 3,
         },
         "system": {
             "mode": 'test',
