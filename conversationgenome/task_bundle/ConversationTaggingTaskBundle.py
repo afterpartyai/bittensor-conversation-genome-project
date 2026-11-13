@@ -95,6 +95,9 @@ class ConversationTaggingTaskBundle(TaskBundle):
             return
 
         self._enforce_minimum_convo_windows()
+        if not self.input.data.indexed_windows:
+            return
+
         await self._get_conversation_quality()
         # Only generate metadata and make bundle ready for conversations that pass quality threshold
         if self._check_conversation_quality():

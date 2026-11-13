@@ -321,3 +321,25 @@ def test_enforce_minimum_convo_windows_uses_validator_floor(num_windows, api_min
     with patch(f"{BUNDLE_MODULE}.c.get", side_effect=_config({("convo_window", "min_convo_windows_floor"): floor})):
         bundle._enforce_minimum_convo_windows()
     assert (len(bundle.input.data.indexed_windows) > 0) == expect_kept
+
+
+@pytest.mark.asyncio
+async def test_setup_skips_llm_calls_when_too_few_windows():
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.lines = [(i % 2, f"line {i}") for i in range(15)]  # 2 windows, below floor
+    with patch.object(bundle, "_get_conversation_quality", AsyncMock()) as mock_quality, \
+         patch.object(bundle, "_generate_metadata", AsyncMock()) as mock_generate:
+        await bundle.setup()
+    mock_quality.assert_not_called()
+    mock_generate.assert_not_called()
+    assert not bundle.is_ready()
+
+
+@pytest.mark.asyncio
+async def test_setup_runs_quality_check_when_enough_windows():
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.lines = [(i % 2, f"line {i}") for i in range(60)]
+    with patch.object(bundle, "_get_conversation_quality", AsyncMock()) as mock_quality, \
+         patch.object(bundle, "_generate_metadata", AsyncMock()):
+        await bundle.setup()
+    mock_quality.assert_called_once()
