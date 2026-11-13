@@ -708,3 +708,42 @@ def test_init_configures_llm_override_lockdown(monkeypatch):
     validator_module.Validator.__init__(instance)
 
     mock_configure_lockdown.assert_called_once_with(33)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "tasks_per_bundle,target,max_bundles,expected_reservations",
+    [
+        (5, 50, 30, 10),  # 5-task bundles: stops after 10, same volume as before
+        (2, 50, 30, 25),  # capped conversation bundles: reserves more conversations
+        (1, 50, 30, 30),  # never exceeds the max bundle count
+        (5, 0, 4, 4),     # target disabled -> fixed bundle count
+    ],
+)
+async def test_forward_reserves_bundles_until_target_task_count(
+    bare_validator, fake_libs, tasks_per_bundle, target, max_bundles, expected_reservations
+):
+    import neurons.validator as validator_module
+
+    overrides = {
+        ("validator", "number_of_task_bundles"): max_bundles,
+        ("validator", "number_of_task_per_bundle"): tasks_per_bundle,
+        ("validator", "target_number_of_tasks"): target,
+        ("validator", "minimum_number_of_tasks"): 10_000,  # abort before dispatch; we only check reservation
+    }
+    original_get = validator_module.c.get
+
+    def get(section, key, default=None, *a, **k):
+        if (section, key) in overrides:
+            return overrides[(section, key)]
+        return original_get(section, key, default, *a, **k)
+
+    reserve = AsyncMock(side_effect=lambda *a, **k: MockTaskBundle(num_tasks=tasks_per_bundle))
+    fake_libs["vl"].reserve_task_bundle = reserve
+    fake_libs["vl"].put_task = AsyncMock()
+
+    with patch.object(validator_module.c, "get", side_effect=get):
+        result = await bare_validator.forward()
+
+    assert result is False
+    assert reserve.await_count == expected_reservations
