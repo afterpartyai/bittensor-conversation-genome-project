@@ -37,8 +37,9 @@ def patch_random_and_config(monkeypatch):
         # validator section
         ("validator", "miners_per_window"): 3,
         ("validator", "miners_per_task"): 6,
-        ("validator", "number_of_task_bundles"): 10,
+        ("validator", "number_of_task_bundles"): 30,
         ("validator", "number_of_task_per_bundle"): 5,
+        ("validator", "target_number_of_tasks"): 50,
         ("validator", "minimum_number_of_tasks"): 10,
         # convo_window section
         ("convo_window", "min_lines"): 5,
@@ -61,8 +62,9 @@ def patch_random_and_config(monkeypatch):
     if fast_tests:
         defaults.update(
             {
-                ("validator", "number_of_task_bundles"): 2,
+                ("validator", "number_of_task_bundles"): 6,
                 ("validator", "number_of_task_per_bundle"): 2,
+                ("validator", "target_number_of_tasks"): 4,
                 ("validator", "minimum_number_of_tasks"): 2
             }
         )

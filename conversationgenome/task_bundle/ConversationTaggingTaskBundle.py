@@ -91,6 +91,9 @@ class ConversationTaggingTaskBundle(TaskBundle):
             return
 
         self._enforce_minimum_convo_windows()
+        if not self.input.data.indexed_windows:
+            return
+
         await self._get_conversation_quality()
         # Only generate metadata and make bundle ready for conversations that pass quality threshold
         if self._check_conversation_quality():
@@ -120,14 +123,20 @@ class ConversationTaggingTaskBundle(TaskBundle):
         return False
 
     def to_mining_tasks(self, number_of_tasks_per_bundle: int) -> List[Task]:
+        """Pick one random window and send the same challenge as every task of the bundle.
+
+        Every miner receiving this conversation sees the exact same input, like the other task
+        types, and no second window of the conversation is ever exposed (nothing to stitch).
+        """
+        windows = self.input.data.indexed_windows or []
+        if not windows:
+            return []
+
+        window_idx, window = random.choice(windows)
+        enrichment_lines = self.input.data.enrichment_lines or None
+
         tasks = []
-
-        if len(self.input.data.indexed_windows) > number_of_tasks_per_bundle:
-            indexed_windows_subset = random.sample(self.input.data.indexed_windows, number_of_tasks_per_bundle)
-        else:
-            indexed_windows_subset = self.input.data.indexed_windows
-
-        for _, indexed_window in enumerate(indexed_windows_subset):
+        for _ in range(number_of_tasks_per_bundle):
             random_id = str(uuid.uuid4())
             task: ConversationTaggingTask = ConversationTaggingTask(
                 mode=self.mode,
@@ -140,10 +149,10 @@ class ConversationTaggingTaskBundle(TaskBundle):
                     input_type=self.input.input_type,
                     guid=self.input.guid,
                     data=ConversationTaskInputData(
-                        window_idx=indexed_window[0],
-                        window=indexed_window[1],
+                        window_idx=window_idx,
+                        window=window,
                         participants=[],
-                        enrichment_lines=self.input.data.enrichment_lines,
+                        enrichment_lines=enrichment_lines,
                     ),
                     input_categories=self.input.input_categories
                 ),
@@ -199,8 +208,8 @@ class ConversationTaggingTaskBundle(TaskBundle):
         self.input.data.indexed_windows = indexed_windows
 
     def _enforce_minimum_convo_windows(self) -> None:
-        minimum_convo_windows = 1
-        if self.input.data.min_convo_windows is not None and self.input.data.min_convo_windows >= 0:
+        minimum_convo_windows = c.get("convo_window", "min_convo_windows_floor", 3)
+        if self.input.data.min_convo_windows is not None and self.input.data.min_convo_windows > minimum_convo_windows:
             bt.logging.info(f"Change in minimum required convo windows from API from {minimum_convo_windows} to {self.input.data.min_convo_windows}.")
             minimum_convo_windows = self.input.data.min_convo_windows
 

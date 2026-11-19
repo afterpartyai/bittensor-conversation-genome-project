@@ -151,3 +151,126 @@ async def test_evaluate_calls_ground_truth_scoring(sample_input):
         mock_mech.return_value.evaluate = mock_eval
         result = await bundle.evaluate(["response"])
     assert result == "score"
+
+
+# ---------- Single window per conversation ----------
+
+import random as _random_module
+
+BUNDLE_MODULE = "conversationgenome.task_bundle.ConversationTaggingTaskBundle"
+
+
+def _config(overrides=None):
+    values = {
+        ("convo_window", "min_lines"): 2,
+        ("convo_window", "max_lines"): 10,
+        ("convo_window", "overlap_lines"): 2,
+        ("convo_window", "min_convo_windows_floor"): 3,
+    }
+    values.update(overrides or {})
+    return lambda section, key, default=None, *a, **k: values.get((section, key), default)
+
+
+@pytest.fixture
+def seeded_random(monkeypatch):
+    # conftest makes random helpers deterministic globally; use a real seeded RNG here.
+    rng = _random_module.Random(1234)
+    monkeypatch.setattr(_random_module, "choice", rng.choice)
+    return rng
+
+
+def _bundle_with_lines(num_lines, enrichment_lines=None):
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.lines = [(i % 2, f"unique line {i}") for i in range(num_lines)]
+    bundle.input.data.total = num_lines
+    bundle.input.data.enrichment_lines = enrichment_lines
+    with patch(f"{BUNDLE_MODULE}.c.get", side_effect=_config()):
+        bundle._split_conversation_in_windows()
+    return bundle
+
+
+@pytest.mark.parametrize("num_lines", [34, 62, 300])
+@pytest.mark.parametrize("n", [1, 5])
+def test_all_tasks_carry_the_same_single_window(seeded_random, num_lines, n):
+    bundle = _bundle_with_lines(num_lines)
+    tasks = bundle.to_mining_tasks(number_of_tasks_per_bundle=n)
+    assert len(tasks) == n
+    assert len({t.input.data.window_idx for t in tasks}) == 1
+    assert all(t.input.data.window == tasks[0].input.data.window for t in tasks)
+    assert len({t.guid for t in tasks}) == n
+
+
+def test_user_request_also_gets_a_single_window(seeded_random):
+    bundle = _bundle_with_lines(300)
+    bundle.is_user_request = True
+    tasks = bundle.to_mining_tasks(number_of_tasks_per_bundle=5)
+    assert len({t.input.data.window_idx for t in tasks}) == 1
+
+
+def test_selection_covers_all_window_positions(seeded_random):
+    bundle = _bundle_with_lines(160)  # 20 windows
+    picked = set()
+    for _ in range(500):
+        picked.add(bundle.to_mining_tasks(number_of_tasks_per_bundle=1)[0].input.data.window_idx)
+    assert picked == set(range(len(bundle.input.data.indexed_windows)))
+
+
+def test_no_windows_yields_no_tasks():
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.indexed_windows = []
+    assert bundle.to_mining_tasks(number_of_tasks_per_bundle=5) == []
+
+
+def test_all_tasks_carry_full_enrichment(seeded_random):
+    enrichment = [(i, f"snippet {i}") for i in range(7)]
+    bundle = _bundle_with_lines(300, enrichment_lines=enrichment)
+    masked = [bundle.mask_task_for_miner(t) for t in bundle.to_mining_tasks(number_of_tasks_per_bundle=5)]
+    payloads = [m.model_dump()["input"]["data"] for m in masked]
+    assert all(p == payloads[0] for p in payloads), "every miner must receive the exact same challenge"
+    assert [tuple(e) for e in payloads[0]["enrichment_lines"]] == enrichment
+
+
+def test_no_enrichment_leaves_tasks_without_enrichment(seeded_random):
+    bundle = _bundle_with_lines(300, enrichment_lines=None)
+    assert all(t.input.data.enrichment_lines is None for t in bundle.to_mining_tasks(number_of_tasks_per_bundle=5))
+
+
+@pytest.mark.parametrize(
+    "num_windows,api_min,floor,expect_kept",
+    [
+        (3, 1, 3, False),  # validator floor applies even though API says 1
+        (4, 1, 3, True),
+        (4, 5, 3, False),  # API can raise the minimum
+        (6, 5, 3, True),
+        (2, 0, 1, True),   # floor is configurable
+    ],
+)
+def test_enforce_minimum_convo_windows_uses_validator_floor(num_windows, api_min, floor, expect_kept):
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.min_convo_windows = api_min
+    bundle.input.data.indexed_windows = [(i, [(0, f"l{i}")]) for i in range(num_windows)]
+    with patch(f"{BUNDLE_MODULE}.c.get", side_effect=_config({("convo_window", "min_convo_windows_floor"): floor})):
+        bundle._enforce_minimum_convo_windows()
+    assert (len(bundle.input.data.indexed_windows) > 0) == expect_kept
+
+
+@pytest.mark.asyncio
+async def test_setup_skips_llm_calls_when_too_few_windows():
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.lines = [(i % 2, f"line {i}") for i in range(15)]  # 2 windows, below floor
+    with patch.object(bundle, "_get_conversation_quality", AsyncMock()) as mock_quality, \
+         patch.object(bundle, "_generate_metadata", AsyncMock()) as mock_generate:
+        await bundle.setup()
+    mock_quality.assert_not_called()
+    mock_generate.assert_not_called()
+    assert not bundle.is_ready()
+
+
+@pytest.mark.asyncio
+async def test_setup_runs_quality_check_when_enough_windows():
+    bundle = DummyData.conversation_tagging_task_bundle()
+    bundle.input.data.lines = [(i % 2, f"line {i}") for i in range(60)]
+    with patch.object(bundle, "_get_conversation_quality", AsyncMock()) as mock_quality, \
+         patch.object(bundle, "_generate_metadata", AsyncMock()):
+        await bundle.setup()
+    mock_quality.assert_called_once()

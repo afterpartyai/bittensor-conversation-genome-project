@@ -48,6 +48,9 @@ async def test_task_bundle_to_mining_tasks_returns_tasks(monkeypatch):
 @pytest.mark.asyncio
 async def test_mask_task_for_miner_masks_sensitive_fields(monkeypatch):
     bundle: ConversationTaggingTaskBundle = DummyData.conversation_tagging_task_bundle()
+    # Long enough to clear the validator's minimum-windows floor (short convos are skipped).
+    bundle.input.data.lines = [(i % 2, f"line {i}") for i in range(60)]
+    bundle.input.data.total = len(bundle.input.data.lines)
 
     generate_metadata_mock = AsyncMock(return_value=None)
     quality_mock = AsyncMock(return_value=None)
