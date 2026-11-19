@@ -17,9 +17,7 @@ class c:
             "minimum_number_of_tasks": 10,
         },
         "convo_window": {
-            # Limit how much of a conversation is exposed to miners
-            "max_windows_per_conversation": 2,
-            "max_window_fraction": 0.25,
+            # Skip conversations too short for one window to be a small part of the whole
             "min_convo_windows_floor": 3,
         },
         "system": {
